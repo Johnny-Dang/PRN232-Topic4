@@ -2,6 +2,7 @@
 using BusinessLogicLayer.Services.Interfaces;
 using DataAccessLayer.Database;
 using DataAccessLayer.Repositories;
+using DataAccessLayer.Repositories.Implementations;
 using DataAccessLayer.Repositories.Interfaces;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
@@ -36,6 +37,7 @@ namespace BusinessLogicLayer.Extensions
 
             // Register services
             serviceCollection.AddScoped<IEventService, EventService>();
+            serviceCollection.AddScoped<IRoundService, RoundService>();
         }
     }
 }

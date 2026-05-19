@@ -15,6 +15,36 @@ namespace SEALHackathonSystem.Controllers
             _eventService = eventService;
         }
 
+        [HttpGet("{eventId}")]
+        public async Task<IActionResult> GetEventById(Guid eventId)
+        {
+            try
+            {
+                var result = await _eventService.GetEventByIdAsync(eventId);
+                if (result == null) return NotFound();
+                return Ok(result);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+        }
+
+        [HttpGet("all")]
+        public async Task<IActionResult> GetAll()
+        {
+            try
+            {
+                var result = await _eventService.GetAllEventAsync();
+                if (result == null) return NotFound();
+                return Ok(result);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+        }
+
         /// <summary>
         /// Create a new event
         /// </summary>
@@ -24,6 +54,24 @@ namespace SEALHackathonSystem.Controllers
             try
             {
                 var result = await _eventService.CreateAsync(request);
+                return Ok(result);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+        }
+
+        /// <summary>
+        /// Update an event
+        /// </summary>
+        [HttpPut("{eventId}")]
+        public async Task<IActionResult> UpdateEvent(Guid eventId, [FromBody] UpdateEventRequest request)
+        {
+            try
+            {
+                request.EventId = eventId;
+                var result = await _eventService.UpdateAsync(request);
                 return Ok(result);
             }
             catch (Exception ex)

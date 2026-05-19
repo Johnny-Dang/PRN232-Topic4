@@ -26,7 +26,7 @@ namespace BusinessLogicLayer.Services.Implements
 
         public async Task<EventDto> CreateAsync(CreateEventRequest request)
         {
-            var @event = new Events
+            var eventEntity = new Events
             {
                 EventId = Guid.NewGuid(),
                 EventName = request.EventName,
@@ -37,7 +37,7 @@ namespace BusinessLogicLayer.Services.Implements
                 EndDate = request.EndDate
             };
 
-            var createdEvent = await _eventRepository.AddAsync(@event);
+            var createdEvent = await _eventRepository.AddAsync(eventEntity);
             await _unitOfWork.SaveChangesAsync();
 
             return new EventDto
@@ -53,10 +53,44 @@ namespace BusinessLogicLayer.Services.Implements
             };
         }
 
+        public async Task<EventDto> UpdateAsync(UpdateEventRequest request)
+        {
+            var eventEntity = await _eventRepository.FirstOrDefaultAsync(x => x.EventId == request.EventId);
+            if (eventEntity == null)
+                throw new Exception($"Event with id {request.EventId} not found");
+
+            eventEntity.EventName = request.EventName;
+            eventEntity.Season = request.Season;
+            eventEntity.Year = request.Year;
+            eventEntity.Description = request.Description;
+            eventEntity.StartDate = request.StartDate;
+            eventEntity.EndDate = request.EndDate;
+
+            _eventRepository.Update(eventEntity);
+            await _unitOfWork.SaveChangesAsync();
+
+            return MapToDto(eventEntity);
+        }
+
+        public async Task<EventDto> GetEventByIdAsync(Guid eventId)
+        {
+            var eventEntity = await _eventRepository.GetByIdAsync(eventId);
+            if (eventEntity == null)
+                throw new Exception($"Event with id {eventId} not found");
+
+            return MapToDto(eventEntity);
+        }
+
+        public async Task<List<EventDto>> GetAllEventAsync()
+        {
+            var events = await _eventRepository.GetAllAsync();
+            return events.Select(MapToDto).ToList();
+        }
+
         public async Task<EventDto> AddRoundForEventAsync(Guid eventId, AddRoundRequest request)
         {
-            var @event = await _eventRepository.GetByIdAsync(eventId);
-            if (@event == null)
+            var eventEntity = await _eventRepository.GetByIdAsync(eventId);
+            if (eventEntity == null)
                 throw new Exception($"Event with id {eventId} not found");
 
             var round = new Rounds
@@ -73,15 +107,15 @@ namespace BusinessLogicLayer.Services.Implements
             await _roundRepository.AddAsync(round);
             await _unitOfWork.SaveChangesAsync();
 
-            @event = await _eventRepository.GetByIdAsync(eventId);
+            eventEntity = await _eventRepository.GetByIdAsync(eventId);
 
-            return MapToDto(@event!);
+            return MapToDto(eventEntity!);
         }
 
         public async Task<EventDto> RemoveRoundForEventAsync(Guid eventId, Guid roundId)
         {
-            var @event = await _eventRepository.GetByIdAsync(eventId);
-            if (@event == null)
+            var eventEntity = await _eventRepository.GetByIdAsync(eventId);
+            if (eventEntity == null)
                 throw new Exception($"Event with id {eventId} not found");
 
             var round = await _roundRepository.GetByIdAsync(roundId);
@@ -94,23 +128,23 @@ namespace BusinessLogicLayer.Services.Implements
             _roundRepository.Delete(round);
             await _unitOfWork.SaveChangesAsync();
 
-            @event = await _eventRepository.GetByIdAsync(eventId);
+            eventEntity = await _eventRepository.GetByIdAsync(eventId);
 
-            return MapToDto(@event!);
+            return MapToDto(eventEntity!);
         }
 
-        private EventDto MapToDto(Events @event)
+        private EventDto MapToDto(Events eventEntity)
         {
             return new EventDto
             {
-                EventId = @event.EventId,
-                EventName = @event.EventName,
-                Season = @event.Season,
-                Year = @event.Year,
-                Description = @event.Description,
-                StartDate = @event.StartDate,
-                EndDate = @event.EndDate,
-                Rounds = @event.Rounds.Select(r => new RoundDto
+                EventId = eventEntity.EventId,
+                EventName = eventEntity.EventName,
+                Season = eventEntity.Season,
+                Year = eventEntity.Year,
+                Description = eventEntity.Description,
+                StartDate = eventEntity.StartDate,
+                EndDate = eventEntity.EndDate,
+                Rounds = eventEntity.Rounds.Select(r => new RoundDto
                 {
                     RoundId = r.RoundId,
                     EventId = r.EventId,
