@@ -32,6 +32,7 @@ namespace DataAccessLayer.Database.Configurations
             builder.HasOne(x => x.Category)
                 .WithMany(c => c.Teams)
                 .HasForeignKey(x => x.CategoryId)
+                .IsRequired(false)
                 .OnDelete(DeleteBehavior.Cascade);
         }
     }

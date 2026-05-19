@@ -1,0 +1,197 @@
+using BusinessLogicLayer.DTOs.Requests;
+using BusinessLogicLayer.DTOs.Responses;
+using BusinessLogicLayer.Services.Interfaces;
+using DataAccessLayer.Database.Entities;
+using DataAccessLayer.Repositories.Interfaces;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
+
+namespace BusinessLogicLayer.Services.Implements
+{
+    public class TeamService : ITeamService
+    {
+        private readonly IGenericRepository<Teams> _teamRepository;
+        private readonly IGenericRepository<TeamMembers> _teamMemberRepository;
+        private readonly IGenericRepository<Users> _userRepository;
+        private readonly IGenericRepository<Categories> _categoryRepository;
+        private readonly IGenericRepository<Events> _eventRepository;
+        private readonly IUnitOfWork _unitOfWork;
+
+        public TeamService(IUnitOfWork unitOfWork)
+        {
+            _unitOfWork = unitOfWork;
+            _teamRepository = _unitOfWork.GetRepository<Teams>();
+            _teamMemberRepository = _unitOfWork.GetRepository<TeamMembers>();
+            _userRepository = _unitOfWork.GetRepository<Users>();
+            _categoryRepository = _unitOfWork.GetRepository<Categories>();
+            _eventRepository = _unitOfWork.GetRepository<Events>();
+        }
+
+        public async Task<TeamDto> CreateAsync(Guid creatorUserId, AddTeamRequest request)
+        {
+            var creator = await _userRepository.GetByIdAsync(creatorUserId);
+            if (creator == null)
+                throw new Exception($"User with id {creatorUserId} not found");
+
+            if (request.CategoryId.HasValue)
+            {
+                var category = await _categoryRepository.GetByIdAsync(request.CategoryId.Value);
+                if (category == null)
+                    throw new Exception($"Category with id {request.CategoryId.Value} not found");
+            }
+
+            var team = new Teams
+            {
+                TeamId = Guid.NewGuid(),
+                TeamName = request.TeamName,
+                TeamLeaderId = creatorUserId,
+                CategoryId = request.CategoryId,
+                TeamStatus = string.IsNullOrWhiteSpace(request.TeamStatus) ? "Active" : request.TeamStatus
+            };
+
+            var createdTeam = await _teamRepository.AddAsync(team);
+
+            var leaderMember = new TeamMembers
+            {
+                TeamMemberId = Guid.NewGuid(),
+                TeamId = createdTeam.TeamId,
+                UserId = creatorUserId,
+                JoinDate = DateTime.UtcNow
+            };
+
+            await _teamMemberRepository.AddAsync(leaderMember);
+            await _unitOfWork.SaveChangesAsync();
+
+            return MapToDto(createdTeam);
+        }
+
+        public async Task<TeamDto?> GetByIdAsync(Guid teamId)
+        {
+            var team = await _teamRepository.GetByIdAsync(teamId);
+            if (team == null) return null;
+            return MapToDto(team);
+        }
+
+        public async Task<List<TeamDto>> GetAllAsync()
+        {
+            var teams = await _teamRepository.GetAllAsync();
+            return teams.Select(MapToDto).ToList();
+        }
+
+        public async Task<TeamDto> UpdateAsync(UpdateTeamRequest request)
+        {
+            var team = await _teamRepository.GetByIdAsync(request.TeamId);
+            if (team == null)
+                throw new Exception($"Team with id {request.TeamId} not found");
+
+            var category = await _categoryRepository.GetByIdAsync(request.CategoryId);
+            if (category == null)
+                throw new Exception($"Category with id {request.CategoryId} not found");
+
+            team.TeamName = request.TeamName;
+            team.CategoryId = request.CategoryId;
+            team.TeamStatus = request.TeamStatus;
+
+            _teamRepository.Update(team);
+            await _unitOfWork.SaveChangesAsync();
+
+            return MapToDto(team);
+        }
+
+        public async Task<TeamDto> SetCategoryAsync(Guid teamId, Guid requesterUserId, SetTeamCategoryRequest request)
+        {
+            var team = await _teamRepository.GetByIdAsync(teamId);
+            if (team == null)
+                throw new Exception($"Team with id {teamId} not found");
+
+            if (team.TeamLeaderId != requesterUserId)
+                throw new Exception("Only the team leader can choose or change the category");
+
+            var category = await _categoryRepository.GetByIdAsync(request.CategoryId);
+            if (category == null)
+                throw new Exception($"Category with id {request.CategoryId} not found");
+
+            team.CategoryId = request.CategoryId;
+
+            _teamRepository.Update(team);
+            await _unitOfWork.SaveChangesAsync();
+
+            return MapToDto(team);
+        }
+
+        public async Task DeleteAsync(Guid teamId)
+        {
+            var team = await _teamRepository.GetByIdAsync(teamId);
+            if (team == null)
+                throw new Exception($"Team with id {teamId} not found");
+
+            _teamRepository.Delete(team);
+            await _unitOfWork.SaveChangesAsync();
+        }
+
+        public async Task<TeamDto> AddMemberAsync(Guid teamId, Guid requesterUserId, AddTeamMemberRequest request)
+        {
+            var team = await _teamRepository.GetByIdAsync(teamId);
+            if (team == null)
+                throw new Exception($"Team with id {teamId} not found");
+
+            if (team.TeamLeaderId != requesterUserId)
+                throw new Exception("Only the team leader can add members");
+
+            // Validate max 5 members
+            var currentMembers = await _teamMemberRepository.FindAsync(x => x.TeamId == teamId);
+            if (currentMembers.Count >= 5)
+                throw new Exception("The team has already reached the maximum limit of 5 members.");
+
+            // Validate category and event
+            if (!team.CategoryId.HasValue)
+                throw new Exception("The team must be assigned to a category before adding members.");
+
+            var category = await _categoryRepository.GetByIdAsync(team.CategoryId.Value);
+            if (category == null)
+                throw new Exception("The category associated with this team does not exist or is no longer open.");
+
+            var eventData = await _eventRepository.GetByIdAsync(category.EventId);
+            if (eventData == null)
+                throw new Exception("The event associated with this category does not exist.");
+
+            if (DateTime.UtcNow >= eventData.StartDate)
+                throw new Exception("Registration for this event is already closed.");
+
+            var memberUser = await _userRepository.GetByIdAsync(request.UserId);
+            if (memberUser == null)
+                throw new Exception($"User with id {request.UserId} not found");
+
+            var existingMember = await _teamMemberRepository.FirstOrDefaultAsync(x => x.TeamId == teamId && x.UserId == request.UserId);
+            if (existingMember != null)
+                throw new Exception("User is already a member of this team");
+
+            var teamMember = new TeamMembers
+            {
+                TeamMemberId = Guid.NewGuid(),
+                TeamId = teamId,
+                UserId = request.UserId,
+                JoinDate = DateTime.UtcNow
+            };
+
+            await _teamMemberRepository.AddAsync(teamMember);
+            await _unitOfWork.SaveChangesAsync();
+
+            return MapToDto(team);
+        }
+
+        private static TeamDto MapToDto(Teams team)
+        {
+            return new TeamDto
+            {
+                TeamId = team.TeamId,
+                TeamName = team.TeamName,
+                TeamLeaderId = team.TeamLeaderId,
+                CategoryId = team.CategoryId,
+                TeamStatus = team.TeamStatus
+            };
+        }
+    }
+}
