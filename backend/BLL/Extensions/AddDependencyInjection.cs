@@ -38,6 +38,9 @@ namespace BusinessLogicLayer.Extensions
             // Register services
             serviceCollection.AddScoped<IEventService, EventService>();
             serviceCollection.AddScoped<IRoundService, RoundService>();
+            serviceCollection.AddScoped<ICategoryService, CategoryService>();
+            serviceCollection.AddScoped<ICategoryMentorService, CategoryMentorService>();
+            serviceCollection.AddScoped<IAdvancementRuleService, AdvancementRuleService>();
         }
     }
 }
