@@ -1,5 +1,8 @@
-﻿using DataAccessLayer.Database;
+﻿using BusinessLogicLayer.Services.Implements;
+using BusinessLogicLayer.Services.Interfaces;
+using DataAccessLayer.Database;
 using DataAccessLayer.Repositories;
+using DataAccessLayer.Repositories.Implementations;
 using DataAccessLayer.Repositories.Interfaces;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
@@ -27,6 +30,14 @@ namespace BusinessLogicLayer.Extensions
                 sp.GetRequiredService<ApplicationDbContext>()
             );
             serviceCollection.AddScoped<IUnitOfWork, UnitOfWork>();
+
+            // Register repositories
+            serviceCollection.AddScoped<IEventRepository, EventRepository>();
+            serviceCollection.AddScoped<IRoundRepository, RoundRepository>();
+
+            // Register services
+            serviceCollection.AddScoped<IEventService, EventService>();
+            serviceCollection.AddScoped<IRoundService, RoundService>();
         }
     }
 }
