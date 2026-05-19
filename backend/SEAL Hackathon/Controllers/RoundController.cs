@@ -1,11 +1,13 @@
 using BusinessLogicLayer.DTOs.Requests;
 using BusinessLogicLayer.Services.Interfaces;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Authorization;
 using System;
 
 namespace SEALHackathonSystem.Controllers
 {
     [ApiController]
+    [Authorize]
     [Route("api/[controller]")]
     public class RoundController : ControllerBase
     {

@@ -41,6 +41,7 @@ namespace BusinessLogicLayer.Extensions
             serviceCollection.AddScoped<ICategoryService, CategoryService>();
             serviceCollection.AddScoped<ICategoryMentorService, CategoryMentorService>();
             serviceCollection.AddScoped<IAdvancementRuleService, AdvancementRuleService>();
+            serviceCollection.AddScoped<IUserService, UserService>();
         }
     }
 }
