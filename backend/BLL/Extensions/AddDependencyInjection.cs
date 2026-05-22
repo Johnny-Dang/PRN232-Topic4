@@ -1,4 +1,4 @@
-﻿using BusinessLogicLayer.Services.Implements;
+using BusinessLogicLayer.Services.Implements;
 using BusinessLogicLayer.Services.Interfaces;
 using DataAccessLayer.Database;
 using DataAccessLayer.Repositories;
@@ -43,6 +43,10 @@ namespace BusinessLogicLayer.Extensions
             serviceCollection.AddScoped<IAdvancementRuleService, AdvancementRuleService>();
             serviceCollection.AddScoped<IUserService, UserService>();
             serviceCollection.AddScoped<ITeamService, TeamService>();
+            serviceCollection.AddScoped<IRoundService, RoundService>();
+            serviceCollection.AddScoped<ISubmissionService, SubmissionService>();
+            serviceCollection.AddScoped<IScoresService, ScoresService>();
+            serviceCollection.AddScoped<IJudgeAssignmentService, JudgeAssignmentService>();
         }
     }
 }
