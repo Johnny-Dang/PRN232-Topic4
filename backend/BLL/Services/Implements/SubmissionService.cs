@@ -1,0 +1,127 @@
+using BusinessLogicLayer.DTOs.Requests;
+using BusinessLogicLayer.DTOs.Responses;
+using BusinessLogicLayer.Services.Interfaces;
+using DataAccessLayer.Database.Entities;
+using DataAccessLayer.Repositories.Interfaces;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
+
+namespace BusinessLogicLayer.Services.Implements
+{
+    public class SubmissionService : ISubmissionService
+    {
+        private readonly IGenericRepository<Submissions> _submissionRepository;
+        private readonly IGenericRepository<Rounds> _roundRepository;
+        private readonly IGenericRepository<Teams> _teamRepository;
+        private readonly IUnitOfWork _unitOfWork;
+
+        public SubmissionService(IUnitOfWork unitOfWork)
+        {
+            _unitOfWork = unitOfWork;
+            _submissionRepository = _unitOfWork.GetRepository<Submissions>();
+            _roundRepository = _unitOfWork.GetRepository<Rounds>();
+            _teamRepository = _unitOfWork.GetRepository<Teams>();
+        }
+
+        public async Task<SubmissionDto> CreateAsync(AddSubmissionRequest request)
+        {
+            var team = await _teamRepository.GetByIdAsync(request.TeamId);
+            if (team == null)
+                throw new Exception($"Team with id {request.TeamId} not found");
+
+            var round = await _roundRepository.GetByIdAsync(request.RoundId);
+            if (round == null)
+                throw new Exception($"Round with id {request.RoundId} not found");
+
+            var now = DateTime.UtcNow;
+            if (now > round.SubmissionDeadline)
+                throw new Exception("Submission deadline has passed. You cannot create a new submission.");
+
+            var existingSubmission = await _submissionRepository.FirstOrDefaultAsync(x => x.TeamId == request.TeamId && x.RoundId == request.RoundId);
+            if (existingSubmission != null)
+                throw new Exception("This team already has a submission for this round. Use update instead.");
+
+            var submission = new Submissions
+            {
+                SubmissionId = Guid.NewGuid(),
+                TeamId = request.TeamId,
+                RoundId = request.RoundId,
+                RepositoryURL = request.RepositoryURL,
+                DemoURL = request.DemoURL,
+                SlideURL = request.SlideURL,
+                SubmittedAt = now,
+                Status = "Submitted"
+            };
+
+            var created = await _submissionRepository.AddAsync(submission);
+            await _unitOfWork.SaveChangesAsync();
+
+            return MapToDto(created);
+        }
+
+        public async Task<SubmissionDto?> GetByIdAsync(Guid submissionId)
+        {
+            var submission = await _submissionRepository.GetByIdAsync(submissionId);
+            if (submission == null) return null;
+            return MapToDto(submission);
+        }
+
+        public async Task<IEnumerable<SubmissionDto>> GetAllAsync()
+        {
+            var submissions = await _submissionRepository.GetAllAsync();
+            return submissions.Select(MapToDto);
+        }
+
+        public async Task<SubmissionDto> UpdateAsync(UpdateSubmissionRequest request)
+        {
+            var submission = await _submissionRepository.GetByIdAsync(request.SubmissionId);
+            if (submission == null)
+                throw new Exception($"Submission with id {request.SubmissionId} not found");
+
+            var round = await _roundRepository.GetByIdAsync(submission.RoundId);
+            if (round == null)
+                throw new Exception($"Round with id {submission.RoundId} not found");
+
+            if (DateTime.UtcNow > round.SubmissionDeadline)
+                throw new Exception("Submission deadline has passed. You cannot update this submission.");
+
+            submission.RepositoryURL = request.RepositoryURL;
+            submission.DemoURL = request.DemoURL;
+            submission.SlideURL = request.SlideURL;
+            submission.SubmittedAt = DateTime.UtcNow;
+            submission.Status = "Updated";
+
+            _submissionRepository.Update(submission);
+            await _unitOfWork.SaveChangesAsync();
+
+            return MapToDto(submission);
+        }
+
+        public async Task DeleteAsync(Guid submissionId)
+        {
+            var submission = await _submissionRepository.GetByIdAsync(submissionId);
+            if (submission == null)
+                throw new Exception($"Submission with id {submissionId} not found");
+
+            _submissionRepository.Delete(submission);
+            await _unitOfWork.SaveChangesAsync();
+        }
+
+        private static SubmissionDto MapToDto(Submissions submission)
+        {
+            return new SubmissionDto
+            {
+                SubmissionId = submission.SubmissionId,
+                TeamId = submission.TeamId,
+                RoundId = submission.RoundId,
+                RepositoryURL = submission.RepositoryURL,
+                DemoURL = submission.DemoURL,
+                SlideURL = submission.SlideURL,
+                SubmittedAt = submission.SubmittedAt,
+                Status = submission.Status
+            };
+        }
+    }
+}
