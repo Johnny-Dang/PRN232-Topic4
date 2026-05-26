@@ -18,6 +18,7 @@ namespace SEALHackathonSystem.Controllers
             _categoryService = categoryService;
         }
 
+        [Authorize(Policy = "CoordinatorOnly")]
         [HttpPost]
         public async Task<IActionResult> CreateCategory([FromBody] AddCategoryRequest request)
         {
@@ -61,6 +62,7 @@ namespace SEALHackathonSystem.Controllers
             }
         }
 
+        [Authorize(Policy = "CoordinatorOnly")]
         [HttpPut("{categoryId}")]
         public async Task<IActionResult> UpdateCategory(Guid categoryId, [FromBody] UpdateCategoryRequest request)
         {
@@ -76,6 +78,7 @@ namespace SEALHackathonSystem.Controllers
             }
         }
 
+        [Authorize(Policy = "CoordinatorOnly")]
         [HttpDelete("{categoryId}")]
         public async Task<IActionResult> DeleteCategory(Guid categoryId)
         {
