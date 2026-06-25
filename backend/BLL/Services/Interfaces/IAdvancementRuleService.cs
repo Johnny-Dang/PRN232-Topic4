@@ -8,7 +8,7 @@ namespace BusinessLogicLayer.Services.Interfaces
 {
     public interface IAdvancementRuleService
     {
-        Task<AdvancementRuleDto> CreateAsync(AddAdvancementRuleRequest request);
+        Task<AdvancementRuleDto> CreateAsync(AddAdvancementRuleRequest request, Guid userId);
         Task<AdvancementRuleDto?> GetByIdAsync(Guid ruleId);
         Task<List<AdvancementRuleDto>> GetAllAsync();
         Task<AdvancementRuleDto> UpdateAsync(UpdateAdvancementRuleRequest request);

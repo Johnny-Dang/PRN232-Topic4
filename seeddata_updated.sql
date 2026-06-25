@@ -277,3 +277,7 @@ INSERT INTO Eliminations (EliminationId, SubmissionId, UserId, Reason, Eliminate
 
 -- Event 3 - Bài nộp SUB012 của Beta Coders (TEAM002) bị loại ở vòng Sơ loại do vi phạm quy chế sao chép mã nguồn (Plagiarism)
 ('E0000000-0000-0000-0000-000000000002', 'D0000000-0000-0000-0000-000000000012', '00000000-0000-0000-0000-000000000014', N'Plagiarism detected in repository source code', '2026-09-22 14:30:00');
+
+select * from Users
+
+select * from Categories

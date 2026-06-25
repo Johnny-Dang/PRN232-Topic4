@@ -8,7 +8,7 @@ namespace BusinessLogicLayer.Services.Interfaces
 {
     public interface ICategoryMentorService
     {
-        Task<CategoryMentorDto> CreateAsync(AddCategoryMentorRequest request);
+        Task<CategoryMentorDto> CreateAsync(AddCategoryMentorRequest request, Guid userId);
         Task<CategoryMentorDto?> GetByIdAsync(Guid categoryMentorId);
         Task<List<CategoryMentorDto>> GetAllAsync();
         Task<CategoryMentorDto> UpdateAsync(UpdateCategoryMentorRequest request);

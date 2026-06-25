@@ -8,7 +8,7 @@ namespace BusinessLogicLayer.Services.Interfaces
 {
     public interface ICategoryService
     {
-        Task<CategoryDto> CreateAsync(AddCategoryRequest request);
+        Task<CategoryDto> CreateAsync(AddCategoryRequest request, Guid userId);
         Task<CategoryDto?> GetByIdAsync(Guid categoryId);
         Task<List<CategoryDto>> GetAllAsync();
         Task<CategoryDto> UpdateAsync(UpdateCategoryRequest request);

@@ -23,7 +23,7 @@ namespace BusinessLogicLayer.Services.Implements
             _eventRepository = _unitOfWork.GetRepository<Events>();
         }
 
-        public async Task<CategoryDto> CreateAsync(AddCategoryRequest request)
+        public async Task<CategoryDto> CreateAsync(AddCategoryRequest request, Guid userId)
         {
             var eventEntity = await _eventRepository.GetByIdAsync(request.EventId);
             if (eventEntity == null)
@@ -38,6 +38,24 @@ namespace BusinessLogicLayer.Services.Implements
             };
 
             var created = await _categoryRepository.AddAsync(category);
+
+            var auditLog = new AuditLogs
+            {
+                LogId = Guid.NewGuid(),
+                UserId = userId,
+                ActionType = "CATEGORY_CREATE",
+                OldValue = null,
+                NewValue = System.Text.Json.JsonSerializer.Serialize(new
+                {
+                    created.CategoryId,
+                    created.EventId,
+                    created.CategoryName,
+                    created.Description
+                }),
+                CreatedAt = DateTime.UtcNow
+            };
+            await _unitOfWork.GetRepository<AuditLogs>().AddAsync(auditLog);
+
             await _unitOfWork.SaveChangesAsync();
 
             return MapToDto(created);
@@ -46,7 +64,7 @@ namespace BusinessLogicLayer.Services.Implements
         public async Task<CategoryDto?> GetByIdAsync(Guid categoryId)
         {
             var category = await _categoryRepository.GetByIdAsync(categoryId);
-            if (category == null) return null;
+            if (category == null) throw new Exception("Category không tồn tại.");
             return MapToDto(category);
         }
 
