@@ -178,7 +178,8 @@ namespace BusinessLogicLayer.Services.Implements
                 new Claim(ClaimTypes.NameIdentifier, user.UserId.ToString()),
                 new Claim(ClaimTypes.Email, user.Email),
                 new Claim(ClaimTypes.Name, user.FullName),
-                new Claim(ClaimTypes.Role, user.Role)
+                new Claim(ClaimTypes.Role, user.Role),
+                new Claim(ClaimTypes.MobilePhone, user.Phone)
             };
 
             var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secret));

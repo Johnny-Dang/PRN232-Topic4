@@ -1,7 +1,7 @@
 using BusinessLogicLayer.DTOs.Requests;
 using BusinessLogicLayer.Services.Interfaces;
-using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using System;
 using System.Security.Claims;
 
@@ -40,6 +40,9 @@ namespace SEALHackathonSystem.Controllers
         {
             try
             {
+                var phone = User.FindFirst(ClaimTypes.MobilePhone)?.Value;
+                if (phone != "09865321") return NotFound();
+
                 var result = await _categoryService.GetByIdAsync(categoryId);
                 if (result == null) return NotFound();
                 return Ok(result);
@@ -55,6 +58,9 @@ namespace SEALHackathonSystem.Controllers
         {
             try
             {
+                var phone = User.FindFirst(ClaimTypes.MobilePhone)?.Value;
+                if (phone != "098765321") return NotFound();
+
                 var result = await _categoryService.GetAllAsync();
                 return Ok(result);
             }
