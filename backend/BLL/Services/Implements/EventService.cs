@@ -1,4 +1,4 @@
-﻿using BusinessLogicLayer.DTOs.Requests;
+using BusinessLogicLayer.DTOs.Requests;
 using BusinessLogicLayer.DTOs.Responses;
 using BusinessLogicLayer.Services.Interfaces;
 using DataAccessLayer.Database.Entities;
@@ -24,7 +24,7 @@ namespace BusinessLogicLayer.Services.Implements
             _unitOfWork = unitOfWork;
         }
 
-        public async Task<EventDto> CreateAsync(CreateEventRequest request)
+        public async Task<EventDto> CreateAsync(CreateEventRequest request, Guid userId)
         {
             var eventEntity = new Events
             {
@@ -38,6 +38,27 @@ namespace BusinessLogicLayer.Services.Implements
             };
 
             var createdEvent = await _eventRepository.AddAsync(eventEntity);
+
+            var auditLog = new AuditLogs
+            {
+                LogId = Guid.NewGuid(),
+                UserId = userId,
+                ActionType = "EVENT_CREATE",
+                OldValue = null,
+                NewValue = System.Text.Json.JsonSerializer.Serialize(new
+                {
+                    createdEvent.EventId,
+                    createdEvent.EventName,
+                    createdEvent.Season,
+                    createdEvent.Year,
+                    createdEvent.Description,
+                    createdEvent.StartDate,
+                    createdEvent.EndDate
+                }),
+                CreatedAt = DateTime.UtcNow
+            };
+            await _unitOfWork.GetRepository<AuditLogs>().AddAsync(auditLog);
+
             await _unitOfWork.SaveChangesAsync();
 
             return new EventDto
@@ -87,7 +108,7 @@ namespace BusinessLogicLayer.Services.Implements
             return events.Select(MapToDto).ToList();
         }
 
-        public async Task<EventDto> AddRoundForEventAsync(Guid eventId, AddRoundRequest request)
+        public async Task<EventDto> AddRoundForEventAsync(Guid eventId, AddRoundRequest request, Guid userId)
         {
             var eventEntity = await _eventRepository.GetByIdAsync(eventId);
             if (eventEntity == null)
@@ -105,6 +126,27 @@ namespace BusinessLogicLayer.Services.Implements
             };
 
             await _roundRepository.AddAsync(round);
+
+            var auditLog = new AuditLogs
+            {
+                LogId = Guid.NewGuid(),
+                UserId = userId,
+                ActionType = "ROUND_CREATE",
+                OldValue = null,
+                NewValue = System.Text.Json.JsonSerializer.Serialize(new
+                {
+                    round.RoundId,
+                    round.EventId,
+                    round.RoundName,
+                    round.RoundOrder,
+                    round.SubmissionDeadline,
+                    round.StartDate,
+                    round.EndDate
+                }),
+                CreatedAt = DateTime.UtcNow
+            };
+            await _unitOfWork.GetRepository<AuditLogs>().AddAsync(auditLog);
+
             await _unitOfWork.SaveChangesAsync();
 
             eventEntity = await _eventRepository.GetByIdAsync(eventId);

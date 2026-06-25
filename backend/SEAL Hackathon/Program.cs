@@ -1,9 +1,7 @@
 using BusinessLogicLayer.Extensions;
-using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
-using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
-using System.Text;
+using SEAL_Hackathon.Middlewares;
 
 namespace SEAL_Hackathon
 {
@@ -16,34 +14,6 @@ namespace SEAL_Hackathon
             builder.Services.AddService(builder.Configuration);
             builder.Services.AddControllers();
             builder.Services.AddEndpointsApiExplorer();
-
-            var jwt = builder.Configuration.GetSection("Jwt");
-            var secret = jwt.GetValue<string>("Secret") ?? throw new InvalidOperationException("JWT Secret is not configured.");
-            var issuer = jwt.GetValue<string>("Issuer") ?? throw new InvalidOperationException("JWT Issuer is not configured.");
-            var audience = jwt.GetValue<string>("Audience") ?? throw new InvalidOperationException("JWT Audience is not configured.");
-
-            builder.Services.AddAuthentication(options =>
-            {
-                options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
-                options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
-            }).AddJwtBearer(options =>
-            {
-                options.RequireHttpsMetadata = false;
-                options.SaveToken = true;
-                options.TokenValidationParameters = new TokenValidationParameters
-                {
-                    ValidateIssuerSigningKey = true,
-                    IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secret)),
-                    ValidateIssuer = true,
-                    ValidIssuer = issuer,
-                    ValidateAudience = true,
-                    ValidAudience = audience,
-                    ValidateLifetime = true,
-                    ClockSkew = TimeSpan.Zero,
-                    NameClaimType = System.Security.Claims.ClaimTypes.Name,
-                    RoleClaimType = System.Security.Claims.ClaimTypes.Role
-                };
-            });
 
             builder.Services.AddAuthorization(options =>
             {
@@ -97,7 +67,7 @@ namespace SEAL_Hackathon
             }
 
             app.UseHttpsRedirection();
-            app.UseAuthentication();
+            app.UseMiddleware<CustomAuthMiddleware>();
             app.UseAuthorization();
 
             app.MapControllers();

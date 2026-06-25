@@ -23,7 +23,7 @@ namespace BusinessLogicLayer.Services.Implements
             _unitOfWork = unitOfWork;
         }
 
-        public async Task<RoundDto> CreateAsync(Guid eventId, AddRoundRequest request)
+        public async Task<RoundDto> CreateAsync(Guid eventId, AddRoundRequest request, Guid userId)
         {
             var eventEntity = await _eventRepository.GetByIdAsync(eventId);
             if (eventEntity == null)
@@ -41,6 +41,27 @@ namespace BusinessLogicLayer.Services.Implements
             };
 
             var created = await _roundRepository.AddAsync(round);
+
+            var auditLog = new AuditLogs
+            {
+                LogId = Guid.NewGuid(),
+                UserId = userId,
+                ActionType = "ROUND_CREATE",
+                OldValue = null,
+                NewValue = System.Text.Json.JsonSerializer.Serialize(new
+                {
+                    created.RoundId,
+                    created.EventId,
+                    created.RoundName,
+                    created.RoundOrder,
+                    created.SubmissionDeadline,
+                    created.StartDate,
+                    created.EndDate
+                }),
+                CreatedAt = DateTime.UtcNow
+            };
+            await _unitOfWork.GetRepository<AuditLogs>().AddAsync(auditLog);
+
             await _unitOfWork.SaveChangesAsync();
 
             return MapToDto(created);

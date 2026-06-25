@@ -12,7 +12,7 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace DataAccessLayer.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    [Migration("20260517152225_Init")]
+    [Migration("20260528155954_Init")]
     partial class Init
     {
         /// <inheritdoc />
@@ -315,6 +315,40 @@ namespace DataAccessLayer.Migrations
                     b.ToTable("Rankings", (string)null);
                 });
 
+            modelBuilder.Entity("DataAccessLayer.Database.Entities.RefreshTokens", b =>
+                {
+                    b.Property<Guid>("RefreshTokenId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime>("ExpiresAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime?>("RevokedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Token")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("RefreshTokenId");
+
+                    b.HasIndex("ExpiresAt");
+
+                    b.HasIndex("Token")
+                        .IsUnique();
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("RefreshTokens", (string)null);
+                });
+
             modelBuilder.Entity("DataAccessLayer.Database.Entities.Rounds", b =>
                 {
                     b.Property<Guid>("RoundId")
@@ -511,7 +545,7 @@ namespace DataAccessLayer.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier");
 
-                    b.Property<Guid>("CategoryId")
+                    b.Property<Guid?>("CategoryId")
                         .HasColumnType("uniqueidentifier");
 
                     b.Property<Guid>("TeamLeaderId")
@@ -757,6 +791,17 @@ namespace DataAccessLayer.Migrations
                     b.Navigation("Team");
                 });
 
+            modelBuilder.Entity("DataAccessLayer.Database.Entities.RefreshTokens", b =>
+                {
+                    b.HasOne("DataAccessLayer.Database.Entities.Users", "User")
+                        .WithMany("RefreshTokens")
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("User");
+                });
+
             modelBuilder.Entity("DataAccessLayer.Database.Entities.Rounds", b =>
                 {
                     b.HasOne("DataAccessLayer.Database.Entities.Events", "Event")
@@ -849,8 +894,7 @@ namespace DataAccessLayer.Migrations
                     b.HasOne("DataAccessLayer.Database.Entities.Categories", "Category")
                         .WithMany("Teams")
                         .HasForeignKey("CategoryId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                        .OnDelete(DeleteBehavior.Cascade);
 
                     b.HasOne("DataAccessLayer.Database.Entities.Users", "TeamLeader")
                         .WithMany()
@@ -926,6 +970,8 @@ namespace DataAccessLayer.Migrations
 
             modelBuilder.Entity("DataAccessLayer.Database.Entities.Users", b =>
                 {
+                    b.Navigation("RefreshTokens");
+
                     b.Navigation("TeamMembers");
                 });
 #pragma warning restore 612, 618

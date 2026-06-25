@@ -3,6 +3,7 @@ using BusinessLogicLayer.Services.Interfaces;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Authorization;
 using System;
+using System.Security.Claims;
 
 namespace SEALHackathonSystem.Controllers
 {
@@ -18,12 +19,14 @@ namespace SEALHackathonSystem.Controllers
             _roundService = roundService;
         }
 
+        [Authorize(Policy = "CoordinatorOnly")]
         [HttpPost("events/{eventId}")]
         public async Task<IActionResult> CreateRound(Guid eventId, [FromBody] AddRoundRequest request)
         {
             try
             {
-                var result = await _roundService.CreateAsync(eventId, request);
+                var userId = GetCurrentUserId();
+                var result = await _roundService.CreateAsync(eventId, request, userId);
                 return Ok(result);
             }
             catch (Exception ex)
@@ -61,6 +64,7 @@ namespace SEALHackathonSystem.Controllers
             }
         }
 
+        [Authorize(Policy = "CoordinatorOnly")]
         [HttpPut("{roundId}")]
         public async Task<IActionResult> UpdateRound(Guid roundId, [FromBody] AddRoundRequest request)
         {
@@ -75,6 +79,7 @@ namespace SEALHackathonSystem.Controllers
             }
         }
 
+        [Authorize(Policy = "CoordinatorOnly")]
         [HttpDelete("{roundId}")]
         public async Task<IActionResult> DeleteRound(Guid roundId)
         {
@@ -87,6 +92,15 @@ namespace SEALHackathonSystem.Controllers
             {
                 return BadRequest(new { message = ex.Message });
             }
+        }
+
+        private Guid GetCurrentUserId()
+        {
+            var userIdClaim = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (string.IsNullOrWhiteSpace(userIdClaim) || !Guid.TryParse(userIdClaim, out var userId))
+                throw new Exception("Invalid user token");
+
+            return userId;
         }
     }
 }

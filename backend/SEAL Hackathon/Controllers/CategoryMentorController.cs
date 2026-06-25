@@ -3,6 +3,7 @@ using BusinessLogicLayer.Services.Interfaces;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Authorization;
 using System;
+using System.Security.Claims;
 
 namespace SEALHackathonSystem.Controllers
 {
@@ -18,12 +19,14 @@ namespace SEALHackathonSystem.Controllers
             _categoryMentorService = categoryMentorService;
         }
 
+        [Authorize(Policy = "CoordinatorOnly")]
         [HttpPost]
         public async Task<IActionResult> Create([FromBody] AddCategoryMentorRequest request)
         {
             try
             {
-                var result = await _categoryMentorService.CreateAsync(request);
+                var userId = GetCurrentUserId();
+                var result = await _categoryMentorService.CreateAsync(request, userId);
                 return Ok(result);
             }
             catch (Exception ex)
@@ -61,6 +64,7 @@ namespace SEALHackathonSystem.Controllers
             }
         }
 
+        [Authorize(Policy = "CoordinatorOnly")]
         [HttpPut("{categoryMentorId}")]
         public async Task<IActionResult> Update(Guid categoryMentorId, [FromBody] UpdateCategoryMentorRequest request)
         {
@@ -76,6 +80,7 @@ namespace SEALHackathonSystem.Controllers
             }
         }
 
+        [Authorize(Policy = "CoordinatorOnly")]
         [HttpDelete("{categoryMentorId}")]
         public async Task<IActionResult> Delete(Guid categoryMentorId)
         {
@@ -88,6 +93,15 @@ namespace SEALHackathonSystem.Controllers
             {
                 return BadRequest(new { message = ex.Message });
             }
+        }
+
+        private Guid GetCurrentUserId()
+        {
+            var userIdClaim = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (string.IsNullOrWhiteSpace(userIdClaim) || !Guid.TryParse(userIdClaim, out var userId))
+                throw new Exception("Invalid user token");
+
+            return userId;
         }
     }
 }

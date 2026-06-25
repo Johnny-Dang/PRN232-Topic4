@@ -2,6 +2,7 @@ using BusinessLogicLayer.DTOs.Requests;
 using BusinessLogicLayer.Services.Interfaces;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Authorization;
+using System.Security.Claims;
 
 namespace SEALHackathonSystem.Controllers
 {
@@ -50,12 +51,14 @@ namespace SEALHackathonSystem.Controllers
         /// <summary>
         /// Create a new event
         /// </summary>
+        [Authorize(Policy = "CoordinatorOnly")]
         [HttpPost]
         public async Task<IActionResult> CreateEvent([FromBody] CreateEventRequest request)
         {
             try
             {
-                var result = await _eventService.CreateAsync(request);
+                var userId = GetCurrentUserId();
+                var result = await _eventService.CreateAsync(request, userId);
                 return Ok(result);
             }
             catch (Exception ex)
@@ -67,6 +70,7 @@ namespace SEALHackathonSystem.Controllers
         /// <summary>
         /// Update an event
         /// </summary>
+        [Authorize(Policy = "CoordinatorOnly")]
         [HttpPut("{eventId}")]
         public async Task<IActionResult> UpdateEvent(Guid eventId, [FromBody] UpdateEventRequest request)
         {
@@ -85,12 +89,14 @@ namespace SEALHackathonSystem.Controllers
         /// <summary>
         /// Add a round to an event
         /// </summary>
+        [Authorize(Policy = "CoordinatorOnly")]
         [HttpPost("{eventId}/rounds")]
         public async Task<IActionResult> AddRound(Guid eventId, [FromBody] AddRoundRequest request)
         {
             try
             {
-                var result = await _eventService.AddRoundForEventAsync(eventId, request);
+                var userId = GetCurrentUserId();
+                var result = await _eventService.AddRoundForEventAsync(eventId, request, userId);
                 return Ok(result);
             }
             catch (Exception ex)
@@ -102,6 +108,7 @@ namespace SEALHackathonSystem.Controllers
         /// <summary>
         /// Remove a round from an event
         /// </summary>
+        [Authorize(Policy = "CoordinatorOnly")]
         [HttpDelete("{eventId}/rounds/{roundId}")]
         public async Task<IActionResult> RemoveRound(Guid eventId, Guid roundId)
         {
@@ -114,6 +121,15 @@ namespace SEALHackathonSystem.Controllers
             {
                 return BadRequest(new { message = ex.Message });
             }
+        }
+
+        private Guid GetCurrentUserId()
+        {
+            var userIdClaim = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (string.IsNullOrWhiteSpace(userIdClaim) || !Guid.TryParse(userIdClaim, out var userId))
+                throw new Exception("Invalid user token");
+
+            return userId;
         }
     }
 }

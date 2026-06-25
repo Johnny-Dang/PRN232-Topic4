@@ -24,6 +24,7 @@ namespace DataAccessLayer.Database
         public DbSet<Events> Events { get; set; }
         public DbSet<JudgeAssignments> JudgeAssignments { get; set; }
         public DbSet<Rankings> Rankings { get; set; }
+        public DbSet<RefreshTokens> RefreshTokens { get; set; }
         public DbSet<Rounds> Rounds { get; set; }
         public DbSet<Scores> Scores { get; set; }
         public DbSet<StudentProfiles> StudentProfiles { get; set; }
@@ -49,6 +50,7 @@ namespace DataAccessLayer.Database
             modelBuilder.ApplyConfiguration<Events>(new EventsConfiguration());
             modelBuilder.ApplyConfiguration<JudgeAssignments>(new JudgeAssignmentsConfiguration());
             modelBuilder.ApplyConfiguration<Rankings>(new RankingsConfiguration());
+            modelBuilder.ApplyConfiguration<RefreshTokens>(new RefreshTokensConfiguration());
             modelBuilder.ApplyConfiguration<Rounds>(new RoundsConfiguration());
             modelBuilder.ApplyConfiguration<Scores>(new ScoresConfiguration());
             modelBuilder.ApplyConfiguration<StudentProfiles>(new StudentProfilesConfiguration());

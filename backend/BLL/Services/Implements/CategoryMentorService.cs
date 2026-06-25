@@ -25,7 +25,7 @@ namespace BusinessLogicLayer.Services.Implements
             _userRepository = _unitOfWork.GetRepository<Users>();
         }
 
-        public async Task<CategoryMentorDto> CreateAsync(AddCategoryMentorRequest request)
+        public async Task<CategoryMentorDto> CreateAsync(AddCategoryMentorRequest request, Guid userId)
         {
             await ValidateForeignKeysAsync(request.CategoryId, request.UserId);
 
@@ -37,6 +37,23 @@ namespace BusinessLogicLayer.Services.Implements
             };
 
             var created = await _categoryMentorRepository.AddAsync(categoryMentor);
+
+            var auditLog = new AuditLogs
+            {
+                LogId = Guid.NewGuid(),
+                UserId = userId,
+                ActionType = "CATEGORY_ASSIGN_MENTOR",
+                OldValue = null,
+                NewValue = System.Text.Json.JsonSerializer.Serialize(new
+                {
+                    created.CategoryMentorId,
+                    created.CategoryId,
+                    created.UserId
+                }),
+                CreatedAt = DateTime.UtcNow
+            };
+            await _unitOfWork.GetRepository<AuditLogs>().AddAsync(auditLog);
+
             await _unitOfWork.SaveChangesAsync();
 
             return MapToDto(created);

@@ -18,5 +18,6 @@ namespace DataAccessLayer.Database.Entities
         public DateTime CreatedAt { get; set; }
 
         public virtual ICollection<TeamMembers> TeamMembers { get; set; } = new List<TeamMembers>();
+        public virtual ICollection<RefreshTokens> RefreshTokens { get; set; } = new List<RefreshTokens>();
     }
 }

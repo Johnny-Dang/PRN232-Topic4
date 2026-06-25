@@ -25,7 +25,7 @@ namespace BusinessLogicLayer.Services.Implements
             _categoryRepository = _unitOfWork.GetRepository<Categories>();
         }
 
-        public async Task<AdvancementRuleDto> CreateAsync(AddAdvancementRuleRequest request)
+        public async Task<AdvancementRuleDto> CreateAsync(AddAdvancementRuleRequest request, Guid userId)
         {
             await ValidateForeignKeysAsync(request.RoundId, request.CategoryId);
 
@@ -38,6 +38,24 @@ namespace BusinessLogicLayer.Services.Implements
             };
 
             var created = await _advancementRuleRepository.AddAsync(rule);
+
+            var auditLog = new AuditLogs
+            {
+                LogId = Guid.NewGuid(),
+                UserId = userId,
+                ActionType = "ADVANCEMENT_RULE_CREATE",
+                OldValue = null,
+                NewValue = System.Text.Json.JsonSerializer.Serialize(new
+                {
+                    created.RuleId,
+                    created.RoundId,
+                    created.CategoryId,
+                    created.TopN
+                }),
+                CreatedAt = DateTime.UtcNow
+            };
+            await _unitOfWork.GetRepository<AuditLogs>().AddAsync(auditLog);
+
             await _unitOfWork.SaveChangesAsync();
 
             return MapToDto(created);

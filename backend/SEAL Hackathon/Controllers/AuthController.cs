@@ -61,5 +61,37 @@ namespace SEALHackathonSystem.Controllers
                 return BadRequest(new { message = ex.Message });
             }
         }
+
+        [AllowAnonymous]
+        [HttpPost("refresh")]
+        public async Task<IActionResult> RefreshToken([FromBody] RefreshTokenRequest request)
+        {
+            try
+            {
+                var auth = await _userService.RefreshTokenAsync(request);
+                return Ok(auth);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+        }
+
+        [HttpPost("revoke")]
+        public async Task<IActionResult> RevokeRefreshToken([FromBody] RefreshTokenRequest request)
+        {
+            try
+            {
+                var result = await _userService.RevokeRefreshTokenAsync(request.RefreshToken);
+                if (result)
+                    return Ok(new { message = "Refresh token revoked successfully" });
+                else
+                    return BadRequest(new { message = "Invalid or already revoked refresh token" });
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+        }
     }
 }
