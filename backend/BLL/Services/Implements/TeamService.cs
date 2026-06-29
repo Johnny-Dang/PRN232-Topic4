@@ -6,6 +6,7 @@ using DataAccessLayer.Repositories.Interfaces;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text.Json;
 using System.Threading.Tasks;
 
 namespace BusinessLogicLayer.Services.Implements
@@ -17,6 +18,7 @@ namespace BusinessLogicLayer.Services.Implements
         private readonly IGenericRepository<Users> _userRepository;
         private readonly IGenericRepository<Categories> _categoryRepository;
         private readonly IGenericRepository<Events> _eventRepository;
+        private readonly IGenericRepository<AuditLogs> _auditLogRepository;
         private readonly IUnitOfWork _unitOfWork;
 
         public TeamService(IUnitOfWork unitOfWork)
@@ -27,6 +29,7 @@ namespace BusinessLogicLayer.Services.Implements
             _userRepository = _unitOfWork.GetRepository<Users>();
             _categoryRepository = _unitOfWork.GetRepository<Categories>();
             _eventRepository = _unitOfWork.GetRepository<Events>();
+            _auditLogRepository = _unitOfWork.GetRepository<AuditLogs>();
         }
 
         public async Task<TeamDto> CreateAsync(Guid creatorUserId, AddTeamRequest request)
@@ -62,6 +65,14 @@ namespace BusinessLogicLayer.Services.Implements
             };
 
             await _teamMemberRepository.AddAsync(leaderMember);
+            await WriteAuditLogAsync(creatorUserId, "TEAM_CREATE", null, JsonSerializer.Serialize(new
+            {
+                team.TeamId,
+                team.TeamName,
+                team.TeamLeaderId,
+                team.CategoryId,
+                team.TeamStatus
+            }));
             await _unitOfWork.SaveChangesAsync();
 
             return MapToDto(createdTeam);
@@ -109,13 +120,16 @@ namespace BusinessLogicLayer.Services.Implements
             if (team.TeamLeaderId != requesterUserId)
                 throw new Exception("Only the team leader can choose or change the category");
 
-            var category = await _categoryRepository.GetByIdAsync(request.CategoryId);
-            if (category == null)
-                throw new Exception($"Category with id {request.CategoryId} not found");
+            await ValidateTeamReadyForCategoryAsync(team, request.CategoryId);
 
             team.CategoryId = request.CategoryId;
 
             _teamRepository.Update(team);
+            await WriteAuditLogAsync(requesterUserId, "TEAM_REGISTER", null, JsonSerializer.Serialize(new
+            {
+                teamId,
+                request.CategoryId
+            }));
             await _unitOfWork.SaveChangesAsync();
 
             return MapToDto(team);
@@ -140,12 +154,10 @@ namespace BusinessLogicLayer.Services.Implements
             if (team.TeamLeaderId != requesterUserId)
                 throw new Exception("Only the team leader can add members");
 
-            // Validate max 5 members
             var currentMembers = await _teamMemberRepository.FindAsync(x => x.TeamId == teamId);
             if (currentMembers.Count >= 5)
                 throw new Exception("The team has already reached the maximum limit of 5 members.");
 
-            // Validate category and event
             if (!team.CategoryId.HasValue)
                 throw new Exception("The team must be assigned to a category before adding members.");
 
@@ -164,9 +176,7 @@ namespace BusinessLogicLayer.Services.Implements
             if (memberUser == null)
                 throw new Exception($"User with id {request.UserId} not found");
 
-            var existingMember = await _teamMemberRepository.FirstOrDefaultAsync(x => x.TeamId == teamId && x.UserId == request.UserId);
-            if (existingMember != null)
-                throw new Exception("User is already a member of this team");
+            ValidateMemberEligibility(memberUser, teamId);
 
             var teamMember = new TeamMembers
             {
@@ -177,9 +187,66 @@ namespace BusinessLogicLayer.Services.Implements
             };
 
             await _teamMemberRepository.AddAsync(teamMember);
+            await WriteAuditLogAsync(requesterUserId, "TEAM_ADD_MEMBER", null, JsonSerializer.Serialize(new
+            {
+                teamId,
+                request.UserId
+            }));
             await _unitOfWork.SaveChangesAsync();
 
             return MapToDto(team);
+        }
+
+        private async Task ValidateTeamReadyForCategoryAsync(Teams team, Guid categoryId)
+        {
+            var category = await _categoryRepository.GetByIdAsync(categoryId);
+            if (category == null)
+                throw new Exception($"Category with id {categoryId} not found");
+
+            var teamMembers = await _teamMemberRepository.FindAsync(x => x.TeamId == team.TeamId);
+            if (teamMembers.Count < 3)
+                throw new Exception("The team must have at least 3 members before choosing a category.");
+
+            if (teamMembers.Count > 5)
+                throw new Exception("The team cannot have more than 5 members.");
+
+            var eventData = await _eventRepository.GetByIdAsync(category.EventId);
+            if (eventData == null)
+                throw new Exception("The event associated with this category does not exist.");
+
+            if (DateTime.UtcNow >= eventData.StartDate)
+                throw new Exception("Registration for this event is already closed.");
+
+            if (DateTime.UtcNow < eventData.EndDate && string.Equals(team.TeamStatus, "Closed", StringComparison.OrdinalIgnoreCase))
+                throw new Exception("The category is not open for team selection.");
+        }
+
+        private void ValidateMemberEligibility(Users memberUser, Guid teamId)
+        {
+            if (!string.Equals(memberUser.AccountStatus, "Approved", StringComparison.OrdinalIgnoreCase))
+                throw new Exception("The user account has not been approved yet.");
+
+            var joinedTeam = _teamMemberRepository.FirstOrDefaultAsync(x => x.UserId == memberUser.UserId && x.TeamId != teamId)
+                .GetAwaiter()
+                .GetResult();
+
+            if (joinedTeam != null)
+                throw new Exception("The user already belongs to another team.");
+        }
+
+        private async Task WriteAuditLogAsync(Guid userId, string actionType, string? oldValue, string newValue)
+        {
+            var auditLog = new AuditLogs
+            {
+                LogId = Guid.NewGuid(),
+                UserId = userId,
+                ActionType = actionType,
+                OldValue = oldValue,
+                NewValue = newValue,
+                CreatedAt = DateTime.UtcNow
+            };
+
+            await _auditLogRepository.AddAsync(auditLog);
         }
 
         private static TeamDto MapToDto(Teams team)

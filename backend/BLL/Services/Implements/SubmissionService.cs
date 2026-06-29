@@ -6,6 +6,7 @@ using DataAccessLayer.Repositories.Interfaces;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text.Json;
 using System.Threading.Tasks;
 
 namespace BusinessLogicLayer.Services.Implements
@@ -16,6 +17,7 @@ namespace BusinessLogicLayer.Services.Implements
         private readonly IGenericRepository<Rounds> _roundRepository;
         private readonly IGenericRepository<Teams> _teamRepository;
         private readonly IUnitOfWork _unitOfWork;
+        private readonly IGenericRepository<AuditLogs> _auditLogRepository;
 
         public SubmissionService(IUnitOfWork unitOfWork)
         {
@@ -23,6 +25,7 @@ namespace BusinessLogicLayer.Services.Implements
             _submissionRepository = _unitOfWork.GetRepository<Submissions>();
             _roundRepository = _unitOfWork.GetRepository<Rounds>();
             _teamRepository = _unitOfWork.GetRepository<Teams>();
+            _auditLogRepository = _unitOfWork.GetRepository<AuditLogs>();
         }
 
         public async Task<SubmissionDto> CreateAsync(AddSubmissionRequest request)
@@ -87,13 +90,47 @@ namespace BusinessLogicLayer.Services.Implements
             if (DateTime.UtcNow > round.SubmissionDeadline)
                 throw new Exception("Submission deadline has passed. You cannot update this submission.");
 
+            var oldValue = JsonSerializer.Serialize(new
+            {
+                submission.RepositoryURL,
+                submission.DemoURL,
+                submission.SlideURL,
+                submission.SubmittedAt,
+                submission.Status
+            });
+
             submission.RepositoryURL = request.RepositoryURL;
             submission.DemoURL = request.DemoURL;
             submission.SlideURL = request.SlideURL;
             submission.SubmittedAt = DateTime.UtcNow;
             submission.Status = "Updated";
 
+            var newValue = JsonSerializer.Serialize(new
+            {
+                submission.RepositoryURL,
+                submission.DemoURL,
+                submission.SlideURL,
+                submission.SubmittedAt,
+                submission.Status
+            });
+
             _submissionRepository.Update(submission);
+
+            var updatedTeam = await _teamRepository.GetByIdAsync(submission.TeamId);
+            if (updatedTeam == null)
+                throw new Exception($"Team with id {submission.TeamId} not found");
+
+            var auditLog = new AuditLogs
+            {
+                LogId = Guid.NewGuid(),
+                UserId = updatedTeam.TeamLeaderId,
+                ActionType = "SUBMISSION_UPDATE",
+                OldValue = oldValue,
+                NewValue = newValue,
+                CreatedAt = DateTime.UtcNow
+            };
+            await _auditLogRepository.AddAsync(auditLog);
+
             await _unitOfWork.SaveChangesAsync();
 
             return MapToDto(submission);

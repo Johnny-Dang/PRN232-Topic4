@@ -1,6 +1,8 @@
 using BusinessLogicLayer.Extensions;
+using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.OpenApi.Models;
+using SEAL_Hackathon.Authentication;
 using SEAL_Hackathon.Middlewares;
 
 namespace SEAL_Hackathon
@@ -14,6 +16,15 @@ namespace SEAL_Hackathon
             builder.Services.AddService(builder.Configuration);
             builder.Services.AddControllers();
             builder.Services.AddEndpointsApiExplorer();
+
+            builder.Services.AddAuthentication(options =>
+            {
+                options.DefaultAuthenticateScheme = CustomJwtAuthenticationHandler.SchemeName;
+                options.DefaultChallengeScheme = CustomJwtAuthenticationHandler.SchemeName;
+                options.DefaultForbidScheme = CustomJwtAuthenticationHandler.SchemeName;
+            })
+            .AddScheme<AuthenticationSchemeOptions, CustomJwtAuthenticationHandler>(
+                CustomJwtAuthenticationHandler.SchemeName, _ => { });
 
             builder.Services.AddAuthorization(options =>
             {
@@ -67,6 +78,7 @@ namespace SEAL_Hackathon
             }
 
             app.UseHttpsRedirection();
+            app.UseAuthentication();
             app.UseMiddleware<CustomAuthMiddleware>();
             app.UseAuthorization();
 
