@@ -15,11 +15,13 @@ namespace BusinessLogicLayer.Services.Implements
         private readonly IGenericRepository<JudgeAssignments> _assignmentRepository;
         private readonly IGenericRepository<Users> _userRepository;
         private readonly IGenericRepository<Rounds> _roundRepository;
+        private readonly INotificationService _notificationService;
         private readonly IUnitOfWork _unitOfWork;
 
-        public JudgeAssignmentService(IUnitOfWork unitOfWork)
+        public JudgeAssignmentService(IUnitOfWork unitOfWork, INotificationService notificationService)
         {
             _unitOfWork = unitOfWork;
+            _notificationService = notificationService;
             _assignmentRepository = _unitOfWork.GetRepository<JudgeAssignments>();
             _userRepository = _unitOfWork.GetRepository<Users>();
             _roundRepository = _unitOfWork.GetRepository<Rounds>();
@@ -44,6 +46,9 @@ namespace BusinessLogicLayer.Services.Implements
 
             var created = await _assignmentRepository.AddAsync(assignment);
             await _unitOfWork.SaveChangesAsync();
+
+            var message = $"[NOTIFICATION] Bạn đã được phân công chấm bài thi cho vòng {round.RoundName}.";
+            await _notificationService.CreateNotificationAsync(request.UserId, message);
 
             return MapToDto(created);
         }
@@ -80,6 +85,9 @@ namespace BusinessLogicLayer.Services.Implements
 
             _assignmentRepository.Update(assignment);
             await _unitOfWork.SaveChangesAsync();
+
+            var message = $"[NOTIFICATION] Bạn đã được phân công chấm bài thi cho vòng {round.RoundName}.";
+            await _notificationService.CreateNotificationAsync(request.UserId, message);
 
             return MapToDto(assignment);
         }

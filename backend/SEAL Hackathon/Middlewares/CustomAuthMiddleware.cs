@@ -18,11 +18,20 @@ namespace SEAL_Hackathon.Middlewares
 
         public async Task InvokeAsync(HttpContext context)
         {
+            string? token = null;
             var authHeader = context.Request.Headers.Authorization.FirstOrDefault();
 
             if (!string.IsNullOrWhiteSpace(authHeader) && authHeader.StartsWith("Bearer ", StringComparison.OrdinalIgnoreCase))
             {
-                var token = authHeader["Bearer ".Length..].Trim();
+                token = authHeader["Bearer ".Length..].Trim();
+            }
+            else if (context.Request.Query.TryGetValue("access_token", out var queryToken))
+            {
+                token = queryToken.FirstOrDefault();
+            }
+
+            if (!string.IsNullOrWhiteSpace(token))
+            {
 
                 try
                 {

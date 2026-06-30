@@ -16,11 +16,13 @@ namespace BusinessLogicLayer.Services.Implements
         private readonly IGenericRepository<Submissions> _submissionRepository;
         private readonly IGenericRepository<JudgeAssignments> _assignmentRepository;
         private readonly IGenericRepository<Criteria> _criteriaRepository;
+        private readonly INotificationService _notificationService;
         private readonly IUnitOfWork _unitOfWork;
 
-        public ScoresService(IUnitOfWork unitOfWork)
+        public ScoresService(IUnitOfWork unitOfWork, INotificationService notificationService)
         {
             _unitOfWork = unitOfWork;
+            _notificationService = notificationService;
             _scoreRepository = _unitOfWork.GetRepository<Scores>();
             _submissionRepository = _unitOfWork.GetRepository<Submissions>();
             _assignmentRepository = _unitOfWork.GetRepository<JudgeAssignments>();
@@ -54,6 +56,17 @@ namespace BusinessLogicLayer.Services.Implements
 
             var created = await _scoreRepository.AddAsync(score);
             await _unitOfWork.SaveChangesAsync();
+
+            var teamRepository = _unitOfWork.GetRepository<Teams>();
+            var team = await teamRepository.GetByIdAsync(submission.TeamId);
+            if (team != null)
+            {
+                var roundRepository = _unitOfWork.GetRepository<Rounds>();
+                var round = await roundRepository.GetByIdAsync(submission.RoundId);
+                var roundName = round?.RoundName ?? "Unknown Round";
+                var message = $"[NOTIFICATION] Bài thi của đội {team.TeamName} tại vòng {roundName} đã được chấm điểm cho tiêu chí {criteria.CriteriaName} bởi Giám khảo.";
+                await _notificationService.CreateNotificationAsync(team.TeamLeaderId, message);
+            }
 
             return MapToDto(created);
         }
@@ -98,6 +111,17 @@ namespace BusinessLogicLayer.Services.Implements
 
             _scoreRepository.Update(score);
             await _unitOfWork.SaveChangesAsync();
+
+            var teamRepository = _unitOfWork.GetRepository<Teams>();
+            var team = await teamRepository.GetByIdAsync(submission.TeamId);
+            if (team != null)
+            {
+                var roundRepository = _unitOfWork.GetRepository<Rounds>();
+                var round = await roundRepository.GetByIdAsync(submission.RoundId);
+                var roundName = round?.RoundName ?? "Unknown Round";
+                var message = $"[NOTIFICATION] Bài thi của đội {team.TeamName} tại vòng {roundName} đã được cập nhật điểm cho tiêu chí {criteria.CriteriaName} bởi Giám khảo.";
+                await _notificationService.CreateNotificationAsync(team.TeamLeaderId, message);
+            }
 
             return MapToDto(score);
         }

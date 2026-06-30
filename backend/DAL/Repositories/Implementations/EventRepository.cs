@@ -1,4 +1,4 @@
-﻿using DataAccessLayer.Database;
+using DataAccessLayer.Database;
 using DataAccessLayer.Database.Entities;
 using DataAccessLayer.Repositories.Interfaces;
 using Microsoft.EntityFrameworkCore;
@@ -14,6 +14,20 @@ namespace DataAccessLayer.Repositories.Implementations
     {
         public EventRepository(IApplicationDbContext context) : base(context)
         {
+        }
+
+        public override async Task<Events?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default)
+        {
+            return await _dbSet
+                .Include(e => e.Rounds)
+                .FirstOrDefaultAsync(e => e.EventId == id, cancellationToken);
+        }
+
+        public override async Task<IReadOnlyList<Events>> GetAllAsync(CancellationToken cancellationToken = default)
+        {
+            return await _dbSet
+                .Include(e => e.Rounds)
+                .ToListAsync(cancellationToken);
         }
     }
 }

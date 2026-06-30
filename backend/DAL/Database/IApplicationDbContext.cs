@@ -1,4 +1,4 @@
-﻿using DataAccessLayer.Database.Entities;
+using DataAccessLayer.Database.Entities;
 using Microsoft.EntityFrameworkCore;
 using System;
 using System.Collections.Generic;
@@ -28,6 +28,7 @@ namespace DataAccessLayer.Database
         public DbSet<TeamMembers> TeamMembers { get; set; }
         public DbSet<Teams> Teams { get; set; }
         public DbSet<Users> Users { get; set; }
+        public DbSet<Notifications> Notifications { get; set; }
 
         DbSet<T> Set<T>()
             where T : class;

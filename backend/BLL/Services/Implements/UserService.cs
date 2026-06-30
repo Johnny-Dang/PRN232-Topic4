@@ -168,6 +168,9 @@ namespace BusinessLogicLayer.Services.Implements
             var secret = jwt["Secret"] ?? throw new Exception("JWT Secret not configured");
             var issuer = jwt["Issuer"] ?? "seal";
             var audience = jwt["Audience"] ?? "seal_audience";
+
+            Console.WriteLine($"[BLL UserService] JWT Secret used for signing: '{secret}'");
+            Console.WriteLine($"[BLL UserService] JWT Issuer used for signing: '{issuer}'");
             var expiryMinutes = 60;
             var expiryStr = jwt["AccessTokenExpiryMinutes"];
             if (!string.IsNullOrEmpty(expiryStr) && int.TryParse(expiryStr, out var em)) expiryMinutes = em;
