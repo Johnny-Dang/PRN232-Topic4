@@ -8,10 +8,10 @@ namespace BusinessLogicLayer.Services.Interfaces
 {
     public interface ISubmissionService
     {
-        Task<SubmissionDto> CreateAsync(AddSubmissionRequest request);
+        Task<SubmissionDto> CreateAsync(AddSubmissionRequest request, Guid userId);
         Task<SubmissionDto?> GetByIdAsync(Guid submissionId);
         Task<IEnumerable<SubmissionDto>> GetAllAsync();
-        Task<SubmissionDto> UpdateAsync(UpdateSubmissionRequest request);
+        Task<SubmissionDto> UpdateAsync(UpdateSubmissionRequest request, Guid userId);
         Task DeleteAsync(Guid submissionId);
     }
 }

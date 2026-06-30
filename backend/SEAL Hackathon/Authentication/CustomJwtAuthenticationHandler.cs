@@ -26,14 +26,21 @@ namespace SEAL_Hackathon.Authentication
 
         protected override Task<AuthenticateResult> HandleAuthenticateAsync()
         {
+            string? token = null;
             var authHeader = Request.Headers.Authorization.FirstOrDefault();
-            if (string.IsNullOrWhiteSpace(authHeader) ||
-                !authHeader.StartsWith("Bearer ", StringComparison.OrdinalIgnoreCase))
+            if (!string.IsNullOrWhiteSpace(authHeader) && authHeader.StartsWith("Bearer ", StringComparison.OrdinalIgnoreCase))
+            {
+                token = authHeader["Bearer ".Length..].Trim();
+            }
+            else if (Request.Query.TryGetValue("access_token", out var queryToken))
+            {
+                token = queryToken.FirstOrDefault();
+            }
+
+            if (string.IsNullOrWhiteSpace(token))
             {
                 return Task.FromResult(AuthenticateResult.NoResult());
             }
-
-            var token = authHeader["Bearer ".Length..].Trim();
 
             try
             {

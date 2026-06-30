@@ -19,11 +19,13 @@ namespace BusinessLogicLayer.Services.Implements
         private readonly IGenericRepository<Categories> _categoryRepository;
         private readonly IGenericRepository<Events> _eventRepository;
         private readonly IGenericRepository<AuditLogs> _auditLogRepository;
+        private readonly INotificationService _notificationService;
         private readonly IUnitOfWork _unitOfWork;
 
-        public TeamService(IUnitOfWork unitOfWork)
+        public TeamService(IUnitOfWork unitOfWork, INotificationService notificationService)
         {
             _unitOfWork = unitOfWork;
+            _notificationService = notificationService;
             _teamRepository = _unitOfWork.GetRepository<Teams>();
             _teamMemberRepository = _unitOfWork.GetRepository<TeamMembers>();
             _userRepository = _unitOfWork.GetRepository<Users>();
@@ -40,9 +42,7 @@ namespace BusinessLogicLayer.Services.Implements
 
             if (request.CategoryId.HasValue)
             {
-                var category = await _categoryRepository.GetByIdAsync(request.CategoryId.Value);
-                if (category == null)
-                    throw new Exception($"Category with id {request.CategoryId.Value} not found");
+                throw new Exception("Cannot choose a category during team creation. You must have at least 3 members first.");
             }
 
             var team = new Teams
@@ -132,6 +132,15 @@ namespace BusinessLogicLayer.Services.Implements
             }));
             await _unitOfWork.SaveChangesAsync();
 
+            var category = await _categoryRepository.GetByIdAsync(request.CategoryId);
+            var categoryName = category?.CategoryName ?? "Unknown Category";
+            var teamMembers = await _teamMemberRepository.FindAsync(x => x.TeamId == teamId);
+            foreach (var member in teamMembers)
+            {
+                var msg = $"[NOTIFICATION] Đội của bạn {team.TeamName} đã đăng ký thi đấu tại Category {categoryName}.";
+                await _notificationService.CreateNotificationAsync(member.UserId, msg);
+            }
+
             return MapToDto(team);
         }
 
@@ -158,20 +167,6 @@ namespace BusinessLogicLayer.Services.Implements
             if (currentMembers.Count >= 5)
                 throw new Exception("The team has already reached the maximum limit of 5 members.");
 
-            if (!team.CategoryId.HasValue)
-                throw new Exception("The team must be assigned to a category before adding members.");
-
-            var category = await _categoryRepository.GetByIdAsync(team.CategoryId.Value);
-            if (category == null)
-                throw new Exception("The category associated with this team does not exist or is no longer open.");
-
-            var eventData = await _eventRepository.GetByIdAsync(category.EventId);
-            if (eventData == null)
-                throw new Exception("The event associated with this category does not exist.");
-
-            if (DateTime.UtcNow >= eventData.StartDate)
-                throw new Exception("Registration for this event is already closed.");
-
             var memberUser = await _userRepository.GetByIdAsync(request.UserId);
             if (memberUser == null)
                 throw new Exception($"User with id {request.UserId} not found");
@@ -193,6 +188,11 @@ namespace BusinessLogicLayer.Services.Implements
                 request.UserId
             }));
             await _unitOfWork.SaveChangesAsync();
+
+            var leaderUser = await _userRepository.GetByIdAsync(requesterUserId);
+            var leaderName = leaderUser?.FullName ?? "Trưởng nhóm";
+            var msg = $"[NOTIFICATION] Bạn đã được thêm vào đội {team.TeamName} bởi {leaderName}.";
+            await _notificationService.CreateNotificationAsync(request.UserId, msg);
 
             return MapToDto(team);
         }
@@ -226,12 +226,17 @@ namespace BusinessLogicLayer.Services.Implements
             if (!string.Equals(memberUser.AccountStatus, "Approved", StringComparison.OrdinalIgnoreCase))
                 throw new Exception("The user account has not been approved yet.");
 
-            var joinedTeam = _teamMemberRepository.FirstOrDefaultAsync(x => x.UserId == memberUser.UserId && x.TeamId != teamId)
+            var joinedTeam = _teamMemberRepository.FirstOrDefaultAsync(x => x.UserId == memberUser.UserId)
                 .GetAwaiter()
                 .GetResult();
 
             if (joinedTeam != null)
-                throw new Exception("The user already belongs to another team.");
+            {
+                if (joinedTeam.TeamId == teamId)
+                    throw new Exception("The user is already a member of this team.");
+                else
+                    throw new Exception("The user already belongs to another team.");
+            }
         }
 
         private async Task WriteAuditLogAsync(Guid userId, string actionType, string? oldValue, string newValue)

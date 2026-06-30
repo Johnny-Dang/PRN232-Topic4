@@ -17,6 +17,11 @@ namespace DataAccessLayer.Database.Configurations
 
             builder.HasKey(x => x.CategoryMentorId);
 
+            builder.Property(x => x.Status)
+                .HasMaxLength(50)
+                .HasDefaultValue("Pending")
+                .IsRequired();
+
             builder.HasOne(x => x.Category)
                 .WithMany(c => c.CategoryMentors)
                 .HasForeignKey(x => x.CategoryId)

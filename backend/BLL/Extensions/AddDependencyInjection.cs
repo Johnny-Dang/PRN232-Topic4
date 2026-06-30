@@ -47,6 +47,7 @@ namespace BusinessLogicLayer.Extensions
             serviceCollection.AddScoped<ISubmissionService, SubmissionService>();
             serviceCollection.AddScoped<IScoresService, ScoresService>();
             serviceCollection.AddScoped<IJudgeAssignmentService, JudgeAssignmentService>();
+            serviceCollection.AddScoped<INotificationService, NotificationService>();
         }
     }
 }

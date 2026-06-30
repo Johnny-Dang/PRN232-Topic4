@@ -1,4 +1,4 @@
--- =========================================================
+﻿-- =========================================================
 -- SEED DATA SCRIPT - 2 TEAMS, 4 MEMBERS EACH (FULLY HARDCODED GUID)
 -- =========================================================
 USE SEAL_Hackathon;
@@ -7,32 +7,33 @@ GO
 -- =========================================================
 -- 1. USERS & STUDENT PROFILES
 -- =========================================================
+-- Password: 123456
 INSERT INTO Users (UserID, Email, Password, FullName, Phone, Role, AccountStatus, CreatedAt) VALUES
 -- Team Leaders
-('00000000-0000-0000-0000-000000000001','leader.phoenix@fpt.edu.vn','HASH001',N'Trần Minh Đức','0901000001','Leader','Approved',GETDATE()),
-('00000000-0000-0000-0000-000000000005','leader.beta@fpt.edu.vn','HASH005',N'Phạm Gia Huy','0901000005','Leader','Approved',GETDATE()),
+('00000000-0000-0000-0000-000000000001','leader.phoenix@fpt.edu.vn','$2a$12$AWgb9KdKy9sz7BM4KUxXxuH0tPdjFNp.ccFtpnmgB.Zfjv8zXaufm',N'Trần Minh Đức','0901000001','TeamLeader','Approved',GETDATE()),
+('00000000-0000-0000-0000-000000000005','leader.beta@fpt.edu.vn','$2a$12$AWgb9KdKy9sz7BM4KUxXxuH0tPdjFNp.ccFtpnmgB.Zfjv8zXaufm',N'Phạm Gia Huy','0901000005','TeamLeader','Approved',GETDATE()),
 
 -- Team Members - Team Phoenix
-('00000000-0000-0000-0000-000000000002','member.phoenix1@fpt.edu.vn','HASH002',N'Nguyễn Thanh Nam','0901000002','Member','Approved',GETDATE()),
-('00000000-0000-0000-0000-000000000003','member.phoenix2@fpt.edu.vn','HASH003',N'Lê Hoàng Anh','0901000003','Member','Approved',GETDATE()),
-('00000000-0000-0000-0000-000000000004','member.phoenix3@uit.edu.vn','HASH004',N'Võ Minh Khang','0901000004','Member','Approved',GETDATE()),
+('00000000-0000-0000-0000-000000000002','member.phoenix1@fpt.edu.vn','$2a$12$AWgb9KdKy9sz7BM4KUxXxuH0tPdjFNp.ccFtpnmgB.Zfjv8zXaufm',N'Nguyễn Thanh Nam','0901000002','TeamMember','Approved',GETDATE()),
+('00000000-0000-0000-0000-000000000003','member.phoenix2@fpt.edu.vn','$2a$12$AWgb9KdKy9sz7BM4KUxXxuH0tPdjFNp.ccFtpnmgB.Zfjv8zXaufm',N'Lê Hoàng Anh','0901000003','TeamMember','Approved',GETDATE()),
+('00000000-0000-0000-0000-000000000004','member.phoenix3@uit.edu.vn','$2a$12$AWgb9KdKy9sz7BM4KUxXxuH0tPdjFNp.ccFtpnmgB.Zfjv8zXaufm',N'Võ Minh Khang','0901000004','TeamMember','Approved',GETDATE()),
 
 -- Team Members - Team Beta
-('00000000-0000-0000-0000-000000000006','member.beta1@fpt.edu.vn','HASH006',N'Trương Quốc Bảo','0901000006','Member','Approved',GETDATE()),
-('00000000-0000-0000-0000-000000000007','member.beta2@hcmus.edu.vn','HASH007',N'Đặng Minh Triết','0901000007','Member','Approved',GETDATE()),
-('00000000-0000-0000-0000-000000000008','member.beta3@hcmute.edu.vn','HASH008',N'Bùi Nhật Long','0901000008','Member','Approved',GETDATE()),
+('00000000-0000-0000-0000-000000000006','member.beta1@fpt.edu.vn','$2a$12$AWgb9KdKy9sz7BM4KUxXxuH0tPdjFNp.ccFtpnmgB.Zfjv8zXaufm',N'Trương Quốc Bảo','0901000006','TeamMember','Approved',GETDATE()),
+('00000000-0000-0000-0000-000000000007','member.beta2@hcmus.edu.vn','$2a$12$AWgb9KdKy9sz7BM4KUxXxuH0tPdjFNp.ccFtpnmgB.Zfjv8zXaufm',N'Đặng Minh Triết','0901000007','TeamMember','Approved',GETDATE()),
+('00000000-0000-0000-0000-000000000008','member.beta3@hcmute.edu.vn','$2a$12$AWgb9KdKy9sz7BM4KUxXxuH0tPdjFNp.ccFtpnmgB.Zfjv8zXaufm',N'Bùi Nhật Long','0901000008','TeamMember','Approved',GETDATE()),
 
 -- Mentors
-('00000000-0000-0000-0000-000000000009','mentor.ai@fpt.edu.vn','HASH009',N'Phạm Văn Tùng','0901000009','Mentor','Approved',GETDATE()),
-('00000000-0000-0000-0000-000000000010','mentor.web@fpt.edu.vn','HASH010',N'Nguyễn Thị Hương','0901000010','Mentor','Approved',GETDATE()),
+('00000000-0000-0000-0000-000000000009','mentor.ai@fpt.edu.vn','$2a$12$AWgb9KdKy9sz7BM4KUxXxuH0tPdjFNp.ccFtpnmgB.Zfjv8zXaufm',N'Phạm Văn Tùng','0901000009','Mentor','Approved',GETDATE()),
+('00000000-0000-0000-0000-000000000010','mentor.web@fpt.edu.vn','$2a$12$AWgb9KdKy9sz7BM4KUxXxuH0tPdjFNp.ccFtpnmgB.Zfjv8zXaufm',N'Nguyễn Thị Hương','0901000010','Mentor','Approved',GETDATE()),
 
 -- Judges
-('00000000-0000-0000-0000-000000000011','judge.internal1@fpt.edu.vn','HASH011',N'Lê Minh Hải','0901000011','Judge','Approved',GETDATE()),
-('00000000-0000-0000-0000-000000000012','judge.internal2@fpt.edu.vn','HASH012',N'Trần Bảo Lâm','0901000012','Judge','Approved',GETDATE()),
+('00000000-0000-0000-0000-000000000011','judge.internal1@fpt.edu.vn','$2a$12$AWgb9KdKy9sz7BM4KUxXxuH0tPdjFNp.ccFtpnmgB.Zfjv8zXaufm',N'Lê Minh Hải','0901000011','Judge','Approved',GETDATE()),
+('00000000-0000-0000-0000-000000000012','judge.internal2@fpt.edu.vn','$2a$12$AWgb9KdKy9sz7BM4KUxXxuH0tPdjFNp.ccFtpnmgB.Zfjv8zXaufm',N'Trần Bảo Lâm','0901000012','Judge','Approved',GETDATE()),
 
 -- Event Coordinators
-('00000000-0000-0000-0000-000000000013','coordinator.se@fpt.edu.vn','HASH013',N'Trần Điều Phối','0901000013','Coordinator','Approved',GETDATE()),
-('00000000-0000-0000-0000-000000000014','coordinator.pdp@fpt.edu.vn','HASH014',N'Nguyễn Event Manager','0901000014','Coordinator','Approved',GETDATE());
+('00000000-0000-0000-0000-000000000013','coordinator.se@fpt.edu.vn','$2a$12$AWgb9KdKy9sz7BM4KUxXxuH0tPdjFNp.ccFtpnmgB.Zfjv8zXaufm',N'Trần Điều Phối','0901000013','Coordinator','Approved',GETDATE()),
+('00000000-0000-0000-0000-000000000014','coordinator.pdp@fpt.edu.vn','$2a$12$AWgb9KdKy9sz7BM4KUxXxuH0tPdjFNp.ccFtpnmgB.Zfjv8zXaufm',N'Nguyễn Event Manager','0901000014','Coordinator','Approved',GETDATE());
 
 
 INSERT INTO StudentProfiles (ProfileID, UserID, StudentType, StudentCode, UniversityName) VALUES

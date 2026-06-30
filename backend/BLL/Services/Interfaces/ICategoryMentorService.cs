@@ -13,5 +13,7 @@ namespace BusinessLogicLayer.Services.Interfaces
         Task<List<CategoryMentorDto>> GetAllAsync();
         Task<CategoryMentorDto> UpdateAsync(UpdateCategoryMentorRequest request);
         Task DeleteAsync(Guid categoryMentorId);
+        Task<CategoryMentorDto> ApproveAsync(Guid categoryMentorId, Guid mentorUserId);
+        Task<CategoryMentorDto> RejectAsync(Guid categoryMentorId, Guid mentorUserId);
     }
 }

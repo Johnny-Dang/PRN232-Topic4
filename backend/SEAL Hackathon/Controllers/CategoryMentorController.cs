@@ -95,6 +95,38 @@ namespace SEALHackathonSystem.Controllers
             }
         }
 
+        [Authorize(Policy = "MentorOnly")]
+        [HttpPut("{categoryMentorId}/approve")]
+        public async Task<IActionResult> Approve(Guid categoryMentorId)
+        {
+            try
+            {
+                var mentorUserId = GetCurrentUserId();
+                var result = await _categoryMentorService.ApproveAsync(categoryMentorId, mentorUserId);
+                return Ok(result);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+        }
+
+        [Authorize(Policy = "MentorOnly")]
+        [HttpPut("{categoryMentorId}/reject")]
+        public async Task<IActionResult> Reject(Guid categoryMentorId)
+        {
+            try
+            {
+                var mentorUserId = GetCurrentUserId();
+                var result = await _categoryMentorService.RejectAsync(categoryMentorId, mentorUserId);
+                return Ok(result);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+        }
+
         private Guid GetCurrentUserId()
         {
             var userIdClaim = User.FindFirstValue(ClaimTypes.NameIdentifier);

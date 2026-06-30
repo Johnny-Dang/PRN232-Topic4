@@ -4,6 +4,12 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.OpenApi.Models;
 using SEAL_Hackathon.Authentication;
 using SEAL_Hackathon.Middlewares;
+using Microsoft.IdentityModel.Tokens;
+using System.Text;
+using System.Security.Claims;
+using BusinessLogicLayer.Services.Interfaces;
+using SEALHackathonSystem.Services;
+using SEALHackathonSystem.Hubs;
 
 namespace SEAL_Hackathon
 {
@@ -16,6 +22,13 @@ namespace SEAL_Hackathon
             builder.Services.AddService(builder.Configuration);
             builder.Services.AddControllers();
             builder.Services.AddEndpointsApiExplorer();
+            builder.Services.AddSignalR();
+            builder.Services.AddScoped<INotificationSender, NotificationSender>();
+
+            var jwt = builder.Configuration.GetSection("Jwt");
+            var secret = jwt["Secret"] ?? throw new InvalidOperationException("JWT Secret is not configured.");
+            var issuer = jwt["Issuer"] ?? "seal";
+            var audience = jwt["Audience"] ?? "seal_audience";
 
             builder.Services.AddAuthentication(options =>
             {
@@ -32,13 +45,13 @@ namespace SEAL_Hackathon
                     .RequireAuthenticatedUser()
                     .Build();
 
-                options.AddPolicy("CoordinatorOnly", policy => policy.RequireRole("EventCoordinator"));
+                options.AddPolicy("CoordinatorOnly", policy => policy.RequireRole("Coordinator"));
                 options.AddPolicy("JudgeOnly", policy => policy.RequireRole("Judge"));
                 options.AddPolicy("MentorOnly", policy => policy.RequireRole("Mentor"));
                 options.AddPolicy("TeamLeaderOnly", policy => policy.RequireRole("TeamLeader"));
                 options.AddPolicy("TeamMemberOnly", policy => policy.RequireRole("TeamMember"));
-                options.AddPolicy("JudgeOrCoordinator", policy => policy.RequireRole("Judge", "EventCoordinator"));
-                options.AddPolicy("MentorOrCoordinator", policy => policy.RequireRole("Mentor", "EventCoordinator"));
+                options.AddPolicy("JudgeOrCoordinator", policy => policy.RequireRole("Judge", "Coordinator"));
+                options.AddPolicy("MentorOrCoordinator", policy => policy.RequireRole("Mentor", "Coordinator"));
             });
 
             builder.Services.AddSwaggerGen(c =>
@@ -71,6 +84,9 @@ namespace SEAL_Hackathon
 
             var app = builder.Build();
 
+            app.Logger.LogInformation("JWT Secret loaded: {Secret}", secret);
+            app.Logger.LogInformation("JWT Issuer loaded: {Issuer}", issuer);
+
             if (app.Environment.IsDevelopment())
             {
                 app.UseSwagger();
@@ -83,6 +99,7 @@ namespace SEAL_Hackathon
             app.UseAuthorization();
 
             app.MapControllers();
+            app.MapHub<NotificationHub>("/notificationHub");
 
             app.Run();
         }

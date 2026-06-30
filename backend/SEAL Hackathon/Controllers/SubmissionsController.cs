@@ -3,6 +3,8 @@ using BusinessLogicLayer.Services.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System;
+using System.Security.Claims;
+using System.Threading.Tasks;
 
 namespace SEALHackathonSystem.Controllers
 {
@@ -23,7 +25,8 @@ namespace SEALHackathonSystem.Controllers
         {
             try
             {
-                var result = await _submissionService.CreateAsync(request);
+                var userId = GetCurrentUserId();
+                var result = await _submissionService.CreateAsync(request, userId);
                 return Ok(result);
             }
             catch (Exception ex)
@@ -66,7 +69,8 @@ namespace SEALHackathonSystem.Controllers
         {
             try
             {
-                var result = await _submissionService.UpdateAsync(request);
+                var userId = GetCurrentUserId();
+                var result = await _submissionService.UpdateAsync(request, userId);
                 return Ok(result);
             }
             catch (Exception ex)
@@ -87,6 +91,15 @@ namespace SEALHackathonSystem.Controllers
             {
                 return BadRequest(new { message = ex.Message });
             }
+        }
+
+        private Guid GetCurrentUserId()
+        {
+            var userIdClaim = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (string.IsNullOrWhiteSpace(userIdClaim) || !Guid.TryParse(userIdClaim, out var userId))
+                throw new Exception("Invalid user token");
+
+            return userId;
         }
     }
 }

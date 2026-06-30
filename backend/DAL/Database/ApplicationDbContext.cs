@@ -1,4 +1,4 @@
-﻿using DataAccessLayer.Database.Configurations;
+using DataAccessLayer.Database.Configurations;
 using DataAccessLayer.Database.Entities;
 using Microsoft.EntityFrameworkCore;
 using System;
@@ -33,6 +33,7 @@ namespace DataAccessLayer.Database
         public DbSet<TeamMembers> TeamMembers { get; set; }
         public DbSet<Teams> Teams { get; set; }
         public DbSet<Users> Users { get; set; }
+        public DbSet<Notifications> Notifications { get; set; }
         public new DbSet<T> Set<T>()
             where T : class => base.Set<T>();
         protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -49,6 +50,7 @@ namespace DataAccessLayer.Database
             modelBuilder.ApplyConfiguration<EventCriteria>(new EventCriteriaConfiguration());
             modelBuilder.ApplyConfiguration<Events>(new EventsConfiguration());
             modelBuilder.ApplyConfiguration<JudgeAssignments>(new JudgeAssignmentsConfiguration());
+            modelBuilder.ApplyConfiguration<Notifications>(new NotificationsConfiguration());
             modelBuilder.ApplyConfiguration<Rankings>(new RankingsConfiguration());
             modelBuilder.ApplyConfiguration<RefreshTokens>(new RefreshTokensConfiguration());
             modelBuilder.ApplyConfiguration<Rounds>(new RoundsConfiguration());
