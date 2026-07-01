@@ -31,35 +31,5 @@ namespace SEALHackathonSystem.Controllers
                 return BadRequest(new { message = ex.Message });
             }
         }
-
-        [Authorize(Policy = "CoordinatorOnly")]
-        [HttpPost("generate/{roundId}")]
-        public async Task<IActionResult> Generate(Guid roundId)
-        {
-            try
-            {
-                var result = await _rankingService.GenerateAsync(roundId);
-                return Ok(result);
-            }
-            catch (Exception ex)
-            {
-                return BadRequest(new { message = ex.Message });
-            }
-        }
-
-        [Authorize(Policy = "CoordinatorOnly")]
-        [HttpPost("apply-advancement/{roundId}")]
-        public async Task<IActionResult> ApplyAdvancement(Guid roundId)
-        {
-            try
-            {
-                var result = await _rankingService.ApplyAdvancementRulesAsync(roundId);
-                return Ok(result);
-            }
-            catch (Exception ex)
-            {
-                return BadRequest(new { message = ex.Message });
-            }
-        }
     }
 }

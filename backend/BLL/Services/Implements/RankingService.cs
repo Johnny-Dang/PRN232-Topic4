@@ -106,15 +106,18 @@ namespace BusinessLogicLayer.Services.Implements
 
                 if (existing == null)
                 {
-                    existing = new Rankings
+                    await _rankingRepository.AddAsync(new Rankings
                     {
                         RankingId = Guid.NewGuid(),
                         TeamId = calculated.TeamId,
                         RoundId = roundId,
-                        CategoryId = calculated.CategoryId
-                    };
+                        CategoryId = calculated.CategoryId,
+                        RankPosition = calculated.RankPosition,
+                        TotalScore = calculated.TotalScore,
+                        GeneratedAt = generatedAt
+                    });
 
-                    await _rankingRepository.AddAsync(existing);
+                    continue;
                 }
 
                 existing.RankPosition = calculated.RankPosition;
@@ -145,6 +148,9 @@ namespace BusinessLogicLayer.Services.Implements
                 : await _rankingRepository.FindAsync(x => x.RoundId == roundId && x.CategoryId == categoryId.Value);
 
             var rules = await _advancementRuleRepository.FindAsync(x => x.RoundId == roundId);
+            var ruleTopNByCategoryId = rules
+                .GroupBy(x => x.CategoryId)
+                .ToDictionary(x => x.Key, x => x.Min(rule => rule.TopN));
             var teamIds = rankings.Select(x => x.TeamId).Distinct().ToList();
             var teams = await _teamRepository.FindAsync(x => teamIds.Contains(x.TeamId));
             var teamsById = teams.ToDictionary(x => x.TeamId, x => x);
@@ -155,7 +161,7 @@ namespace BusinessLogicLayer.Services.Implements
                 .Select(ranking =>
                 {
                     teamsById.TryGetValue(ranking.TeamId, out var team);
-                    var rule = rules.FirstOrDefault(x => x.CategoryId == ranking.CategoryId);
+                    var hasRule = ruleTopNByCategoryId.TryGetValue(ranking.CategoryId, out var topN);
 
                     return new RankingDto
                     {
@@ -167,7 +173,7 @@ namespace BusinessLogicLayer.Services.Implements
                         RankPosition = ranking.RankPosition,
                         TotalScore = ranking.TotalScore,
                         GeneratedAt = ranking.GeneratedAt,
-                        IsAdvanced = rule != null && ranking.RankPosition <= rule.TopN
+                        IsAdvanced = hasRule && ranking.RankPosition <= topN
                     };
                 });
         }
@@ -184,11 +190,25 @@ namespace BusinessLogicLayer.Services.Implements
                 .Distinct()
                 .ToList();
 
-            var teams = await _teamRepository.FindAsync(x => advancedTeamIds.Contains(x.TeamId));
+            var rankedTeamIds = rankings
+                .Select(x => x.TeamId)
+                .Distinct()
+                .ToList();
+
+            var teams = await _teamRepository.FindAsync(x => rankedTeamIds.Contains(x.TeamId));
             foreach (var team in teams)
             {
-                team.TeamStatus = "Advanced";
-                _teamRepository.Update(team);
+                var shouldAdvance = advancedTeamIds.Contains(team.TeamId);
+                if (shouldAdvance && team.TeamStatus != "Advanced")
+                {
+                    team.TeamStatus = "Advanced";
+                    _teamRepository.Update(team);
+                }
+                else if (!shouldAdvance && team.TeamStatus == "Advanced")
+                {
+                    team.TeamStatus = "Active";
+                    _teamRepository.Update(team);
+                }
             }
 
             await _unitOfWork.SaveChangesAsync();
