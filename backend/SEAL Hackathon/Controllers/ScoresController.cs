@@ -3,6 +3,7 @@ using BusinessLogicLayer.Services.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System;
+using System.Security.Claims;
 using System.Threading.Tasks;
 
 namespace SEALHackathonSystem.Controllers
@@ -19,6 +20,55 @@ namespace SEALHackathonSystem.Controllers
             _scoresService = scoresService;
         }
 
+        [Authorize(Policy = "JudgeOnly")]
+        [HttpGet("assigned-submissions")]
+        public async Task<IActionResult> GetAssignedSubmissions()
+        {
+            try
+            {
+                var judgeUserId = GetCurrentUserId();
+                var result = await _scoresService.GetAssignedSubmissionsAsync(judgeUserId);
+                return Ok(result);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+        }
+
+        [Authorize(Policy = "JudgeOnly")]
+        [HttpPost("submissions/{submissionId}")]
+        public async Task<IActionResult> SubmitForSubmission(Guid submissionId, [FromBody] SubmitScoresRequest request)
+        {
+            try
+            {
+                var judgeUserId = GetCurrentUserId();
+                var result = await _scoresService.SubmitForSubmissionAsync(submissionId, judgeUserId, request);
+                return Ok(result);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+        }
+
+        [Authorize(Policy = "JudgeOnly")]
+        [HttpPut("submissions/{submissionId}")]
+        public async Task<IActionResult> UpdateForSubmission(Guid submissionId, [FromBody] SubmitScoresRequest request)
+        {
+            try
+            {
+                var judgeUserId = GetCurrentUserId();
+                var result = await _scoresService.UpdateForSubmissionAsync(submissionId, judgeUserId, request);
+                return Ok(result);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+        }
+
+        [Authorize(Policy = "CoordinatorOnly")]
         [HttpPost]
         public async Task<IActionResult> Create([FromBody] AddScoreRequest request)
         {
@@ -33,6 +83,7 @@ namespace SEALHackathonSystem.Controllers
             }
         }
 
+        [Authorize(Policy = "JudgeOrCoordinator")]
         [HttpGet("{scoreId}")]
         public async Task<IActionResult> GetById(Guid scoreId)
         {
@@ -48,6 +99,7 @@ namespace SEALHackathonSystem.Controllers
             }
         }
 
+        [Authorize(Policy = "CoordinatorOnly")]
         [HttpGet]
         public async Task<IActionResult> GetAll()
         {
@@ -62,6 +114,7 @@ namespace SEALHackathonSystem.Controllers
             }
         }
 
+        [Authorize(Policy = "CoordinatorOnly")]
         [HttpPut]
         public async Task<IActionResult> Update([FromBody] UpdateScoreRequest request)
         {
@@ -76,6 +129,7 @@ namespace SEALHackathonSystem.Controllers
             }
         }
 
+        [Authorize(Policy = "CoordinatorOnly")]
         [HttpDelete("{scoreId}")]
         public async Task<IActionResult> Delete(Guid scoreId)
         {
@@ -88,6 +142,15 @@ namespace SEALHackathonSystem.Controllers
             {
                 return BadRequest(new { message = ex.Message });
             }
+        }
+
+        private Guid GetCurrentUserId()
+        {
+            var userIdValue = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (string.IsNullOrWhiteSpace(userIdValue) || !Guid.TryParse(userIdValue, out var userId))
+                throw new Exception("Authenticated user id is missing or invalid");
+
+            return userId;
         }
     }
 }

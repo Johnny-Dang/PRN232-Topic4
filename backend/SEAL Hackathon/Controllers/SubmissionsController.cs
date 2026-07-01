@@ -84,7 +84,8 @@ namespace SEALHackathonSystem.Controllers
         {
             try
             {
-                await _submissionService.DeleteAsync(submissionId);
+                var userId = GetCurrentUserId();
+                await _submissionService.DeleteAsync(submissionId, userId);
                 return NoContent();
             }
             catch (Exception ex)
