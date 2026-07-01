@@ -223,8 +223,8 @@ namespace BusinessLogicLayer.Services.Implements
 
         private void ValidateMemberEligibility(Users memberUser, Guid teamId)
         {
-            if (!string.Equals(memberUser.AccountStatus, "Approved", StringComparison.OrdinalIgnoreCase))
-                throw new Exception("The user account has not been approved yet.");
+            //if (!string.Equals(memberUser.AccountStatus, "Approved", StringComparison.OrdinalIgnoreCase))
+            //    throw new Exception("The user account has not been approved yet.");
 
             var joinedTeam = _teamMemberRepository.FirstOrDefaultAsync(x => x.UserId == memberUser.UserId)
                 .GetAwaiter()
