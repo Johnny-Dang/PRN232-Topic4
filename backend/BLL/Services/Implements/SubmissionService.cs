@@ -182,11 +182,18 @@ namespace BusinessLogicLayer.Services.Implements
             return MapToDto(submission);
         }
 
-        public async Task DeleteAsync(Guid submissionId)
+        public async Task DeleteAsync(Guid submissionId, Guid userId)
         {
             var submission = await _submissionRepository.GetByIdAsync(submissionId);
             if (submission == null)
                 throw new Exception($"Submission with id {submissionId} not found");
+
+            var team = await _teamRepository.GetByIdAsync(submission.TeamId);
+            if (team == null)
+                throw new Exception($"Team with id {submission.TeamId} not found");
+
+            if (team.TeamLeaderId != userId)
+                throw new Exception("Only the team leader can delete the submission.");
 
             _submissionRepository.Delete(submission);
             await _unitOfWork.SaveChangesAsync();

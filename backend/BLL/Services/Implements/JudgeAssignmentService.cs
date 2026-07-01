@@ -33,9 +33,18 @@ namespace BusinessLogicLayer.Services.Implements
             if (user == null)
                 throw new Exception($"User with id {request.UserId} not found");
 
+            if (user.Role != "Judge")
+                throw new Exception("Only users with Judge role can be assigned as judges");
+
             var round = await _roundRepository.GetByIdAsync(request.RoundId);
             if (round == null)
                 throw new Exception($"Round with id {request.RoundId} not found");
+
+            var existingAssignment = await _assignmentRepository.FirstOrDefaultAsync(x =>
+                x.UserId == request.UserId && x.RoundId == request.RoundId);
+
+            if (existingAssignment != null)
+                throw new Exception("Judge is already assigned to this round");
 
             var assignment = new JudgeAssignments
             {
@@ -76,9 +85,20 @@ namespace BusinessLogicLayer.Services.Implements
             if (user == null)
                 throw new Exception($"User with id {request.UserId} not found");
 
+            if (user.Role != "Judge")
+                throw new Exception("Only users with Judge role can be assigned as judges");
+
             var round = await _roundRepository.GetByIdAsync(request.RoundId);
             if (round == null)
                 throw new Exception($"Round with id {request.RoundId} not found");
+
+            var existingAssignment = await _assignmentRepository.FirstOrDefaultAsync(x =>
+                x.AssignmentId != request.AssignmentId &&
+                x.UserId == request.UserId &&
+                x.RoundId == request.RoundId);
+
+            if (existingAssignment != null)
+                throw new Exception("Judge is already assigned to this round");
 
             assignment.UserId = request.UserId;
             assignment.RoundId = request.RoundId;
