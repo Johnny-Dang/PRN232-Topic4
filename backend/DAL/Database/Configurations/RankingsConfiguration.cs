@@ -24,6 +24,12 @@ namespace DataAccessLayer.Database.Configurations
                 .IsRequired()
                 .HasColumnType("decimal(18,2)");
 
+            builder.Property(x => x.GeneratedAt)
+                .HasColumnType("datetime");
+
+            builder.HasIndex(x => new { x.RoundId, x.CategoryId, x.TeamId })
+                .IsUnique();
+
             builder.HasOne(x => x.Team)
                 .WithMany(t => t.Rankings)
                 .HasForeignKey(x => x.TeamId)
@@ -32,6 +38,11 @@ namespace DataAccessLayer.Database.Configurations
             builder.HasOne(x => x.Round)
                 .WithMany(r => r.Rankings)
                 .HasForeignKey(x => x.RoundId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            builder.HasOne(x => x.Category)
+                .WithMany()
+                .HasForeignKey(x => x.CategoryId)
                 .OnDelete(DeleteBehavior.Restrict);
         }
     }

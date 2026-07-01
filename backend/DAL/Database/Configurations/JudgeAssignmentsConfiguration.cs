@@ -17,6 +17,9 @@ namespace DataAccessLayer.Database.Configurations
 
             builder.HasKey(x => x.AssignmentId);
 
+            builder.HasIndex(x => new { x.UserId, x.RoundId })
+                .IsUnique();
+
             builder.HasOne(x => x.User)
                 .WithMany() // Assuming Users don't have JudgeAssignments collection
                 .HasForeignKey(x => x.UserId)
