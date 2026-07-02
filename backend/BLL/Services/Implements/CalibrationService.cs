@@ -49,6 +49,13 @@ namespace BusinessLogicLayer.Services.Implements
             if (round == null)
                 throw new Exception($"Round with id {request.RoundId} not found");
 
+            if (team.CategoryId == null)
+                throw new Exception("Calibration sample team must have a category");
+
+            var eventCriteria = await _eventCriteriaRepository.FindAsync(x => x.EventId == round.EventId);
+            if (!eventCriteria.Any())
+                throw new Exception("No criteria configured for this round event");
+
             if (string.IsNullOrWhiteSpace(request.RepositoryURL) &&
                 string.IsNullOrWhiteSpace(request.DemoURL) &&
                 string.IsNullOrWhiteSpace(request.SlideURL))
@@ -94,6 +101,7 @@ namespace BusinessLogicLayer.Services.Implements
             var submission = await GetCalibrationSubmissionAsync(submissionId);
             await ValidateJudgeAsync(judgeUserId);
             ValidateDuplicateCriteria(request);
+            ValidateScoreValues(request);
             await ValidateSubmittedCriteriaSetAsync(submission.RoundId, request);
 
             var result = new List<CalibrationScores>();
@@ -131,6 +139,7 @@ namespace BusinessLogicLayer.Services.Implements
             var submission = await GetCalibrationSubmissionAsync(submissionId);
             await ValidateJudgeAsync(judgeUserId);
             ValidateDuplicateCriteria(request);
+            ValidateScoreValues(request);
             await ValidateSubmittedCriteriaSetAsync(submission.RoundId, request);
 
             var result = new List<CalibrationScores>();
@@ -159,6 +168,8 @@ namespace BusinessLogicLayer.Services.Implements
         {
             var submission = await GetCalibrationSubmissionAsync(submissionId);
             var scores = (await _calibrationScoreRepository.FindAsync(x => x.SubmissionId == submissionId)).ToList();
+            ValidateAnalysisDataset(scores);
+
             var criteriaIds = scores.Select(x => x.CriteriaId).Distinct().ToList();
             var criteria = await _criteriaRepository.FindAsync(x => criteriaIds.Contains(x.CriteriaId));
             var criteriaById = criteria.ToDictionary(x => x.CriteriaId, x => x);
@@ -294,6 +305,9 @@ namespace BusinessLogicLayer.Services.Implements
 
             if (!string.Equals(judge.Role, "Judge", StringComparison.OrdinalIgnoreCase))
                 throw new Exception("Only users with Judge role can submit calibration scores");
+
+            if (!string.Equals(judge.AccountStatus, "Active", StringComparison.OrdinalIgnoreCase))
+                throw new Exception("Only active judges can submit calibration scores");
         }
 
         private static void ValidateDuplicateCriteria(SubmitScoresRequest request)
@@ -309,6 +323,22 @@ namespace BusinessLogicLayer.Services.Implements
 
             if (duplicateCriteria.Any())
                 throw new Exception("Duplicate criteria found in score request");
+        }
+
+        private static void ValidateScoreValues(SubmitScoresRequest request)
+        {
+            if (request.Scores.Any(x => x.ScoreValue < 0 || x.ScoreValue > 100))
+                throw new Exception("Score value must be between 0 and 100");
+        }
+
+        private static void ValidateAnalysisDataset(List<CalibrationScores> scores)
+        {
+            if (!scores.Any())
+                throw new Exception("Calibration analysis requires submitted calibration scores");
+
+            var judgeCount = scores.Select(x => x.JudgeId).Distinct().Count();
+            if (judgeCount < 2)
+                throw new Exception("Calibration analysis requires scores from at least two judges");
         }
 
         private async Task ValidateSubmittedCriteriaSetAsync(Guid roundId, SubmitScoresRequest request)

@@ -42,7 +42,10 @@ namespace BusinessLogicLayer.Services.Implements
             if (!eventCriteria.Any())
                 throw new Exception("No criteria configured for this round event");
 
-            var submissions = await _submissionRepository.FindAsync(x => x.RoundId == roundId);
+            var submissions = await _submissionRepository.FindAsync(x =>
+                x.RoundId == roundId &&
+                !x.IsCalibrationSample &&
+                (x.Status == "Submitted" || x.Status == "Updated"));
             if (!submissions.Any())
                 return Enumerable.Empty<RankingDto>();
 
@@ -146,6 +149,9 @@ namespace BusinessLogicLayer.Services.Implements
             var rankings = categoryId == null
                 ? await _rankingRepository.FindAsync(x => x.RoundId == roundId)
                 : await _rankingRepository.FindAsync(x => x.RoundId == roundId && x.CategoryId == categoryId.Value);
+
+            if (!rankings.Any())
+                return Enumerable.Empty<RankingDto>();
 
             var rules = await _advancementRuleRepository.FindAsync(x => x.RoundId == roundId);
             var ruleTopNByCategoryId = rules
