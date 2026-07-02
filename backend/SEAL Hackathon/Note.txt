@@ -1,0 +1,1 @@
+﻿xóa categoryId ở request create team

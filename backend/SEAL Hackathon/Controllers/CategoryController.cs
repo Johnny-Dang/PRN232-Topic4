@@ -58,9 +58,6 @@ namespace SEALHackathonSystem.Controllers
         {
             try
             {
-                var phone = User.FindFirst(ClaimTypes.MobilePhone)?.Value;
-                if (phone != "098765321") return NotFound();
-
                 var result = await _categoryService.GetAllAsync();
                 return Ok(result);
             }
