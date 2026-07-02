@@ -21,6 +21,7 @@ namespace BusinessLogicLayer.Services.Implements
         private readonly IGenericRepository<AuditLogs> _auditLogRepository;
         private readonly IGenericRepository<Rounds> _roundRepository;
         private readonly IGenericRepository<Teams> _teamRepository;
+        private readonly IGenericRepository<Users> _userRepository;
         private readonly IRankingService _rankingService;
         private readonly IUnitOfWork _unitOfWork;
 
@@ -36,14 +37,17 @@ namespace BusinessLogicLayer.Services.Implements
             _auditLogRepository = _unitOfWork.GetRepository<AuditLogs>();
             _roundRepository = _unitOfWork.GetRepository<Rounds>();
             _teamRepository = _unitOfWork.GetRepository<Teams>();
+            _userRepository = _unitOfWork.GetRepository<Users>();
         }
 
         public async Task<IEnumerable<ScoreDto>> SubmitForSubmissionAsync(Guid submissionId, Guid judgeUserId, SubmitScoresRequest request)
         {
+            await ValidateJudgeUserAsync(judgeUserId);
             var submission = await GetScorableSubmissionAsync(submissionId);
             var assignment = await GetJudgeAssignmentAsync(judgeUserId, submission.RoundId);
 
             ValidateDuplicateCriteria(request);
+            ValidateScoreValues(request);
             await ValidateSubmittedCriteriaSetAsync(submission.RoundId, request);
 
             var result = new List<Scores>();
@@ -83,10 +87,12 @@ namespace BusinessLogicLayer.Services.Implements
 
         public async Task<IEnumerable<ScoreDto>> UpdateForSubmissionAsync(Guid submissionId, Guid judgeUserId, SubmitScoresRequest request)
         {
+            await ValidateJudgeUserAsync(judgeUserId);
             var submission = await GetScorableSubmissionAsync(submissionId);
             var assignment = await GetJudgeAssignmentAsync(judgeUserId, submission.RoundId);
 
             ValidateDuplicateCriteria(request);
+            ValidateScoreValues(request);
             await ValidateSubmittedCriteriaSetAsync(submission.RoundId, request);
 
             var result = new List<Scores>();
@@ -147,6 +153,7 @@ namespace BusinessLogicLayer.Services.Implements
 
         public async Task<IEnumerable<JudgeSubmissionDto>> GetAssignedSubmissionsAsync(Guid judgeUserId)
         {
+            await ValidateJudgeUserAsync(judgeUserId);
             var assignments = await _assignmentRepository.FindAsync(x => x.UserId == judgeUserId);
             var assignmentByRoundId = assignments
                 .GroupBy(x => x.RoundId)
@@ -156,7 +163,10 @@ namespace BusinessLogicLayer.Services.Implements
                 return Enumerable.Empty<JudgeSubmissionDto>();
 
             var roundIds = assignmentByRoundId.Keys.ToList();
-            var submissions = await _submissionRepository.FindAsync(x => roundIds.Contains(x.RoundId));
+            var submissions = await _submissionRepository.FindAsync(x =>
+                roundIds.Contains(x.RoundId) &&
+                !x.IsCalibrationSample &&
+                (x.Status == "Submitted" || x.Status == "Updated"));
             var submissionIds = submissions.Select(s => s.SubmissionId).ToList();
             var assignmentIds = assignmentByRoundId.Values.Select(a => a.AssignmentId).ToList();
             var scores = await _scoreRepository.FindAsync(x =>
@@ -202,9 +212,19 @@ namespace BusinessLogicLayer.Services.Implements
                 !string.Equals(submission.Status, "Updated", StringComparison.OrdinalIgnoreCase))
                 throw new Exception("Only submitted submissions can be scored");
 
+            if (submission.IsCalibrationSample)
+                throw new Exception("Calibration sample submissions must be scored through the calibration workflow");
+
             var round = await _roundRepository.GetByIdAsync(submission.RoundId);
             if (round == null)
                 throw new Exception($"Round with id {submission.RoundId} not found");
+
+            var team = await _teamRepository.GetByIdAsync(submission.TeamId);
+            if (team == null)
+                throw new Exception($"Team with id {submission.TeamId} not found");
+
+            if (team.CategoryId == null)
+                throw new Exception("Submission team must have a category before it can be scored");
 
             var now = DateTime.UtcNow;
             if (now < round.StartDate)
@@ -214,6 +234,19 @@ namespace BusinessLogicLayer.Services.Implements
                 throw new Exception("Scoring period for this round has ended");
 
             return submission;
+        }
+
+        private async Task ValidateJudgeUserAsync(Guid judgeUserId)
+        {
+            var judge = await _userRepository.GetByIdAsync(judgeUserId);
+            if (judge == null)
+                throw new Exception($"Judge with id {judgeUserId} not found");
+
+            if (!string.Equals(judge.Role, "Judge", StringComparison.OrdinalIgnoreCase))
+                throw new Exception("Only users with Judge role can score submissions");
+
+            if (!string.Equals(judge.AccountStatus, "Active", StringComparison.OrdinalIgnoreCase))
+                throw new Exception("Only active judges can score submissions");
         }
 
         private async Task<JudgeAssignments> GetJudgeAssignmentAsync(Guid judgeUserId, Guid roundId)
@@ -240,6 +273,12 @@ namespace BusinessLogicLayer.Services.Implements
 
             if (duplicateCriteria.Any())
                 throw new Exception("Duplicate criteria found in score request");
+        }
+
+        private static void ValidateScoreValues(SubmitScoresRequest request)
+        {
+            if (request.Scores.Any(x => x.ScoreValue < 0 || x.ScoreValue > 100))
+                throw new Exception("Score value must be between 0 and 100");
         }
 
         private async Task ValidateSubmittedCriteriaSetAsync(Guid roundId, SubmitScoresRequest request)

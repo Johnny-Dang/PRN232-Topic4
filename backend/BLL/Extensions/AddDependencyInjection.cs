@@ -50,6 +50,7 @@ namespace BusinessLogicLayer.Extensions
             serviceCollection.AddScoped<INotificationService, NotificationService>();
             serviceCollection.AddScoped<IRankingService, RankingService>();
             serviceCollection.AddScoped<IEventCriteriaService, EventCriteriaService>();
+            serviceCollection.AddScoped<ICalibrationService, CalibrationService>();
         }
     }
 }

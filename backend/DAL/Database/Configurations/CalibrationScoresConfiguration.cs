@@ -21,6 +21,15 @@ namespace DataAccessLayer.Database.Configurations
                 .IsRequired()
                 .HasColumnType("decimal(18,2)");
 
+            builder.Property(x => x.Comment)
+                .HasMaxLength(1000);
+
+            builder.Property(x => x.ScoredAt)
+                .HasColumnType("datetime");
+
+            builder.HasIndex(x => new { x.SubmissionId, x.JudgeId, x.CriteriaId })
+                .IsUnique();
+
             builder.HasOne(x => x.Judge)
                 .WithMany() // Assuming User doesn't have a specific collection for CalibrationScores
                 .HasForeignKey(x => x.JudgeId)

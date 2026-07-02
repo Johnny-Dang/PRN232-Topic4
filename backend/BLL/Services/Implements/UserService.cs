@@ -23,7 +23,7 @@ namespace BusinessLogicLayer.Services.Implements
         private readonly IUnitOfWork _unitOfWork;
         private readonly IConfiguration _configuration;
 
-        private static readonly string[] CoordinatorAllowedRoles = new[] { "TeamMember", "TeamLeader", "Mentor", "Judge", "EventCoordinator" };
+        private static readonly string[] CoordinatorAllowedRoles = new[] { "TeamMember", "TeamLeader", "Mentor", "Judge", "EventCoordinator", "Researcher" };
 
         public UserService(IUnitOfWork unitOfWork, IConfiguration configuration)
         {
