@@ -12,8 +12,8 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace DataAccessLayer.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    [Migration("20260629135244_AddScoringRankingWorkflow")]
-    partial class AddScoringRankingWorkflow
+    [Migration("20260702123750_IntialDatabase")]
+    partial class IntialDatabase
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -44,7 +44,8 @@ namespace DataAccessLayer.Migrations
 
                     b.HasIndex("CategoryId");
 
-                    b.HasIndex("RoundId");
+                    b.HasIndex("RoundId", "CategoryId")
+                        .IsUnique();
 
                     b.ToTable("AdvancementRules", (string)null);
                 });
@@ -144,6 +145,13 @@ namespace DataAccessLayer.Migrations
                     b.Property<Guid>("CategoryId")
                         .HasColumnType("uniqueidentifier");
 
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)")
+                        .HasDefaultValue("Pending");
+
                     b.Property<Guid>("UserId")
                         .HasColumnType("uniqueidentifier");
 
@@ -228,7 +236,8 @@ namespace DataAccessLayer.Migrations
 
                     b.HasIndex("CriteriaId");
 
-                    b.HasIndex("EventId");
+                    b.HasIndex("EventId", "CriteriaId")
+                        .IsUnique();
 
                     b.ToTable("EventCriteria", (string)null);
                 });
@@ -287,6 +296,34 @@ namespace DataAccessLayer.Migrations
                         .IsUnique();
 
                     b.ToTable("JudgeAssignments", (string)null);
+                });
+
+            modelBuilder.Entity("DataAccessLayer.Database.Entities.Notifications", b =>
+                {
+                    b.Property<Guid>("NotificationId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime");
+
+                    b.Property<bool>("IsRead")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bit")
+                        .HasDefaultValue(false);
+
+                    b.Property<string>("Message")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("NotificationId");
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("Notifications", (string)null);
                 });
 
             modelBuilder.Entity("DataAccessLayer.Database.Entities.Rankings", b =>
@@ -779,6 +816,17 @@ namespace DataAccessLayer.Migrations
                         .IsRequired();
 
                     b.Navigation("Round");
+
+                    b.Navigation("User");
+                });
+
+            modelBuilder.Entity("DataAccessLayer.Database.Entities.Notifications", b =>
+                {
+                    b.HasOne("DataAccessLayer.Database.Entities.Users", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
 
                     b.Navigation("User");
                 });

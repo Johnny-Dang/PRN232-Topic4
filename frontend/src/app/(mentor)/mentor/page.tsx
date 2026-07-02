@@ -1,12 +1,10 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { MessageSquare, ExternalLink, RefreshCw, Send, CheckCircle2, Video, FileCode2, FileText, Info } from 'lucide-react';
+import { MessageSquare, RefreshCw, Send, CheckCircle2, Video, FileCode2, FileText, Info } from 'lucide-react';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 
 import {
@@ -19,6 +17,13 @@ import {
   Category,
   Event as ApiEvent
 } from '@/lib/api';
+
+interface FeedbackLog {
+  id: string;
+  teamName: string;
+  comment: string;
+  date: string;
+}
 
 export default function MentorPage() {
   const [loading, setLoading] = useState<boolean>(true);
@@ -36,7 +41,7 @@ export default function MentorPage() {
   const [events, setEvents] = useState<ApiEvent[]>([]);
 
   // Local feedback log
-  const [feedbackLogs, setFeedbackLogs] = useState<any[]>([
+  const [feedbackLogs, setFeedbackLogs] = useState<FeedbackLog[]>([
     { id: '1', teamName: 'Phoenix AI', comment: 'Đề án AI thiết kế tốt, cần chú ý hiệu năng xử lý ảnh thời gian thực.', date: '2026-03-18 10:00' },
     { id: '2', teamName: 'Beta Coders', comment: 'Hệ thống Web đáp ứng tốt các yêu cầu Agile, giao diện thiết kế theo Skeletal khá mượt.', date: '2026-03-18 11:30' }
   ]);
@@ -76,7 +81,7 @@ export default function MentorPage() {
   };
 
   useEffect(() => {
-    loadData();
+    void Promise.resolve().then(loadData);
   }, []);
 
   const handleSendFeedback = (e: React.FormEvent) => {

@@ -12,7 +12,8 @@ import {
   Leaf, 
   MessageSquare, 
   Heart, 
-  Paintbrush 
+  Paintbrush,
+  type LucideIcon
 } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 
@@ -28,7 +29,7 @@ export default function CategoryExploration({
   competitionsSectionRef,
 }: CategoryExplorationProps) {
 
-  const categoryMeta: Record<string, { icon: any; color: string; bg: string; label: string; count: number; desc: string }> = {
+  const categoryMeta: Record<string, { icon: LucideIcon; color: string; bg: string; label: string; count: number; desc: string }> = {
     Technology: { icon: Cpu, color: 'text-indigo-600 dark:text-indigo-400', bg: 'bg-indigo-50 dark:bg-indigo-950/20', label: 'Công nghệ', count: 12, desc: 'Lập trình, AI, Blockchain, Website' },
     Design: { icon: Palette, color: 'text-pink-600 dark:text-pink-400', bg: 'bg-pink-50 dark:bg-pink-950/20', label: 'Thiết kế', count: 8, desc: 'Thiết kế UI/UX, Đồ họa, Poster' },
     Academic: { icon: GraduationCap, color: 'text-blue-600 dark:text-blue-400', bg: 'bg-blue-50 dark:bg-blue-950/20', label: 'Học thuật', count: 15, desc: 'Olympic Toán, Tin, Nghiên cứu lý thuyết' },

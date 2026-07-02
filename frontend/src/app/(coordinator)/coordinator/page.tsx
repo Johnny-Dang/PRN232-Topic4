@@ -1,78 +1,72 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { ShieldCheck, RefreshCw, Activity, Trash2, GitCompare, Info, UserCheck, AlertTriangle, Send } from 'lucide-react';
+import { ShieldCheck, RefreshCw, Activity, Trash2, GitCompare, AlertTriangle, Send } from 'lucide-react';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 
 import {
-  getEvents,
   getRounds,
   getSubmissions,
   getScores,
-  getCalibrationScores,
   getEliminations,
   getAuditLogs,
   calculateMean,
   calculateVariance,
   calculateStdDev,
-  Event as ApiEvent,
-  Round as ApiRound,
   Submission as ApiSubmission,
-  Score as ApiScore,
-  CalibrationScore as ApiCalibrationScore,
-  Elimination as ApiElimination,
-  AuditLog as ApiAuditLog,
   Team
 } from '@/lib/api';
+
+interface IrrCriteriaBreakdown {
+  name: string;
+  mean: number;
+  variance: number;
+  stdDev: number;
+}
+
+interface IrrSubmissionData {
+  submissionId: string;
+  teamName: string;
+  roundName: string;
+  criteria: IrrCriteriaBreakdown[];
+}
 
 export default function CoordinatorPage() {
   const [loading, setLoading] = useState<boolean>(true);
   const [submittingDisq, setSubmittingDisq] = useState<boolean>(false);
   const [disqSuccess, setDisqSuccess] = useState<string>('');
-
+ 
   // Form states to Disqualify
   const [disqSubId, setDisqSubId] = useState<string>('');
   const [disqReason, setDisqReason] = useState<string>('');
-
+ 
   // Loaded states
-  const [events, setEvents] = useState<ApiEvent[]>([]);
-  const [rounds, setRounds] = useState<ApiRound[]>([]);
   const [submissions, setSubmissions] = useState<(ApiSubmission & { Team: Team })[]>([]);
-  const [calibrationScores, setCalibrationScores] = useState<any[]>([]);
-  const [eliminations, setEliminations] = useState<any[]>([]);
-  const [auditLogs, setAuditLogs] = useState<any[]>([]);
-  
+  const [eliminations, setEliminations] = useState<Awaited<ReturnType<typeof getEliminations>>>([]);
+  const [auditLogs, setAuditLogs] = useState<Awaited<ReturnType<typeof getAuditLogs>>>([]);
+   
   // Statistical IRR calculations for all graded submissions
-  const [irrData, setIrrData] = useState<any[]>([]);
+  const [irrData, setIrrData] = useState<IrrSubmissionData[]>([]);
 
   const loadData = async () => {
     setLoading(true);
     try {
       const [
-        fetchedEvents,
         fetchedRounds,
         fetchedSubs,
-        fetchedCalibrations,
         fetchedEliminations,
         fetchedLogs
       ] = await Promise.all([
-        getEvents(),
         getRounds(),
         getSubmissions(),
-        getCalibrationScores(),
         getEliminations(),
         getAuditLogs()
       ]);
 
-      setEvents(fetchedEvents);
-      setRounds(fetchedRounds);
       setSubmissions(fetchedSubs);
-      setCalibrationScores(fetchedCalibrations);
       setEliminations(fetchedEliminations);
       setAuditLogs(fetchedLogs);
 
@@ -81,7 +75,7 @@ export default function CoordinatorPage() {
       }
 
       // Compute IRR details for each graded submission
-      const computedIrr = [];
+      const computedIrr: IrrSubmissionData[] = [];
       for (const sub of fetchedSubs) {
         if (sub.Status === 'Graded') {
           const scores = await getScores(sub.SubmissionID);
@@ -118,7 +112,7 @@ export default function CoordinatorPage() {
   };
 
   useEffect(() => {
-    loadData();
+    void Promise.resolve().then(loadData);
   }, []);
 
   const handleDisqualify = (e: React.FormEvent) => {
@@ -133,23 +127,41 @@ export default function CoordinatorPage() {
       if (targetSub) {
         // Mock updating local state
         targetSub.Status = 'Disqualified';
-        const newElim = {
+        const newElim: Awaited<ReturnType<typeof getEliminations>>[number] = {
           EliminationId: Date.now().toString(),
           SubmissionId: disqSubId,
-          Team: targetSub.Team,
+          UserId: '00000000-0000-0000-0000-000000000013',
           Reason: disqReason,
-          Coordinator: { FullName: 'Trần Điều Phối' },
-          EliminatedAt: new Date().toISOString().replace('T', ' ').substring(0, 16)
+          EliminatedAt: new Date().toISOString().replace('T', ' ').substring(0, 16),
+          Submission: targetSub,
+          Team: targetSub.Team,
+          Coordinator: {
+            UserID: '00000000-0000-0000-0000-000000000013',
+            Email: 'coordinator.se@fpt.edu.vn',
+            FullName: 'Trần Điều Phối',
+            Phone: '0901000013',
+            Role: 'Coordinator',
+            AccountStatus: 'Approved'
+          }
         };
         setEliminations([newElim, ...eliminations]);
 
         // Add to audit logs
-        const newLog = {
+        const newLog: Awaited<ReturnType<typeof getAuditLogs>>[number] = {
           LogID: Date.now().toString(),
-          User: { FullName: 'Trần Điều Phối', Role: 'Coordinator' },
+          UserID: '00000000-0000-0000-0000-000000000013',
           ActionType: 'SUBMISSION_DISQUALIFY',
+          OldValue: null,
           NewValue: JSON.stringify({ TeamName: targetSub.Team.TeamName, Reason: disqReason }),
-          CreatedAt: new Date().toISOString().replace('T', ' ').substring(0, 16)
+          CreatedAt: new Date().toISOString().replace('T', ' ').substring(0, 16),
+          User: {
+            UserID: '00000000-0000-0000-0000-000000000013',
+            Email: 'coordinator.se@fpt.edu.vn',
+            FullName: 'Trần Điều Phối',
+            Phone: '0901000013',
+            Role: 'Coordinator',
+            AccountStatus: 'Approved'
+          }
         };
         setAuditLogs([newLog, ...auditLogs]);
       }
@@ -300,7 +312,7 @@ export default function CoordinatorPage() {
                       </div>
                       
                       <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                        {item.criteria.map((crit: any) => {
+                        {item.criteria.map((crit: IrrCriteriaBreakdown) => {
                           const hasHighDiscrepancy = crit.stdDev > 0.8;
                           return (
                             <div key={crit.name} className={`p-3 border rounded-xl flex flex-col justify-between ${

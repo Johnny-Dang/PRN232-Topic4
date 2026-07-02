@@ -17,14 +17,14 @@ import {
   getEvents,
   getRounds,
   getCategories,
-  mockUsers,
-  mockStudentProfiles,
   Team,
   Submission,
-  Score,
   Event as ApiEvent,
   Round as ApiRound
 } from '@/lib/api';
+
+type TeamMemberWithProfile = Awaited<ReturnType<typeof getTeamMembers>>[number];
+type ScoreWithDetails = Awaited<ReturnType<typeof getScores>>[number];
 
 export default function LeaderPage() {
   const [loading, setLoading] = useState<boolean>(true);
@@ -38,10 +38,10 @@ export default function LeaderPage() {
 
   // Loaded states
   const [team, setTeam] = useState<Team | null>(null);
-  const [members, setMembers] = useState<any[]>([]);
+  const [members, setMembers] = useState<TeamMemberWithProfile[]>([]);
   const [submissions, setSubmissions] = useState<Submission[]>([]);
   const [currentSubmission, setCurrentSubmission] = useState<Submission | null>(null);
-  const [scores, setScores] = useState<any[]>([]);
+  const [scores, setScores] = useState<ScoreWithDetails[]>([]);
   const [event, setEvent] = useState<ApiEvent | null>(null);
   const [rounds, setRounds] = useState<ApiRound[]>([]);
 
@@ -97,7 +97,7 @@ export default function LeaderPage() {
   };
 
   useEffect(() => {
-    loadData();
+    void Promise.resolve().then(loadData);
   }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -351,7 +351,7 @@ export default function LeaderPage() {
                             {sc.Criteria.CriteriaName}
                           </h5>
                           <p className="text-[10px] text-slate-400 dark:text-slate-500 leading-normal">
-                            N/X: "{sc.Comment}"
+                            N/X: &quot;{sc.Comment}&quot;
                           </p>
                         </div>
                         <span className="text-sm font-black text-indigo-600 dark:text-indigo-400">

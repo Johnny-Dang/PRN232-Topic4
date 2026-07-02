@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { MessageSquare, HelpCircle, ChevronRight, LogOut, Menu, ChevronLeft } from 'lucide-react';
+import { MessageSquare, HelpCircle, ChevronRight, LogOut, Menu, ChevronLeft, Home } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -15,15 +15,22 @@ export default function MentorLayout({
 }) {
   const pathname = usePathname();
   const router = useRouter();
-  const [authorized, setAuthorized] = useState<boolean>(false);
-  const [isCollapsed, setIsCollapsed] = useState(false);
+  const [authorized] = useState<boolean>(() => {
+    if (typeof window === 'undefined') return false;
+    const session = localStorage.getItem('seal_user');
+    if (!session) return false;
 
-  useEffect(() => {
-    const saved = localStorage.getItem('sidebar_collapsed');
-    if (saved === 'true') {
-      setIsCollapsed(true);
+    try {
+      const user = JSON.parse(session) as { Role?: string };
+      return user.Role === 'Mentor';
+    } catch {
+      return false;
     }
-  }, []);
+  });
+  const [isCollapsed, setIsCollapsed] = useState(() => {
+    if (typeof window === 'undefined') return false;
+    return localStorage.getItem('sidebar_collapsed') === 'true';
+  });
 
   const toggleSidebar = () => {
     const nextValue = !isCollapsed;
@@ -37,13 +44,11 @@ export default function MentorLayout({
       router.push('/login');
     } else {
       try {
-        const user = JSON.parse(session);
-        if (user.Role === 'Mentor') {
-          setAuthorized(true);
-        } else {
+        const user = JSON.parse(session) as { Role?: string };
+        if (user.Role !== 'Mentor') {
           router.push('/');
         }
-      } catch (e) {
+      } catch {
         localStorage.removeItem('seal_user');
         router.push('/login');
       }
@@ -131,6 +136,15 @@ export default function MentorLayout({
 
           {/* Footer actions */}
           <div className="p-6 border-t border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/50 flex flex-col gap-4">
+            <Link
+              href="/"
+              className="flex items-center justify-between text-xs text-sky-600 hover:text-sky-700 font-bold dark:text-sky-400 dark:hover:text-sky-300 outline-none w-full text-left cursor-pointer"
+            >
+              <span className="flex items-center gap-1.5">
+                <Home className="w-4 h-4 text-sky-500" /> Quay lại Trang chủ
+              </span>
+              <ChevronRight className="w-4 h-4" />
+            </Link>
             <button
               onClick={() => {
                 localStorage.removeItem('seal_user');

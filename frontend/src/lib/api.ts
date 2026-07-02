@@ -521,8 +521,10 @@ export const mockDetailedCompetitions: DetailedCompetition[] = [
 
 
 // Active source config (mock vs live API)
-let useLiveApi = false;
-const BASE_URL = 'http://localhost:5279/api';
+import { apiClient } from '../services/api/apiClient';
+
+// Active source config (mock vs live API)
+let useLiveApi = true;
 
 export const isLiveApiEnabled = () => useLiveApi;
 export const setLiveApi = (enabled: boolean) => {
@@ -549,63 +551,284 @@ export const calculateStdDev = (values: number[]): number => {
   return Math.sqrt(calculateVariance(values));
 };
 
-// API calls with simulated latency (1000ms) for skeletal loading states
+// Standard Backend DTO configurations/interfaces
+export interface BackendEvent {
+  eventId?: string;
+  EventId?: string;
+  EventID?: string;
+  eventName?: string;
+  EventName?: string;
+  season?: string;
+  Season?: string;
+  year?: number;
+  Year?: number;
+  description?: string;
+  Description?: string;
+  startDate?: string;
+  StartDate?: string;
+  endDate?: string;
+  EndDate?: string;
+  rounds?: BackendRound[];
+}
+
+export interface BackendRound {
+  roundId?: string;
+  RoundId?: string;
+  RoundID?: string;
+  eventId?: string;
+  EventId?: string;
+  EventID?: string;
+  roundName?: string;
+  RoundName?: string;
+  roundOrder?: number;
+  RoundOrder?: number;
+  submissionDeadline?: string;
+  SubmissionDeadline?: string;
+  startDate?: string;
+  StartDate?: string;
+  endDate?: string;
+  EndDate?: string;
+}
+
+export interface BackendCategory {
+  categoryId?: string;
+  CategoryId?: string;
+  CategoryID?: string;
+  eventId?: string;
+  EventId?: string;
+  EventID?: string;
+  categoryName?: string;
+  CategoryName?: string;
+  description?: string;
+  Description?: string;
+}
+
+export interface BackendTeam {
+  teamId?: string;
+  TeamId?: string;
+  TeamID?: string;
+  teamName?: string;
+  TeamName?: string;
+  teamLeaderId?: string;
+  TeamLeaderId?: string;
+  categoryId?: string;
+  CategoryId?: string;
+  CategoryID?: string;
+  teamStatus?: string;
+  TeamStatus?: string;
+}
+
+export interface BackendSubmission {
+  submissionId?: string;
+  SubmissionId?: string;
+  SubmissionID?: string;
+  teamId?: string;
+  TeamId?: string;
+  TeamID?: string;
+  roundId?: string;
+  RoundId?: string;
+  RoundID?: string;
+  repositoryUrl?: string;
+  repositoryURL?: string;
+  RepositoryURL?: string;
+  demoUrl?: string;
+  demoURL?: string;
+  DemoURL?: string;
+  slideUrl?: string;
+  slideURL?: string;
+  SlideURL?: string;
+  submittedAt?: string;
+  SubmittedAt?: string;
+  status?: string;
+  Status?: string;
+}
+
+export interface BackendScore {
+  scoreId?: string;
+  ScoreId?: string;
+  ScoreID?: string;
+  submissionId?: string;
+  SubmissionId?: string;
+  SubmissionID?: string;
+  assignmentId?: string;
+  AssignmentId?: string;
+  criteriaId?: string;
+  CriteriaId?: string;
+  CriteriaID?: string;
+  scoreValue?: number;
+  ScoreValue?: number;
+  comment?: string;
+  Comment?: string;
+  scoredAt?: string;
+  ScoredAt?: string;
+  criteriaName?: string;
+  CriteriaName?: string;
+  weight?: number;
+  Weight?: number;
+}
+
+export interface BackendAdvancementRule {
+  ruleId?: string;
+  RuleId?: string;
+  roundId?: string;
+  RoundId?: string;
+  categoryId?: string;
+  CategoryId?: string;
+  topN?: number;
+  TopN?: number;
+}
+
+export interface BackendRanking {
+  rankingId?: string;
+  RankingId?: string;
+  teamId?: string;
+  TeamId?: string;
+  roundId?: string;
+  RoundId?: string;
+  rankPosition?: number;
+  RankPosition?: number;
+  totalScore?: number;
+  TotalScore?: number;
+}
+
+interface BackendSubmissionWithScores extends BackendSubmission {
+  scores?: BackendScore[];
+}
+
+// Casing mapping helpers (camelCase backend -> PascalCase/capitalized frontend)
+const mapEvent = (e: BackendEvent): Event => ({
+  EventID: e.eventId || e.EventId || e.EventID || '',
+  EventName: e.eventName || e.EventName || '',
+  Season: e.season || e.Season || '',
+  Year: e.year || e.Year || 0,
+  Description: e.description || e.Description || '',
+  StartDate: e.startDate || e.StartDate || '',
+  EndDate: e.endDate || e.EndDate || '',
+});
+
+const mapRound = (r: BackendRound): Round => ({
+  RoundID: r.roundId || r.RoundId || r.RoundID || '',
+  EventID: r.eventId || r.EventId || r.EventID || '',
+  RoundName: r.roundName || r.RoundName || '',
+  RoundOrder: r.roundOrder || r.RoundOrder || 0,
+  SubmissionDeadline: r.submissionDeadline || r.SubmissionDeadline || '',
+  StartDate: r.startDate || r.StartDate || '',
+  EndDate: r.endDate || r.EndDate || '',
+});
+
+const mapCategory = (c: BackendCategory): Category => ({
+  CategoryID: c.categoryId || c.CategoryId || c.CategoryID || '',
+  EventID: c.eventId || c.EventId || c.EventID || '',
+  CategoryName: c.categoryName || c.CategoryName || '',
+  Description: c.description || c.Description || '',
+});
+
+const mapTeam = (t: BackendTeam): Team => ({
+  TeamID: t.teamId || t.TeamId || t.TeamID || '',
+  TeamName: t.teamName || t.TeamName || '',
+  TeamLeaderId: t.teamLeaderId || t.TeamLeaderId || '',
+  CategoryID: t.categoryId || t.CategoryId || t.CategoryID || '',
+  TeamStatus: (t.teamStatus || t.TeamStatus || 'Active') as Team['TeamStatus'],
+});
+
+const mapSubmission = (s: BackendSubmission): Submission => ({
+  SubmissionID: s.submissionId || s.SubmissionId || s.SubmissionID || '',
+  TeamID: s.teamId || s.TeamId || s.TeamID || '',
+  RoundID: s.roundId || s.RoundId || s.RoundID || '',
+  RepositoryURL: s.repositoryURL || s.repositoryUrl || s.RepositoryURL || '',
+  DemoURL: s.demoURL || s.demoUrl || s.DemoURL || '',
+  SlideURL: s.slideURL || s.slideUrl || s.SlideURL || '',
+  SubmittedAt: s.submittedAt || s.SubmittedAt || '',
+  Status: (s.status || s.Status || 'Submitted') as Submission['Status'],
+});
+
+const mapScore = (s: BackendScore): Score => ({
+  ScoreID: s.scoreId || s.ScoreId || s.ScoreID || '',
+  SubmissionID: s.submissionId || s.SubmissionId || s.SubmissionID || '',
+  AssignmentId: s.assignmentId || s.AssignmentId || '',
+  CriteriaID: s.criteriaId || s.CriteriaId || s.CriteriaID || '',
+  ScoreValue: s.scoreValue || s.ScoreValue || 0,
+  Comment: s.comment || s.Comment || '',
+  ScoredAt: s.scoredAt || s.ScoredAt || '',
+});
+
+const mapAdvancementRule = (r: BackendAdvancementRule): AdvancementRule => ({
+  RuleId: r.ruleId || r.RuleId || '',
+  RoundId: r.roundId || r.RoundId || '',
+  CategoryId: r.categoryId || r.CategoryId || '',
+  TopN: r.topN || r.TopN || 0,
+});
+
+const mapRanking = (r: BackendRanking): Ranking => ({
+  RankingId: r.rankingId || r.RankingId || '',
+  TeamId: r.teamId || r.TeamId || '',
+  RoundId: r.roundId || r.RoundId || '',
+  RankPosition: r.rankPosition || r.RankPosition || 0,
+  TotalScore: r.totalScore || r.TotalScore || 0,
+});
+
+// API calls with live API implementation & mock fallback
 export async function getEvents(): Promise<Event[]> {
-  await delay(800);
+  await delay(200);
   if (useLiveApi) {
     try {
-      const res = await fetch(`${BASE_URL}/Event`);
-      if (res.ok) return await res.json();
-    } catch (e) {
-      console.warn('Live API error, falling back to mock:', e);
+      const res = await apiClient.get<BackendEvent[]>('/Event/all');
+      return res.data.map(mapEvent);
+    } catch (e: unknown) {
+      console.warn('Live API error for getEvents, falling back to mock:', e);
     }
   }
   return mockEvents;
 }
 
 export async function getRounds(eventId?: string): Promise<Round[]> {
-  await delay(800);
+  await delay(200);
   if (useLiveApi) {
     try {
-      const url = eventId ? `${BASE_URL}/Round?eventId=${eventId}` : `${BASE_URL}/Round`;
-      const res = await fetch(url);
-      if (res.ok) return await res.json();
-    } catch (e) {
-      console.warn('Live API error, falling back to mock:', e);
+      if (eventId) {
+        const res = await apiClient.get<BackendRound[]>(`/Round/events/${eventId}`);
+        return res.data.map(mapRound);
+      } else {
+        const res = await apiClient.get<BackendEvent[]>('/Event/all');
+        return res.data.flatMap((e: BackendEvent) => (e.rounds || []).map(mapRound));
+      }
+    } catch (e: unknown) {
+      console.warn('Live API error for getRounds, falling back to mock:', e);
     }
   }
   return eventId ? mockRounds.filter(r => r.EventID === eventId) : mockRounds;
 }
 
 export async function getCategories(eventId?: string): Promise<Category[]> {
-  await delay(800);
+  await delay(200);
   if (useLiveApi) {
     try {
-      const url = eventId ? `${BASE_URL}/Category?eventId=${eventId}` : `${BASE_URL}/Category`;
-      const res = await fetch(url);
-      if (res.ok) return await res.json();
-    } catch (e) {
-      console.warn('Live API error, falling back to mock:', e);
+      const res = await apiClient.get<BackendCategory[]>('/Category');
+      const list = res.data.map(mapCategory);
+      return eventId ? list.filter((c: Category) => c.EventID === eventId) : list;
+    } catch (e: unknown) {
+      console.warn('Live API error for getCategories, falling back to mock:', e);
     }
   }
   return eventId ? mockCategories.filter(c => c.EventID === eventId) : mockCategories;
 }
 
 export async function getTeams(): Promise<Team[]> {
-  await delay(800);
+  await delay(200);
   if (useLiveApi) {
     try {
-      const res = await fetch(`${BASE_URL}/Teams`);
-      if (res.ok) return await res.json();
-    } catch (e) {
-      console.warn('Live API error, falling back to mock:', e);
+      const res = await apiClient.get<BackendTeam[]>('/Teams');
+      return res.data.map(mapTeam);
+    } catch (e: unknown) {
+      console.warn('Live API error for getTeams, falling back to mock:', e);
     }
   }
   return mockTeams;
 }
 
 export async function getTeamMembers(teamId: string): Promise<(TeamMember & { User: User; StudentProfile?: StudentProfile })[]> {
-  await delay(500);
+  await delay(200);
+  // Backend doesn't have an endpoint for get team members, so we fall back to mock members.
   const members = mockTeamMembers.filter(m => m.TeamID === teamId);
   return members.map(m => {
     const user = mockUsers.find(u => u.UserID === m.UserId)!;
@@ -619,20 +842,19 @@ export async function getTeamMembers(teamId: string): Promise<(TeamMember & { Us
 }
 
 export async function getSubmissions(roundId?: string): Promise<(Submission & { Team: Team })[]> {
-  await delay(800);
+  await delay(200);
   if (useLiveApi) {
     try {
-      const res = await fetch(`${BASE_URL}/Submissions`);
-      if (res.ok) {
-        const data: Submission[] = await res.json();
-        const teams = await getTeams();
-        return data.map(sub => ({
-          ...sub,
-          Team: teams.find(t => t.TeamID === sub.TeamID) || mockTeams[0]
-        }));
-      }
-    } catch (e) {
-      console.warn('Live API error, falling back to mock:', e);
+      const res = await apiClient.get<BackendSubmission[]>('/Submissions');
+      const teams = await getTeams();
+      const subs = res.data.map((s: BackendSubmission) => {
+        const mappedSub = mapSubmission(s);
+        const team = teams.find(t => t.TeamID === mappedSub.TeamID) || mockTeams[0];
+        return { ...mappedSub, Team: team };
+      });
+      return roundId ? subs.filter((s: Submission & { Team: Team }) => s.RoundID === roundId) : subs;
+    } catch (e: unknown) {
+      console.warn('Live API error for getSubmissions, falling back to mock:', e);
     }
   }
   const subs = roundId ? mockSubmissions.filter(s => s.RoundID === roundId) : mockSubmissions;
@@ -643,13 +865,34 @@ export async function getSubmissions(roundId?: string): Promise<(Submission & { 
 }
 
 export async function getScores(submissionId: string): Promise<(Score & { Judge: User; Criteria: Criteria })[]> {
-  await delay(600);
+  await delay(200);
+  if (useLiveApi) {
+    try {
+      const res = await apiClient.get<BackendSubmissionWithScores[]>('/Scores/assigned-submissions');
+      const targetSub = res.data.find((s: BackendSubmissionWithScores) => (s.submissionId || s.SubmissionId) === submissionId);
+      if (targetSub && targetSub.scores) {
+        return targetSub.scores.map((sc: BackendScore) => {
+          const criteria = mockCriteria.find(c => c.CriteriaID === (sc.criteriaId || sc.CriteriaId)) || {
+            CriteriaID: sc.criteriaId || sc.CriteriaId || '',
+            TemplateID: '',
+            CriteriaName: sc.criteriaName || sc.CriteriaName || 'Tiêu chí',
+            Weight: sc.weight || sc.Weight || 1
+          };
+          const judge = mockUsers.find(u => u.Role === 'Judge')!; // Fallback
+          return {
+            ...mapScore(sc),
+            Judge: judge,
+            Criteria: criteria
+          };
+        });
+      }
+    } catch (e: unknown) {
+      console.warn('Live API error for getScores, falling back to mock:', e);
+    }
+  }
   const scores = mockScores.filter(s => s.SubmissionID === submissionId);
   return scores.map(s => {
-    const assignment = mockUsers.find(u => u.Role === 'Judge'); // Placeholder mapping if assignment id not directly matched
-    // Find criteria
     const criteria = mockCriteria.find(c => c.CriteriaID === s.CriteriaID)!;
-    // Map judge: Judge 1 is Lê Minh Hải, Judge 2 is Trần Bảo Lâm
     const isJudge2 = s.ScoreID.includes('-j2') || s.AssignmentId.includes('0002') || s.AssignmentId.includes('0004') || s.AssignmentId.includes('0008');
     const judge = isJudge2 
       ? mockUsers.find(u => u.Email.includes('judge.internal2'))!
@@ -664,7 +907,8 @@ export async function getScores(submissionId: string): Promise<(Score & { Judge:
 }
 
 export async function getCalibrationScores(): Promise<(CalibrationScore & { Judge: User; Criteria: Criteria; Submission: Submission; Team: Team })[]> {
-  await delay(800);
+  await delay(200);
+  // Backend has no calibration endpoint, fallback to mock
   return mockCalibrationScores.map(c => {
     const judge = c.JudgeID.includes('11')
       ? mockUsers.find(u => u.Email.includes('judge.internal1'))!
@@ -683,20 +927,22 @@ export async function getCalibrationScores(): Promise<(CalibrationScore & { Judg
 }
 
 export async function getAdvancementRules(roundId?: string): Promise<AdvancementRule[]> {
-  await delay(600);
+  await delay(200);
   if (useLiveApi) {
     try {
-      const res = await fetch(`${BASE_URL}/AdvancementRule`);
-      if (res.ok) return await res.json();
-    } catch (e) {
-      console.warn('Live API error, falling back to mock:', e);
+      const res = await apiClient.get<BackendAdvancementRule[]>('/AdvancementRule');
+      const list = res.data.map(mapAdvancementRule);
+      return roundId ? list.filter((r: AdvancementRule) => r.RoundId === roundId) : list;
+    } catch (e: unknown) {
+      console.warn('Live API error for getAdvancementRules, falling back to mock:', e);
     }
   }
   return roundId ? mockAdvancementRules.filter(r => r.RoundId === roundId) : mockAdvancementRules;
 }
 
 export async function getEliminations(): Promise<(Elimination & { Submission: Submission; Team: Team; Coordinator: User })[]> {
-  await delay(800);
+  await delay(200);
+  // Backend has no direct elimination endpoint, fallback to mock
   return mockEliminations.map(e => {
     const submission = mockSubmissions.find(s => s.SubmissionID === e.SubmissionId)!;
     const team = mockTeams.find(t => t.TeamID === submission.TeamID)!;
@@ -711,7 +957,8 @@ export async function getEliminations(): Promise<(Elimination & { Submission: Su
 }
 
 export async function getAuditLogs(): Promise<(AuditLog & { User: User })[]> {
-  await delay(800);
+  await delay(200);
+  // Backend has no direct audit logs endpoint, fallback to mock
   return mockAuditLogs.map(l => {
     const user = mockUsers.find(u => u.UserID === l.UserID)!;
     return {
@@ -722,7 +969,19 @@ export async function getAuditLogs(): Promise<(AuditLog & { User: User })[]> {
 }
 
 export async function getRankings(roundId?: string): Promise<(Ranking & { Team: Team })[]> {
-  await delay(600);
+  await delay(200);
+  if (useLiveApi && roundId) {
+    try {
+      const res = await apiClient.get<BackendRanking[]>('/Rankings', { params: { roundId } });
+      const teams = await getTeams();
+      return res.data.map((r: BackendRanking) => ({
+        ...mapRanking(r),
+        Team: teams.find(t => t.TeamID === r.teamId) || mockTeams[0]
+      }));
+    } catch (e: unknown) {
+      console.warn('Live API error for getRankings, falling back to mock:', e);
+    }
+  }
   const ranks = roundId ? mockRankings.filter(r => r.RoundId === roundId) : mockRankings;
   return ranks.map(r => ({
     ...r,
@@ -731,13 +990,13 @@ export async function getRankings(roundId?: string): Promise<(Ranking & { Team: 
 }
 
 export async function getAnnouncements(eventId?: string): Promise<Announcement[]> {
-  await delay(600);
+  await delay(200);
+  // Backend has no announcements table/controller, fallback to mock
   return eventId ? mockAnnouncements.filter(a => a.EventID === eventId) : mockAnnouncements;
 }
 
 export async function getDetailedCompetitions(): Promise<DetailedCompetition[]> {
-  await delay(500);
+  await delay(200);
   return mockDetailedCompetitions;
 }
-
 

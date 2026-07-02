@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Calendar, Users, RefreshCw, CheckCircle2, AlertCircle, Info, Bookmark } from 'lucide-react';
+import { Calendar, Users, RefreshCw, CheckCircle2, Bookmark } from 'lucide-react';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -20,20 +20,23 @@ import {
   Event as ApiEvent,
   Category as ApiCategory,
   Round as ApiRound,
-  Ranking as ApiRanking
 } from '@/lib/api';
+
+type TeamMemberWithProfile = Awaited<ReturnType<typeof getTeamMembers>>[number];
+type RankingWithTeam = Awaited<ReturnType<typeof getRankings>>[number];
+type AdvancementRuleData = Awaited<ReturnType<typeof getAdvancementRules>>[number];
 
 export default function MemberPage() {
   const [loading, setLoading] = useState<boolean>(true);
 
   // Loaded states
   const [team, setTeam] = useState<Team | null>(null);
-  const [members, setMembers] = useState<any[]>([]);
+  const [members, setMembers] = useState<TeamMemberWithProfile[]>([]);
   const [event, setEvent] = useState<ApiEvent | null>(null);
   const [category, setCategory] = useState<ApiCategory | null>(null);
   const [rounds, setRounds] = useState<ApiRound[]>([]);
-  const [rankings, setRankings] = useState<any[]>([]);
-  const [rules, setRules] = useState<any[]>([]);
+  const [rankings, setRankings] = useState<RankingWithTeam[]>([]);
+  const [rules, setRules] = useState<AdvancementRuleData[]>([]);
 
   const loadData = async () => {
     setLoading(true);
@@ -78,7 +81,7 @@ export default function MemberPage() {
   };
 
   useEffect(() => {
-    loadData();
+    void Promise.resolve().then(loadData);
   }, []);
 
   return (

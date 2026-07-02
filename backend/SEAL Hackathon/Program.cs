@@ -24,6 +24,15 @@ namespace SEAL_Hackathon
             builder.Services.AddEndpointsApiExplorer();
             builder.Services.AddSignalR();
             builder.Services.AddScoped<INotificationSender, NotificationSender>();
+            builder.Services.AddCors(options =>
+            {
+                options.AddPolicy("AllowAll", policy =>
+                {
+                    policy.AllowAnyOrigin()
+                          .AllowAnyMethod()
+                          .AllowAnyHeader();
+                });
+            });
 
             var jwt = builder.Configuration.GetSection("Jwt");
             var secret = jwt["Secret"] ?? throw new InvalidOperationException("JWT Secret is not configured.");
@@ -95,7 +104,11 @@ namespace SEAL_Hackathon
                 app.UseSwaggerUI();
             }
 
-            app.UseHttpsRedirection();
+            app.UseCors("AllowAll");
+            if (!app.Environment.IsDevelopment())
+            {
+                app.UseHttpsRedirection();
+            }
             app.UseAuthentication();
             app.UseMiddleware<CustomAuthMiddleware>();
             app.UseAuthorization();

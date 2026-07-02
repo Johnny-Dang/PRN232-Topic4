@@ -1,34 +1,51 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { 
-  ShieldAlert, 
-  ArrowRight, 
-  UserCheck, 
-  Key, 
-  Mail, 
-  Sparkles, 
-  CheckCircle2, 
-  Trophy, 
-  ArrowLeft, 
-  UserPlus, 
-  Phone, 
-  User, 
-  School, 
+import {
+  ShieldAlert,
+  ArrowRight,
+  Key,
+  Mail,
+  Sparkles,
+  CheckCircle2,
+  Trophy,
+  ArrowLeft,
+  Phone,
+  User,
   Heart,
   ShieldCheck
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
-import { mockUsers } from '@/lib/api';
+import { loginApi, registerApi } from '../../services/api/auth';
+import type { User as AuthUser } from '../../services/types/auth';
+
+type NormalizedRole = 'Leader' | 'Member' | 'Mentor' | 'Judge' | 'Coordinator';
+
+const getApiErrorMessage = (error: unknown, fallback: string) => {
+  if (typeof error !== 'object' || error === null || !('response' in error)) {
+    return fallback;
+  }
+
+  const response = (error as { response?: { data?: { message?: string } } }).response;
+  return response?.data?.message || fallback;
+};
+
+const normalizeRole = (role: AuthUser['Role']): NormalizedRole | AuthUser['Role'] => {
+  if (role === 'TeamLeader') return 'Leader';
+  if (role === 'TeamMember') return 'Member';
+  if (role === 'EventCoordinator') return 'Coordinator';
+  return role;
+};
+
 
 export default function AuthContainer({ initialMode }: { initialMode: 'login' | 'register' }) {
   const router = useRouter();
   const [mode, setMode] = useState<'login' | 'register'>(initialMode);
-  
+
   // Login Form States
   const [loginEmail, setLoginEmail] = useState<string>('');
   const [loginPassword, setLoginPassword] = useState<string>('');
@@ -41,96 +58,64 @@ export default function AuthContainer({ initialMode }: { initialMode: 'login' | 
   const [regPassword, setRegPassword] = useState<string>('');
   const [regFullName, setRegFullName] = useState<string>('');
   const [regPhone, setRegPhone] = useState<string>('');
-  const [regRole, setRegRole] = useState<string>('Member');
-  const [regStudentType, setRegStudentType] = useState<string>('FPT');
-  const [regStudentCode, setRegStudentCode] = useState<string>('');
-  const [regUniversity, setRegUniversity] = useState<string>('FPT University');
   const [regLoading, setRegLoading] = useState<boolean>(false);
   const [regSuccess, setRegSuccess] = useState<string>('');
 
-  useEffect(() => {
-    setMode(initialMode);
-  }, [initialMode]);
-
   const switchMode = (newMode: 'login' | 'register') => {
     setMode(newMode);
-    window.history.pushState(null, '', newMode === 'login' ? '/login' : '/register');
+    router.push(newMode === 'login' ? '/login' : '/register');
   };
 
   // Login handler
-  const handleLogin = (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoginLoading(true);
     setLoginError('');
     setLoginSuccess('');
 
-    setTimeout(() => {
-      const matchedUser = mockUsers.find(u => u.Email.toLowerCase() === loginEmail.trim().toLowerCase());
-      
-      if (!matchedUser) {
-        setLoginError('Email không tồn tại trong hệ thống SEAL Hackathon.');
-        setLoginLoading(false);
-        return;
-      }
+    try {
+      const response = await loginApi({ Email: loginEmail.trim(), Password: loginPassword });
+
+      const role = normalizeRole(response.User.Role);
+
+      const matchedUser = {
+        ...response.User,
+        UserID: response.User.UserId,
+        Role: role,
+        AccessToken: response.AccessToken,
+        RefreshToken: response.RefreshToken,
+      };
 
       setLoginSuccess(`Đăng nhập thành công! Vai trò: ${matchedUser.Role}`);
       localStorage.setItem('seal_user', JSON.stringify(matchedUser));
 
       setTimeout(() => {
-        if (matchedUser.Role === 'Leader') {
-          router.push('/leader');
-        } else if (matchedUser.Role === 'Member') {
-          router.push('/member');
-        } else if (matchedUser.Role === 'Mentor') {
-          router.push('/mentor');
-        } else if (matchedUser.Role === 'Judge') {
-          router.push('/judge');
-        } else if (matchedUser.Role === 'Coordinator') {
-          router.push('/coordinator');
-        } else {
-          router.push('/');
-        }
+        router.push('/');
       }, 800);
-    }, 1000);
+    } catch (err: unknown) {
+      console.error(err);
+      setLoginError(getApiErrorMessage(err, 'Email hoặc mật khẩu không đúng.'));
+    } finally {
+      setLoginLoading(false);
+    }
   };
 
-  // Quick login handler
-  const handleQuickLogin = (email: string) => {
-    setLoginEmail(email);
-    setLoginPassword('HASH001');
-    setLoginLoading(true);
-    setLoginError('');
-    setLoginSuccess('');
-    
-    setTimeout(() => {
-      const matchedUser = mockUsers.find(u => u.Email.toLowerCase() === email.toLowerCase())!;
-      setLoginSuccess(`Đăng nhập nhanh thành công! Vai trò: ${matchedUser.Role}`);
-      localStorage.setItem('seal_user', JSON.stringify(matchedUser));
-      
-      setTimeout(() => {
-        if (matchedUser.Role === 'Leader') {
-          router.push('/leader');
-        } else if (matchedUser.Role === 'Member') {
-          router.push('/member');
-        } else if (matchedUser.Role === 'Mentor') {
-          router.push('/mentor');
-        } else if (matchedUser.Role === 'Judge') {
-          router.push('/judge');
-        } else if (matchedUser.Role === 'Coordinator') {
-          router.push('/coordinator');
-        }
-      }, 800);
-    }, 800);
-  };
 
   // Register handler
-  const handleRegister = (e: React.FormEvent) => {
+  const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
     setRegLoading(true);
     setRegSuccess('');
 
-    setTimeout(() => {
-      setRegSuccess('Đăng ký thành công! Đang chờ ban tổ chức phê duyệt...');
+    try {
+      await registerApi({
+        Email: regEmail,
+        Password: regPassword,
+        FullName: regFullName,
+        Phone: regPhone,
+      });
+
+      setRegSuccess('Đăng ký thành công! Chuyển hướng đăng nhập...');
       setRegLoading(false);
 
       setTimeout(() => {
@@ -138,26 +123,21 @@ export default function AuthContainer({ initialMode }: { initialMode: 'login' | 
         setRegSuccess('');
         setLoginEmail(regEmail);
       }, 1500);
-    }, 1200);
+    } catch (err: unknown) {
+      console.error(err);
+      setRegSuccess('');
+      alert(getApiErrorMessage(err, 'Đăng ký thất bại. Email có thể đã được đăng ký.'));
+    }
   };
 
-  const isStudent = regRole === 'Leader' || regRole === 'Member';
-
-  const quickUsers = [
-    { label: 'Trưởng nhóm', email: 'leader.phoenix@fpt.edu.vn' },
-    { label: 'Giám khảo', email: 'judge.internal1@fpt.edu.vn' },
-    { label: 'Cố vấn', email: 'mentor.ai@fpt.edu.vn' },
-    { label: 'Điều phối viên', email: 'coordinator.se@fpt.edu.vn' }
-  ];
 
   return (
     <div className="h-screen w-full relative flex overflow-hidden bg-white dark:bg-slate-950 select-none">
-      
+
       {/* 1. SLIDING BANNER OVERLAY (Desktop only - 40% Width) */}
-      <div 
-        className={`hidden md:flex absolute top-0 bottom-0 z-20 w-[40%] transition-transform duration-700 ease-in-out text-white flex-col justify-between p-12 overflow-hidden ${
-          mode === 'login' ? 'translate-x-0 left-0' : 'translate-x-[150%] left-0'
-        }`}
+      <div
+        className={`hidden md:flex absolute top-0 bottom-0 z-20 w-[40%] transition-transform duration-700 ease-in-out text-white flex-col justify-between p-12 overflow-hidden ${mode === 'login' ? 'translate-x-0 left-0' : 'translate-x-[150%] left-0'
+          }`}
         style={{
           backgroundImage: `url('https://images.unsplash.com/photo-1555066931-4365d14bab8c?w=1080&auto=format&fit=crop&q=80')`,
           backgroundSize: 'cover',
@@ -185,11 +165,10 @@ export default function AuthContainer({ initialMode }: { initialMode: 'login' | 
 
         {/* Sliding Contents (Fade transitions) */}
         <div className="relative flex-1 flex items-center z-10">
-          
+
           {/* Content for Login Mode */}
-          <div className={`absolute inset-0 flex flex-col justify-center space-y-5 transition-all duration-500 ease-in-out ${
-            mode === 'login' ? 'opacity-100 translate-x-0 pointer-events-auto' : 'opacity-0 -translate-x-8 pointer-events-none'
-          }`}>
+          <div className={`absolute inset-0 flex flex-col justify-center space-y-5 transition-all duration-500 ease-in-out ${mode === 'login' ? 'opacity-100 translate-x-0 pointer-events-auto' : 'opacity-0 -translate-x-8 pointer-events-none'
+            }`}>
             <Badge className="bg-white/10 text-indigo-200 border-none text-[8.5px] font-black uppercase tracking-widest px-3 py-1 rounded-full w-fit flex items-center gap-1.5">
               <Trophy className="w-3.5 h-3.5" /> LIÊN MINH CÔNG NGHỆ CHUYÊN NGHIỆP
             </Badge>
@@ -202,9 +181,8 @@ export default function AuthContainer({ initialMode }: { initialMode: 'login' | 
           </div>
 
           {/* Content for Register Mode */}
-          <div className={`absolute inset-0 flex flex-col justify-center space-y-5 transition-all duration-500 ease-in-out ${
-            mode === 'register' ? 'opacity-100 translate-x-0 pointer-events-auto' : 'opacity-0 translate-x-8 pointer-events-none'
-          }`}>
+          <div className={`absolute inset-0 flex flex-col justify-center space-y-5 transition-all duration-500 ease-in-out ${mode === 'register' ? 'opacity-100 translate-x-0 pointer-events-auto' : 'opacity-0 translate-x-8 pointer-events-none'
+            }`}>
             <Badge className="bg-white/10 text-indigo-200 border-none text-[8.5px] font-black uppercase tracking-widest px-3 py-1 rounded-full w-fit flex items-center gap-1.5">
               <Heart className="w-3.5 h-3.5 text-rose-450" /> KIẾN TẠO TƯƠNG LAI CÔNG NGHỆ
             </Badge>
@@ -225,13 +203,12 @@ export default function AuthContainer({ initialMode }: { initialMode: 'login' | 
       </div>
 
       {/* 2. SLIDING FORM CONTAINERS (Desktop - 60% Width) */}
-      <div 
-        className={`absolute top-0 bottom-0 w-full md:w-[60%] transition-all duration-700 ease-in-out h-full overflow-hidden bg-white dark:bg-slate-950 ${
-          mode === 'login' ? 'left-0 md:left-[40%]' : 'left-0'
-        }`}
+      <div
+        className={`absolute top-0 bottom-0 w-full md:w-[60%] transition-all duration-700 ease-in-out h-full overflow-hidden bg-white dark:bg-slate-950 ${mode === 'login' ? 'left-0 md:left-[40%]' : 'left-0'
+          }`}
       >
-        <Link 
-          href="/" 
+        <Link
+          href="/"
           className="absolute top-5 left-6 md:left-12 flex items-center gap-1 text-[11px] text-slate-400 hover:text-slate-655 dark:hover:text-white font-bold z-30"
         >
           <ArrowLeft className="w-3.5 h-3.5" /> Quay về Trang chủ
@@ -240,12 +217,11 @@ export default function AuthContainer({ initialMode }: { initialMode: 'login' | 
 
         {/* Relative content frame */}
         <div className="w-full h-full relative flex items-center justify-center p-6 md:p-12">
-          
+
           {/* LOGIN FORM BOX */}
-          <div className={`absolute w-full max-w-sm px-6 transition-all duration-500 ease-in-out ${
-            mode === 'login' ? 'opacity-100 translate-x-0 pointer-events-auto z-10' : 'opacity-0 -translate-x-12 pointer-events-none z-0'
-          }`}>
-            
+          <div className={`absolute w-full max-w-sm px-6 transition-all duration-500 ease-in-out ${mode === 'login' ? 'opacity-100 translate-x-0 pointer-events-auto z-10' : 'opacity-0 -translate-x-12 pointer-events-none z-0'
+            }`}>
+
             {/* Logo for mobile */}
             <div className="flex items-center gap-3 md:hidden mb-4">
               <div className="w-9 h-9 rounded-xl bg-indigo-600 flex items-center justify-center text-white font-black text-lg">S</div>
@@ -269,10 +245,11 @@ export default function AuthContainer({ initialMode }: { initialMode: 'login' | 
 
             <form onSubmit={handleLogin} className="space-y-4">
               <div className="space-y-1.5">
-                <label className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider flex items-center gap-1.5">
+                <label htmlFor="login-email" className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider flex items-center gap-1.5">
                   <Mail className="w-3.5 h-3.5 text-slate-400" /> Địa chỉ Email
                 </label>
                 <Input
+                  id="login-email"
                   type="email"
                   placeholder="username@fpt.edu.vn"
                   className="rounded-xl h-10 bg-slate-50 dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-xs font-bold focus-visible:ring-indigo-600"
@@ -283,10 +260,11 @@ export default function AuthContainer({ initialMode }: { initialMode: 'login' | 
               </div>
 
               <div className="space-y-1.5">
-                <label className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider flex items-center gap-1.5">
+                <label htmlFor="login-password" className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider flex items-center gap-1.5">
                   <Key className="w-3.5 h-3.5 text-slate-400" /> Mật khẩu bảo mật
                 </label>
                 <Input
+                  id="login-password"
                   type="password"
                   placeholder="••••••••"
                   className="rounded-xl h-10 bg-slate-50 dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-xs font-bold focus-visible:ring-indigo-600"
@@ -319,29 +297,10 @@ export default function AuthContainer({ initialMode }: { initialMode: 'login' | 
               </Button>
             </form>
 
-            {/* Quick login */}
-            <div className="pt-4 border-t border-slate-100 dark:border-slate-850 space-y-2.5 mt-4">
-              <span className="text-[9.5px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest block">
-                ĐĂNG NHẬP NHANH TÀI KHOẢN MẪU:
-              </span>
-              <div className="grid grid-cols-2 gap-2">
-                {quickUsers.map((qu) => (
-                  <button
-                    key={qu.email}
-                    type="button"
-                    onClick={() => handleQuickLogin(qu.email)}
-                    disabled={loginLoading}
-                    className="p-2 border border-slate-200 dark:border-slate-800 text-left rounded-xl bg-slate-50/50 hover:bg-slate-100/50 dark:bg-slate-900 dark:hover:bg-slate-800/80 transition-colors text-[9.5px] font-bold text-slate-750 dark:text-slate-350 outline-none cursor-pointer"
-                  >
-                    <div className="truncate">{qu.label}</div>
-                  </button>
-                ))}
-              </div>
-            </div>
 
             <div className="text-center text-xs text-slate-450 dark:text-slate-500 font-semibold pt-4">
               Chưa có tài khoản?{' '}
-              <button 
+              <button
                 onClick={() => switchMode('register')}
                 className="text-indigo-650 hover:text-indigo-700 font-extrabold dark:text-indigo-400 cursor-pointer outline-none"
               >
@@ -351,10 +310,9 @@ export default function AuthContainer({ initialMode }: { initialMode: 'login' | 
           </div>
 
           {/* REGISTER FORM BOX (COMPACT - NO SCROLL) */}
-          <div className={`absolute w-full max-w-xl px-6 transition-all duration-500 ease-in-out h-full flex flex-col justify-center ${
-            mode === 'register' ? 'opacity-100 translate-x-0 pointer-events-auto z-10' : 'opacity-0 translate-x-12 pointer-events-none z-0'
-          }`}>
-            
+          <div className={`absolute w-full max-w-xl px-6 transition-all duration-500 ease-in-out h-full flex flex-col justify-center ${mode === 'register' ? 'opacity-100 translate-x-0 pointer-events-auto z-10' : 'opacity-0 translate-x-12 pointer-events-none z-0'
+            }`}>
+
             {/* Logo for mobile */}
             <div className="flex items-center gap-3 md:hidden mb-2">
               <div className="w-8 h-8 rounded-xl bg-indigo-600 flex items-center justify-center text-white font-black text-sm">S</div>
@@ -378,13 +336,14 @@ export default function AuthContainer({ initialMode }: { initialMode: 'login' | 
 
             <form onSubmit={handleRegister} className="space-y-2.5">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-                
+
                 {/* Row 1: Email & Password */}
                 <div className="space-y-1">
-                  <label className="text-[9px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider flex items-center gap-1">
+                  <label htmlFor="register-email" className="text-[9px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider flex items-center gap-1">
                     <Mail className="w-3.5 h-3.5 text-slate-400" /> Email đăng nhập
                   </label>
                   <Input
+                    id="register-email"
                     type="email"
                     placeholder="example@fpt.edu.vn"
                     className="rounded-xl h-8.5 bg-slate-50 dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-[11px] font-semibold focus-visible:ring-indigo-650"
@@ -395,10 +354,11 @@ export default function AuthContainer({ initialMode }: { initialMode: 'login' | 
                 </div>
 
                 <div className="space-y-1">
-                  <label className="text-[9px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider flex items-center gap-1">
+                  <label htmlFor="register-password" className="text-[9px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider flex items-center gap-1">
                     <Key className="w-3.5 h-3.5 text-slate-400" /> Mật khẩu bảo mật
                   </label>
                   <Input
+                    id="register-password"
                     type="password"
                     placeholder="••••••••"
                     className="rounded-xl h-8.5 bg-slate-50 dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-[11px] font-semibold focus-visible:ring-indigo-655"
@@ -410,10 +370,11 @@ export default function AuthContainer({ initialMode }: { initialMode: 'login' | 
 
                 {/* Row 2: Fullname & Phone */}
                 <div className="space-y-1">
-                  <label className="text-[9px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider flex items-center gap-1">
+                  <label htmlFor="register-full-name" className="text-[9px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider flex items-center gap-1">
                     <User className="w-3.5 h-3.5 text-slate-400" /> Họ tên đầy đủ
                   </label>
                   <Input
+                    id="register-full-name"
                     type="text"
                     placeholder="Nguyễn Văn A"
                     className="rounded-xl h-8.5 bg-slate-50 dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-[11px] font-semibold focus-visible:ring-indigo-650"
@@ -424,10 +385,11 @@ export default function AuthContainer({ initialMode }: { initialMode: 'login' | 
                 </div>
 
                 <div className="space-y-1">
-                  <label className="text-[9px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider flex items-center gap-1">
+                  <label htmlFor="register-phone" className="text-[9px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider flex items-center gap-1">
                     <Phone className="w-3.5 h-3.5 text-slate-400" /> Số điện thoại
                   </label>
                   <Input
+                    id="register-phone"
                     type="tel"
                     placeholder="0901xxxxxx"
                     className="rounded-xl h-8.5 bg-slate-50 dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-[11px] font-semibold focus-visible:ring-indigo-655"
@@ -436,78 +398,6 @@ export default function AuthContainer({ initialMode }: { initialMode: 'login' | 
                     required={mode === 'register'}
                   />
                 </div>
-
-                {/* Row 3: Role & Student Type */}
-                <div className="space-y-1">
-                  <label className="text-[9px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider flex items-center gap-1">
-                    <UserPlus className="w-3.5 h-3.5 text-slate-400" /> Vai trò thi đấu
-                  </label>
-                  <select
-                    className="w-full h-8.5 px-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 text-[11px] font-bold focus:outline-none"
-                    value={regRole}
-                    onChange={(e) => setRegRole(e.target.value)}
-                  >
-                    <option value="Member">Thành viên (Member)</option>
-                    <option value="Leader">Trưởng nhóm (Leader)</option>
-                    <option value="Mentor">Cố vấn (Mentor)</option>
-                    <option value="Judge">Giám khảo (Judge)</option>
-                  </select>
-                </div>
-
-                <div className="space-y-1">
-                  <label className="text-[9px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider block">
-                    Đối tượng kiểm tra
-                  </label>
-                  <select
-                    disabled={!isStudent}
-                    className={`w-full h-8.5 px-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 text-[11px] font-bold focus:outline-none ${
-                      !isStudent ? 'opacity-50 cursor-not-allowed' : ''
-                    }`}
-                    value={regStudentType}
-                    onChange={(e) => {
-                      setRegStudentType(e.target.value);
-                      setRegUniversity(e.target.value === 'FPT' ? 'FPT University' : '');
-                    }}
-                  >
-                    <option value="FPT">Sinh viên FPT (Nội bộ)</option>
-                    <option value="External">Trường đại học khác</option>
-                  </select>
-                </div>
-
-                {/* Row 4 (Conditional): MSSV & University Name */}
-                {isStudent && (
-                  <>
-                    <div className="space-y-1 animate-in fade-in slide-in-from-top-1 duration-150">
-                      <label className="text-[9px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider block">
-                        Mã sinh viên (MSSV)
-                      </label>
-                      <Input
-                        type="text"
-                        placeholder={regStudentType === 'FPT' ? 'SE17xxxx' : 'SVxxxx'}
-                        className="rounded-xl h-8.5 bg-slate-50 dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-[11px] font-semibold focus-visible:ring-indigo-650"
-                        value={regStudentCode}
-                        onChange={(e) => setRegStudentCode(e.target.value)}
-                        required={isStudent}
-                      />
-                    </div>
-
-                    <div className="space-y-1 animate-in fade-in slide-in-from-top-1 duration-150">
-                      <label className="text-[9px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider block flex items-center gap-1">
-                        <School className="w-3.5 h-3.5" /> Tên trường học
-                      </label>
-                      <Input
-                        type="text"
-                        placeholder="Đại học Bách Khoa, UIT..."
-                        className="rounded-xl h-8.5 bg-slate-50 dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-[11px] font-semibold focus-visible:ring-indigo-655"
-                        value={regUniversity}
-                        onChange={(e) => setRegUniversity(e.target.value)}
-                        disabled={regStudentType === 'FPT'}
-                        required={isStudent}
-                      />
-                    </div>
-                  </>
-                )}
-
               </div>
 
               {regSuccess && (
@@ -528,7 +418,7 @@ export default function AuthContainer({ initialMode }: { initialMode: 'login' | 
 
             <div className="text-center text-xs text-slate-450 dark:text-slate-500 font-semibold mt-3">
               Đã có tài khoản?{' '}
-              <button 
+              <button
                 onClick={() => switchMode('login')}
                 className="text-indigo-655 hover:text-indigo-700 font-extrabold dark:text-indigo-400 cursor-pointer outline-none"
               >

@@ -3,13 +3,14 @@
 import React from 'react';
 import { Check } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import type { User } from '@/lib/api';
 
 interface ActionModalProps {
   isOpen: boolean;
   onClose: () => void;
   title: string;
   description: string;
-  currentUser: any | null;
+  currentUser: User | null;
   getDashboardLink: () => string;
   onRedirect: (url: string) => void;
 }

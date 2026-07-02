@@ -1,7 +1,7 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
-import { UserCheck, ExternalLink, RefreshCw, Send, CheckCircle2, Video, FileCode2, FileText, Info, Award } from 'lucide-react';
+import React, { useState, useEffect, useMemo } from 'react';
+import { RefreshCw, Send, Video, FileCode2, FileText, Award } from 'lucide-react';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -9,7 +9,6 @@ import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 
 import {
-  getTeams,
   getSubmissions,
   getCategories,
   getRounds,
@@ -46,7 +45,7 @@ export default function JudgePage() {
   // Filter criteria for active category
   // If AI Solution -> AI Accuracy, Model Performance, Business Impact
   // If Web Application -> Innovation, Technical Complexity, UI/UX
-  const getActiveCriteria = (): Criteria[] => {
+  const activeCriteria = useMemo<Criteria[]>(() => {
     if (!activeCategory) return [];
     if (activeCategory.CategoryName.includes('AI') || activeCategory.CategoryName.includes('ML')) {
       return mockCriteria.filter(c => c.TemplateID === 'F0000000-0000-0000-0000-000000000002');
@@ -55,7 +54,7 @@ export default function JudgePage() {
     }
     // Default general template
     return mockCriteria.filter(c => c.TemplateID === 'F0000000-0000-0000-0000-000000000001');
-  };
+  }, [activeCategory]);
 
   const loadData = async () => {
     setLoading(true);
@@ -82,24 +81,25 @@ export default function JudgePage() {
   };
 
   useEffect(() => {
-    loadData();
+    void Promise.resolve().then(loadData);
   }, []);
 
   // Initialize form fields when active submission changes
   useEffect(() => {
     if (activeSubmission) {
-      const activeCriteria = getActiveCriteria();
       const initialScores: { [id: string]: number } = {};
       const initialComments: { [id: string]: string } = {};
       activeCriteria.forEach(c => {
         initialScores[c.CriteriaID] = 8.5; // default starting score
         initialComments[c.CriteriaID] = '';
       });
-      setScores(initialScores);
-      setComments(initialComments);
-      setSuccessMessage('');
+      void Promise.resolve().then(() => {
+        setScores(initialScores);
+        setComments(initialComments);
+        setSuccessMessage('');
+      });
     }
-  }, [selectedSubId]);
+  }, [activeCriteria, activeSubmission]);
 
   const handleScoreChange = (criteriaId: string, val: number) => {
     setScores(prev => ({
@@ -116,7 +116,6 @@ export default function JudgePage() {
   };
 
   const calculateWeightedTotal = (): number => {
-    const activeCriteria = getActiveCriteria();
     return activeCriteria.reduce((total, c) => {
       const score = scores[c.CriteriaID] || 0;
       return total + (score * c.Weight);
@@ -251,7 +250,7 @@ export default function JudgePage() {
                     Tiêu chí đánh giá & Điểm số
                   </h3>
                   
-                  {getActiveCriteria().map(crit => (
+                  {activeCriteria.map(crit => (
                     <Card key={crit.CriteriaID} className="bg-white border-slate-200 dark:bg-slate-900 dark:border-slate-800 shadow-sm">
                       <CardContent className="p-6">
                         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">

@@ -6,7 +6,7 @@ using Microsoft.EntityFrameworkCore.Migrations;
 namespace DataAccessLayer.Migrations
 {
     /// <inheritdoc />
-    public partial class InitialCreate : Migration
+    public partial class IntialDatabase : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
@@ -145,6 +145,27 @@ namespace DataAccessLayer.Migrations
                 });
 
             migrationBuilder.CreateTable(
+                name: "Notifications",
+                columns: table => new
+                {
+                    NotificationId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    UserId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    Message = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    IsRead = table.Column<bool>(type: "bit", nullable: false, defaultValue: false),
+                    CreatedAt = table.Column<DateTime>(type: "datetime", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_Notifications", x => x.NotificationId);
+                    table.ForeignKey(
+                        name: "FK_Notifications_Users_UserId",
+                        column: x => x.UserId,
+                        principalTable: "Users",
+                        principalColumn: "UserId",
+                        onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateTable(
                 name: "RefreshTokens",
                 columns: table => new
                 {
@@ -193,7 +214,8 @@ namespace DataAccessLayer.Migrations
                 {
                     CategoryMentorId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
                     CategoryId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
-                    UserId = table.Column<Guid>(type: "uniqueidentifier", nullable: false)
+                    UserId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    Status = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: false, defaultValue: "Pending")
                 },
                 constraints: table =>
                 {
@@ -323,12 +345,20 @@ namespace DataAccessLayer.Migrations
                     RankingId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
                     TeamId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
                     RoundId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    CategoryId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
                     RankPosition = table.Column<int>(type: "int", nullable: false),
-                    TotalScore = table.Column<decimal>(type: "decimal(18,2)", nullable: false)
+                    TotalScore = table.Column<decimal>(type: "decimal(18,2)", nullable: false),
+                    GeneratedAt = table.Column<DateTime>(type: "datetime", nullable: false)
                 },
                 constraints: table =>
                 {
                     table.PrimaryKey("PK_Rankings", x => x.RankingId);
+                    table.ForeignKey(
+                        name: "FK_Rankings_Categories_CategoryId",
+                        column: x => x.CategoryId,
+                        principalTable: "Categories",
+                        principalColumn: "CategoryId",
+                        onDelete: ReferentialAction.Restrict);
                     table.ForeignKey(
                         name: "FK_Rankings_Rounds_RoundId",
                         column: x => x.RoundId,
@@ -500,9 +530,10 @@ namespace DataAccessLayer.Migrations
                 column: "CategoryId");
 
             migrationBuilder.CreateIndex(
-                name: "IX_AdvancementRules_RoundId",
+                name: "IX_AdvancementRules_RoundId_CategoryId",
                 table: "AdvancementRules",
-                column: "RoundId");
+                columns: new[] { "RoundId", "CategoryId" },
+                unique: true);
 
             migrationBuilder.CreateIndex(
                 name: "IX_AuditLogs_UserId",
@@ -560,9 +591,10 @@ namespace DataAccessLayer.Migrations
                 column: "CriteriaId");
 
             migrationBuilder.CreateIndex(
-                name: "IX_EventCriteria_EventId",
+                name: "IX_EventCriteria_EventId_CriteriaId",
                 table: "EventCriteria",
-                column: "EventId");
+                columns: new[] { "EventId", "CriteriaId" },
+                unique: true);
 
             migrationBuilder.CreateIndex(
                 name: "IX_JudgeAssignments_RoundId",
@@ -570,14 +602,26 @@ namespace DataAccessLayer.Migrations
                 column: "RoundId");
 
             migrationBuilder.CreateIndex(
-                name: "IX_JudgeAssignments_UserId",
+                name: "IX_JudgeAssignments_UserId_RoundId",
                 table: "JudgeAssignments",
+                columns: new[] { "UserId", "RoundId" },
+                unique: true);
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Notifications_UserId",
+                table: "Notifications",
                 column: "UserId");
 
             migrationBuilder.CreateIndex(
-                name: "IX_Rankings_RoundId",
+                name: "IX_Rankings_CategoryId",
                 table: "Rankings",
-                column: "RoundId");
+                column: "CategoryId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Rankings_RoundId_CategoryId_TeamId",
+                table: "Rankings",
+                columns: new[] { "RoundId", "CategoryId", "TeamId" },
+                unique: true);
 
             migrationBuilder.CreateIndex(
                 name: "IX_Rankings_TeamId",
@@ -616,9 +660,10 @@ namespace DataAccessLayer.Migrations
                 column: "CriteriaId");
 
             migrationBuilder.CreateIndex(
-                name: "IX_Scores_SubmissionId",
+                name: "IX_Scores_SubmissionId_AssignmentId_CriteriaId",
                 table: "Scores",
-                column: "SubmissionId");
+                columns: new[] { "SubmissionId", "AssignmentId", "CriteriaId" },
+                unique: true);
 
             migrationBuilder.CreateIndex(
                 name: "IX_StudentProfiles_UserId",
@@ -682,6 +727,9 @@ namespace DataAccessLayer.Migrations
 
             migrationBuilder.DropTable(
                 name: "EventCriteria");
+
+            migrationBuilder.DropTable(
+                name: "Notifications");
 
             migrationBuilder.DropTable(
                 name: "Rankings");

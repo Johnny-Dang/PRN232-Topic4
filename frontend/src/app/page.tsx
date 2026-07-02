@@ -6,7 +6,8 @@ import {
   getDetailedCompetitions, 
   getAnnouncements, 
   Announcement, 
-  DetailedCompetition 
+  DetailedCompetition,
+  User
 } from '@/lib/api';
 
 // Landing components
@@ -29,7 +30,19 @@ export default function HomeLandingPage() {
   const [loading, setLoading] = useState<boolean>(true);
   const [competitions, setCompetitions] = useState<DetailedCompetition[]>([]);
   const [announcements, setAnnouncements] = useState<Announcement[]>([]);
-  const [currentUser, setCurrentUser] = useState<any | null>(null);
+  const [currentUser, setCurrentUser] = useState<User | null>(() => {
+    if (typeof window === 'undefined') return null;
+
+    const stored = localStorage.getItem('seal_user');
+    if (!stored) return null;
+
+    try {
+      return JSON.parse(stored) as User;
+    } catch (e) {
+      console.error('Lá»—i phÃ¢n tÃ­ch cÃº phÃ¡p user session:', e);
+      return null;
+    }
+  });
 
   // Layout & UI states
   const [isScrolled, setIsScrolled] = useState<boolean>(false);
@@ -63,7 +76,9 @@ export default function HomeLandingPage() {
     const stored = localStorage.getItem('seal_user');
     if (stored) {
       try {
-        setCurrentUser(JSON.parse(stored));
+        void Promise.resolve().then(() => {
+          setCurrentUser(JSON.parse(stored) as User);
+        });
       } catch (e) {
         console.error('Lỗi phân tích cú pháp user session:', e);
       }
@@ -72,8 +87,9 @@ export default function HomeLandingPage() {
 
   // Fetch competitions & announcements from API
   useEffect(() => {
-    setLoading(true);
-    Promise.all([getDetailedCompetitions(), getAnnouncements()])
+    void Promise.resolve().then(() => {
+      setLoading(true);
+      Promise.all([getDetailedCompetitions(), getAnnouncements()])
       .then(([comps, anns]) => {
         setCompetitions(comps);
         setAnnouncements(anns);
@@ -83,6 +99,7 @@ export default function HomeLandingPage() {
         console.error('Lỗi khi tải dữ liệu trang chủ:', err);
         setLoading(false);
       });
+    });
   }, []);
 
   // Logout handler
@@ -167,7 +184,6 @@ export default function HomeLandingPage() {
   return (
     <div className="min-h-screen flex flex-col bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 font-sans antialiased selection:bg-indigo-600 selection:text-white transition-colors duration-200">
       
-      {/* 1. HEADER / NAVBAR */}
       <Header
         currentUser={currentUser}
         isScrolled={isScrolled}
@@ -178,7 +194,6 @@ export default function HomeLandingPage() {
         competitionsSectionRef={competitionsSectionRef}
         announcementsSectionRef={announcementsSectionRef}
         handleAction={handleAction}
-        getDashboardLink={getDashboardLink}
       />
 
       {/* 2. HERO BANNER */}
