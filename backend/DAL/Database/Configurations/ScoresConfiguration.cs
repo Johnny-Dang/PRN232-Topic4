@@ -27,6 +27,9 @@ namespace DataAccessLayer.Database.Configurations
             builder.Property(x => x.ScoredAt)
                 .HasColumnType("datetime");
 
+            builder.HasIndex(x => new { x.SubmissionId, x.AssignmentId, x.CriteriaId })
+                .IsUnique();
+
             builder.HasOne(x => x.Submission)
                 .WithMany(s => s.Scores)
                 .HasForeignKey(x => x.SubmissionId)

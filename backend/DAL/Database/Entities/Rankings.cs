@@ -11,10 +11,13 @@ namespace DataAccessLayer.Database.Entities
         public Guid RankingId { get; set; }
         public Guid TeamId { get; set; }
         public Guid RoundId { get; set; }
+        public Guid CategoryId { get; set; }
         public int RankPosition { get; set; }
         public decimal TotalScore { get; set; }
+        public DateTime GeneratedAt { get; set; }
 
         public virtual Teams Team { get; set; } = null!;
         public virtual Rounds Round { get; set; } = null!;
+        public virtual Categories Category { get; set; } = null!;
     }
 }

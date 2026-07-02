@@ -1,19 +1,18 @@
 using System;
+using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 
 namespace BusinessLogicLayer.DTOs.Requests
 {
-    public class UpdateScoreRequest
+    public class SubmitScoresRequest
     {
         [Required]
-        public Guid ScoreId { get; set; }
+        [MinLength(1)]
+        public List<SubmitScoreItemRequest> Scores { get; set; } = new();
+    }
 
-        [Required]
-        public Guid SubmissionId { get; set; }
-
-        [Required]
-        public Guid AssignmentId { get; set; }
-
+    public class SubmitScoreItemRequest
+    {
         [Required]
         public Guid CriteriaId { get; set; }
 

@@ -29,6 +29,24 @@ namespace BusinessLogicLayer.Services.Implements
         {
             await ValidateForeignKeysAsync(request.RoundId, request.CategoryId);
 
+            var existingRules = (await _advancementRuleRepository.FindAsync(x =>
+                x.RoundId == request.RoundId && x.CategoryId == request.CategoryId)).ToList();
+
+            if (existingRules.Any())
+            {
+                var existingRule = existingRules.First();
+                existingRule.TopN = request.TopN;
+                _advancementRuleRepository.Update(existingRule);
+
+                foreach (var duplicateRule in existingRules.Skip(1))
+                {
+                    _advancementRuleRepository.Delete(duplicateRule);
+                }
+
+                await _unitOfWork.SaveChangesAsync();
+                return MapToDto(existingRule);
+            }
+
             var rule = new AdvancementRules
             {
                 RuleId = Guid.NewGuid(),
@@ -82,6 +100,16 @@ namespace BusinessLogicLayer.Services.Implements
 
             await ValidateForeignKeysAsync(request.RoundId, request.CategoryId);
 
+            var duplicateRules = await _advancementRuleRepository.FindAsync(x =>
+                x.RuleId != request.RuleId &&
+                x.RoundId == request.RoundId &&
+                x.CategoryId == request.CategoryId);
+
+            foreach (var duplicateRule in duplicateRules)
+            {
+                _advancementRuleRepository.Delete(duplicateRule);
+            }
+
             rule.RoundId = request.RoundId;
             rule.CategoryId = request.CategoryId;
             rule.TopN = request.TopN;
@@ -111,6 +139,9 @@ namespace BusinessLogicLayer.Services.Implements
             var category = await _categoryRepository.GetByIdAsync(categoryId);
             if (category == null)
                 throw new Exception($"Category with id {categoryId} not found");
+
+            if (category.EventId != round.EventId)
+                throw new Exception("Category does not belong to the selected round event");
         }
 
         private static AdvancementRuleDto MapToDto(AdvancementRules rule)
