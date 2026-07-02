@@ -13,6 +13,8 @@ namespace DataAccessLayer.Database.Entities
         public Guid CriteriaId { get; set; }
         public Guid SubmissionId { get; set; }
         public decimal ScoreValue { get; set; }
+        public string Comment { get; set; } = string.Empty;
+        public DateTime ScoredAt { get; set; }
 
         public virtual Users Judge { get; set; } = null!;
         public virtual Criteria Criteria { get; set; } = null!;

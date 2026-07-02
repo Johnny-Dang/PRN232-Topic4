@@ -29,6 +29,12 @@ namespace DataAccessLayer.Database.Configurations
             builder.Property(x => x.Status)
                 .HasMaxLength(50);
 
+            builder.Property(x => x.IsCalibrationSample)
+                .HasDefaultValue(false);
+
+            builder.Property(x => x.CalibrationTitle)
+                .HasMaxLength(255);
+
             builder.Property(x => x.SubmittedAt)
                 .HasColumnType("datetime");
 

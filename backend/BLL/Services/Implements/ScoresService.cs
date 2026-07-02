@@ -202,6 +202,9 @@ namespace BusinessLogicLayer.Services.Implements
                 !string.Equals(submission.Status, "Updated", StringComparison.OrdinalIgnoreCase))
                 throw new Exception("Only submitted submissions can be scored");
 
+            if (submission.IsCalibrationSample)
+                throw new Exception("Calibration sample submissions must be scored through the calibration workflow");
+
             var round = await _roundRepository.GetByIdAsync(submission.RoundId);
             if (round == null)
                 throw new Exception($"Round with id {submission.RoundId} not found");

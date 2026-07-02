@@ -52,6 +52,8 @@ namespace SEAL_Hackathon
                 options.AddPolicy("TeamMemberOnly", policy => policy.RequireRole("TeamMember"));
                 options.AddPolicy("JudgeOrCoordinator", policy => policy.RequireRole("Judge", "Coordinator"));
                 options.AddPolicy("MentorOrCoordinator", policy => policy.RequireRole("Mentor", "Coordinator"));
+                options.AddPolicy("CalibrationViewer", policy => policy.RequireRole("Judge", "Coordinator", "Researcher"));
+                options.AddPolicy("ResearcherOrCoordinator", policy => policy.RequireRole("Researcher", "Coordinator"));
             });
 
             builder.Services.AddSwaggerGen(c =>

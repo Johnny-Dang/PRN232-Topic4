@@ -17,6 +17,8 @@ namespace DataAccessLayer.Database.Entities
         public string SlideURL { get; set; } = string.Empty;
         public DateTime SubmittedAt { get; set; }
         public string Status { get; set; } = string.Empty;
+        public bool IsCalibrationSample { get; set; }
+        public string CalibrationTitle { get; set; } = string.Empty;
 
         public virtual Teams Team { get; set; } = null!;
         public virtual Rounds Round { get; set; } = null!;
