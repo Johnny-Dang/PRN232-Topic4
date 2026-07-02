@@ -44,6 +44,15 @@ namespace BusinessLogicLayer.Services.Implements
                 throw new Exception("Duplicate criteria found in request");
 
             var existingEventCriteria = await _eventCriteriaRepository.FindAsync(x => x.EventId == eventId);
+            var requestedCriteriaIds = request.Criteria.Select(x => x.CriteriaId).ToHashSet();
+            var removedEventCriteria = existingEventCriteria
+                .Where(x => !requestedCriteriaIds.Contains(x.CriteriaId))
+                .ToList();
+
+            foreach (var removed in removedEventCriteria)
+            {
+                _eventCriteriaRepository.Delete(removed);
+            }
 
             foreach (var item in request.Criteria)
             {

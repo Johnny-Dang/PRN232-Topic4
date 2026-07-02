@@ -41,7 +41,8 @@ namespace DataAccessLayer.Migrations
 
                     b.HasIndex("CategoryId");
 
-                    b.HasIndex("RoundId");
+                    b.HasIndex("RoundId", "CategoryId")
+                        .IsUnique();
 
                     b.ToTable("AdvancementRules", (string)null);
                 });
@@ -232,7 +233,8 @@ namespace DataAccessLayer.Migrations
 
                     b.HasIndex("CriteriaId");
 
-                    b.HasIndex("EventId");
+                    b.HasIndex("EventId", "CriteriaId")
+                        .IsUnique();
 
                     b.ToTable("EventCriteria", (string)null);
                 });

@@ -9,6 +9,5 @@ namespace BusinessLogicLayer.Services.Interfaces
     {
         Task<IEnumerable<RankingDto>> GenerateAsync(Guid roundId);
         Task<IEnumerable<RankingDto>> GetByRoundAsync(Guid roundId, Guid? categoryId = null);
-        Task<IEnumerable<RankingDto>> ApplyAdvancementRulesAsync(Guid roundId);
     }
 }

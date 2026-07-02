@@ -178,43 +178,6 @@ namespace BusinessLogicLayer.Services.Implements
                 });
         }
 
-        public async Task<IEnumerable<RankingDto>> ApplyAdvancementRulesAsync(Guid roundId)
-        {
-            var rankings = (await GetByRoundAsync(roundId)).ToList();
-            if (!rankings.Any())
-                rankings = (await GenerateAsync(roundId)).ToList();
-
-            var advancedTeamIds = rankings
-                .Where(x => x.IsAdvanced)
-                .Select(x => x.TeamId)
-                .Distinct()
-                .ToList();
-
-            var rankedTeamIds = rankings
-                .Select(x => x.TeamId)
-                .Distinct()
-                .ToList();
-
-            var teams = await _teamRepository.FindAsync(x => rankedTeamIds.Contains(x.TeamId));
-            foreach (var team in teams)
-            {
-                var shouldAdvance = advancedTeamIds.Contains(team.TeamId);
-                if (shouldAdvance && team.TeamStatus != "Advanced")
-                {
-                    team.TeamStatus = "Advanced";
-                    _teamRepository.Update(team);
-                }
-                else if (!shouldAdvance && team.TeamStatus == "Advanced")
-                {
-                    team.TeamStatus = "Active";
-                    _teamRepository.Update(team);
-                }
-            }
-
-            await _unitOfWork.SaveChangesAsync();
-            return rankings;
-        }
-
         private static Dictionary<Guid, decimal> NormalizeWeights(IEnumerable<EventCriteria> eventCriteria)
         {
             var criteria = eventCriteria.ToList();

@@ -21,6 +21,9 @@ namespace DataAccessLayer.Database.Configurations
                 .IsRequired()
                 .HasColumnType("decimal(18,2)");
 
+            builder.HasIndex(x => new { x.EventId, x.CriteriaId })
+                .IsUnique();
+
             builder.HasOne(x => x.Criteria)
                 .WithMany(c => c.EventCriteria)
                 .HasForeignKey(x => x.CriteriaId)

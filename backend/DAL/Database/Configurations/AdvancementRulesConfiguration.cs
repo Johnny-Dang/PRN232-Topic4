@@ -20,6 +20,9 @@ namespace DataAccessLayer.Database.Configurations
             builder.Property(x => x.TopN)
                 .IsRequired();
 
+            builder.HasIndex(x => new { x.RoundId, x.CategoryId })
+                .IsUnique();
+
             builder.HasOne(x => x.Round)
                 .WithMany(r => r.AdvancementRules)
                 .HasForeignKey(x => x.RoundId)
