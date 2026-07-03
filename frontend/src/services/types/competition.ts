@@ -21,12 +21,32 @@ export const eventSchema = z.object({
   Rounds: z.array(roundSchema).default([]),
 });
 
-export const categorySchema = z.object({
+const normalizedCategorySchema = z.object({
   CategoryId: z.string().uuid(),
   EventId: z.string().uuid(),
   CategoryName: z.string(),
   Description: z.string(),
 });
+
+export const categorySchema = z
+  .object({
+    CategoryId: z.string().uuid().optional(),
+    categoryId: z.string().uuid().optional(),
+    EventId: z.string().uuid().optional(),
+    eventId: z.string().uuid().optional(),
+    CategoryName: z.string().optional(),
+    categoryName: z.string().optional(),
+    Description: z.string().optional(),
+    description: z.string().optional(),
+  })
+  .passthrough()
+  .transform((category) => ({
+    CategoryId: category.CategoryId ?? category.categoryId ?? '',
+    EventId: category.EventId ?? category.eventId ?? '',
+    CategoryName: category.CategoryName ?? category.categoryName ?? '',
+    Description: category.Description ?? category.description ?? '',
+  }))
+  .pipe(normalizedCategorySchema);
 
 export type Round = z.infer<typeof roundSchema>;
 export type Event = z.infer<typeof eventSchema>;

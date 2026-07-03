@@ -384,7 +384,9 @@ namespace DataAccessLayer.Migrations
                     DemoURL = table.Column<string>(type: "nvarchar(2000)", maxLength: 2000, nullable: false),
                     SlideURL = table.Column<string>(type: "nvarchar(2000)", maxLength: 2000, nullable: false),
                     SubmittedAt = table.Column<DateTime>(type: "datetime", nullable: false),
-                    Status = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: false)
+                    Status = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: false),
+                    IsCalibrationSample = table.Column<bool>(type: "bit", nullable: false, defaultValue: false),
+                    CalibrationTitle = table.Column<string>(type: "nvarchar(255)", maxLength: 255, nullable: false)
                 },
                 constraints: table =>
                 {
@@ -437,7 +439,9 @@ namespace DataAccessLayer.Migrations
                     JudgeId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
                     CriteriaId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
                     SubmissionId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
-                    ScoreValue = table.Column<decimal>(type: "decimal(18,2)", nullable: false)
+                    ScoreValue = table.Column<decimal>(type: "decimal(18,2)", nullable: false),
+                    Comment = table.Column<string>(type: "nvarchar(1000)", maxLength: 1000, nullable: false),
+                    ScoredAt = table.Column<DateTime>(type: "datetime", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -551,9 +555,10 @@ namespace DataAccessLayer.Migrations
                 column: "JudgeId");
 
             migrationBuilder.CreateIndex(
-                name: "IX_CalibrationScores_SubmissionId",
+                name: "IX_CalibrationScores_SubmissionId_JudgeId_CriteriaId",
                 table: "CalibrationScores",
-                column: "SubmissionId");
+                columns: new[] { "SubmissionId", "JudgeId", "CriteriaId" },
+                unique: true);
 
             migrationBuilder.CreateIndex(
                 name: "IX_Categories_EventId",

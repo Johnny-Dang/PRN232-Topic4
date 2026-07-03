@@ -7,7 +7,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
-import { DetailedCompetition } from '@/lib/api';
+import type { DetailedCompetition } from '@/lib/api';
 
 interface FeaturedCompetitionsProps {
   competitionsSectionRef: React.RefObject<HTMLDivElement | null>;
@@ -18,6 +18,7 @@ interface FeaturedCompetitionsProps {
   setSelectedFilter: (filter: string) => void;
   setSearchQuery: (query: string) => void;
   handleAction: (title: string, message: string, isRedirect?: boolean) => void;
+  onViewDetails: (comp: DetailedCompetition) => void;
 }
 
 export default function FeaturedCompetitions({
@@ -29,6 +30,7 @@ export default function FeaturedCompetitions({
   setSelectedFilter,
   setSearchQuery,
   handleAction,
+  onViewDetails,
 }: FeaturedCompetitionsProps) {
 
   const getStatusBadge = (status: string) => {
@@ -77,6 +79,9 @@ export default function FeaturedCompetitions({
         <div className="flex items-center gap-3">
           <span className="text-xs font-bold text-slate-400 uppercase tracking-widest hidden sm:inline">Lĩnh vực:</span>
           <select
+            id="featured-category-filter"
+            aria-label="Lọc cuộc thi theo lĩnh vực"
+            title="Lọc cuộc thi theo lĩnh vực"
             value={selectedCategory}
             onChange={(e) => setSelectedCategory(e.target.value)}
             className="px-3.5 py-1.8 text-xs font-bold rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-350 outline-none cursor-pointer shadow-sm hover:border-slate-350 dark:hover:border-slate-750 transition-colors"
@@ -134,7 +139,10 @@ export default function FeaturedCompetitions({
               >
 
                 {/* Card Banner with hover zoom */}
-                <div className="relative h-44 overflow-hidden">
+                <div 
+                  onClick={() => onViewDetails(comp)}
+                  className="relative h-44 overflow-hidden cursor-pointer"
+                >
                   <Image
                     src={comp.BannerUrl}
                     alt={comp.Name}
@@ -168,7 +176,10 @@ export default function FeaturedCompetitions({
                       <span className="text-slate-400 dark:text-slate-550">Đơn vị: {comp.Organizer}</span>
                     </div>
 
-                    <h4 className="text-sm font-bold text-slate-800 dark:text-white group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors leading-snug">
+                    <h4 
+                      onClick={() => onViewDetails(comp)}
+                      className="text-sm font-bold text-slate-800 dark:text-white group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors leading-snug cursor-pointer"
+                    >
                       {comp.Name}
                     </h4>
 
@@ -199,7 +210,7 @@ export default function FeaturedCompetitions({
                   <div className="pt-2 flex gap-2">
                     <Button
                       variant="outline"
-                      onClick={() => handleAction(`Chi tiết ${comp.Name}`, `Xem thể lệ, giải thưởng và tài liệu đính kèm của ${comp.Name}.`, false)}
+                      onClick={() => onViewDetails(comp)}
                       className="flex-1 rounded-xl text-xs font-semibold h-9 border-slate-200 hover:bg-slate-100 dark:border-slate-800 dark:hover:bg-slate-800 cursor-pointer"
                     >
                       Xem chi tiết

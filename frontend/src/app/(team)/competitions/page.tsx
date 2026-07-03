@@ -240,6 +240,9 @@ export default function CompetitionsPage() {
 
                 {/* Event filter dropdown */}
                 <select
+                  id="announcement-event-filter"
+                  aria-label="Lọc thông báo theo giải đấu"
+                  title="Lọc thông báo theo giải đấu"
                   value={filterEvent}
                   onChange={(e) => setFilterEvent(e.target.value)}
                   className="px-3 py-1.5 text-xs font-semibold rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 outline-none cursor-pointer"

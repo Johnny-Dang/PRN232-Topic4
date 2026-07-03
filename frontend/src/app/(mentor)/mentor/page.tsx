@@ -1,11 +1,16 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { MessageSquare, RefreshCw, Send, CheckCircle2, Video, FileCode2, FileText, Info } from 'lucide-react';
+import { MessageSquare, RefreshCw, Send, CheckCircle2, Video, FileCode2, FileText, Info, XCircle, Clock } from 'lucide-react';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Skeleton } from '@/components/ui/skeleton';
+import { getCategoriesApi } from '@/services/api/competition';
+import { approveCategoryMentorApi, getCategoryMentorsApi, rejectCategoryMentorApi } from '@/services/api/mentor';
+import type { Category as FlowCategory } from '@/services/types/competition';
+import type { CategoryMentor } from '@/services/types/mentor';
 
 import {
   getTeams,
@@ -18,6 +23,54 @@ import {
   Event as ApiEvent
 } from '@/lib/api';
 
+const getStringProperty = (value: unknown, keys: string[]): string | null => {
+  if (typeof value !== 'object' || value === null) return null;
+
+  const record = value as Record<string, unknown>;
+  for (const key of keys) {
+    const property = record[key];
+    if (typeof property === 'string' && property.trim()) {
+      return property;
+    }
+  }
+
+  return null;
+};
+
+const getStoredUserId = (): string | null => {
+  if (typeof window === 'undefined') return null;
+
+  const storedUser = localStorage.getItem('seal_user');
+  if (!storedUser) return null;
+
+  try {
+    const parsed = JSON.parse(storedUser) as unknown;
+    return getStringProperty(parsed, ['UserID', 'UserId', 'userId']);
+  } catch (error) {
+    console.error('Cannot parse seal_user from localStorage:', error);
+    return null;
+  }
+};
+
+const getApiErrorMessage = (error: unknown, fallback: string): string => {
+  if (typeof error !== 'object' || error === null || !('response' in error)) {
+    return fallback;
+  }
+
+  const response = (error as { response?: { data?: { message?: string } } }).response;
+  return response?.data?.message || fallback;
+};
+
+const getAssignmentStatusClass = (status: CategoryMentor['Status']): string => {
+  if (status === 'Approved') return 'bg-emerald-50 text-emerald-700 border-emerald-100';
+  if (status === 'Rejected') return 'bg-rose-50 text-rose-700 border-rose-100';
+  return 'bg-amber-50 text-amber-700 border-amber-100';
+};
+
+const getCategoryName = (categories: FlowCategory[], categoryId: string): string => {
+  return categories.find((category) => category.CategoryId === categoryId)?.CategoryName || categoryId.substring(0, 8);
+};
+
 interface FeedbackLog {
   id: string;
   teamName: string;
@@ -29,6 +82,10 @@ export default function MentorPage() {
   const [loading, setLoading] = useState<boolean>(true);
   const [submitting, setSubmitting] = useState<boolean>(false);
   const [successMessage, setSuccessMessage] = useState<string>('');
+  const [assignmentMessage, setAssignmentMessage] = useState<string>('');
+  const [assignmentError, setAssignmentError] = useState<string>('');
+  const [assignmentActionId, setAssignmentActionId] = useState<string>('');
+  const [currentUserId, setCurrentUserId] = useState<string>('');
 
   // Form states
   const [selectedTeamId, setSelectedTeamId] = useState<string>('');
@@ -39,6 +96,8 @@ export default function MentorPage() {
   const [teams, setTeams] = useState<Team[]>([]);
   const [submissions, setSubmissions] = useState<(Submission & { Team: Team })[]>([]);
   const [events, setEvents] = useState<ApiEvent[]>([]);
+  const [flowCategories, setFlowCategories] = useState<FlowCategory[]>([]);
+  const [categoryMentorAssignments, setCategoryMentorAssignments] = useState<CategoryMentor[]>([]);
 
   // Local feedback log
   const [feedbackLogs, setFeedbackLogs] = useState<FeedbackLog[]>([
@@ -49,16 +108,44 @@ export default function MentorPage() {
   const loadData = async () => {
     setLoading(true);
     try {
+      const storedUserId = getStoredUserId();
+      setCurrentUserId(storedUserId ?? '');
+
       const fetchedEvents = await getEvents();
       setEvents(fetchedEvents);
 
       // Mentor Phạm Văn Tùng (00000000-0000-0000-0000-000000000009)
       // Assigned Categories: Web Application (C0000000-0000-0000-0000-000000000001) & AI Solution (C0000000-0000-0000-0000-000000000003)
       const fetchedCategories = await getCategories();
-      const myCats = fetchedCategories.filter(c => 
+      let myCats = fetchedCategories.filter(c => 
         c.CategoryID === 'C0000000-0000-0000-0000-000000000001' || 
         c.CategoryID === 'C0000000-0000-0000-0000-000000000003'
       );
+
+      try {
+        const [fetchedFlowCategories, fetchedAssignments] = await Promise.all([
+          getCategoriesApi(),
+          getCategoryMentorsApi(),
+        ]);
+        const visibleAssignments = storedUserId
+          ? fetchedAssignments.filter((assignment) => assignment.UserId.toLowerCase() === storedUserId.toLowerCase())
+          : fetchedAssignments;
+        const approvedCategoryIds = new Set(
+          visibleAssignments
+            .filter((assignment) => assignment.Status === 'Approved')
+            .map((assignment) => assignment.CategoryId.toLowerCase())
+        );
+
+        setFlowCategories(fetchedFlowCategories);
+        setCategoryMentorAssignments(visibleAssignments);
+
+        if (approvedCategoryIds.size > 0) {
+          myCats = fetchedCategories.filter((category) => approvedCategoryIds.has(category.CategoryID.toLowerCase()));
+        }
+      } catch (flowError) {
+        console.error('Cannot load mentor assignment workflow data:', flowError);
+      }
+
       setAssignedCategories(myCats);
 
       const fetchedTeams = await getTeams();
@@ -83,6 +170,56 @@ export default function MentorPage() {
   useEffect(() => {
     void Promise.resolve().then(loadData);
   }, []);
+
+  const handleAssignmentDecision = async (categoryMentorId: string, decision: 'approve' | 'reject') => {
+    setAssignmentActionId(categoryMentorId);
+    setAssignmentMessage('');
+    setAssignmentError('');
+
+    try {
+      const updatedAssignment = decision === 'approve'
+        ? await approveCategoryMentorApi(categoryMentorId)
+        : await rejectCategoryMentorApi(categoryMentorId);
+
+      setCategoryMentorAssignments((current) =>
+        current.map((assignment) =>
+          assignment.CategoryMentorId === updatedAssignment.CategoryMentorId ? updatedAssignment : assignment
+        )
+      );
+      if (updatedAssignment.Status === 'Approved') {
+        const approvedCategory = flowCategories.find(
+          (category) => category.CategoryId === updatedAssignment.CategoryId
+        );
+        if (approvedCategory) {
+          setAssignedCategories((current) => {
+            if (current.some((category) => category.CategoryID === approvedCategory.CategoryId)) {
+              return current;
+            }
+
+            return [
+              ...current,
+              {
+                CategoryID: approvedCategory.CategoryId,
+                EventID: approvedCategory.EventId,
+                CategoryName: approvedCategory.CategoryName,
+                Description: approvedCategory.Description,
+              },
+            ];
+          });
+        }
+      }
+      setAssignmentMessage(
+        decision === 'approve'
+          ? 'Đã chấp thuận phân công Mentor.'
+          : 'Đã từ chối phân công Mentor.'
+      );
+    } catch (error: unknown) {
+      console.error(error);
+      setAssignmentError(getApiErrorMessage(error, 'Không thể cập nhật trạng thái phân công Mentor.'));
+    } finally {
+      setAssignmentActionId('');
+    }
+  };
 
   const handleSendFeedback = (e: React.FormEvent) => {
     e.preventDefault();
@@ -140,6 +277,84 @@ export default function MentorPage() {
           
           {/* Left panel: List categories & feedback form */}
           <div className="lg:col-span-1 space-y-6">
+
+            <Card className="bg-white border-slate-200 dark:bg-slate-900 dark:border-slate-800 shadow-sm">
+              <CardHeader>
+                <CardTitle className="text-base font-bold flex items-center gap-2">
+                  <Clock className="w-5 h-5 text-amber-600 dark:text-amber-400" /> Yêu cầu phân công
+                </CardTitle>
+                <CardDescription className="text-xs text-slate-400 font-medium">
+                  Xác nhận hoặc từ chối đề xuất phụ trách Category từ Coordinator.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="p-6 pt-0 space-y-4">
+                {currentUserId && (
+                  <div className="text-[10px] text-slate-400 font-mono truncate">
+                    Mentor ID: {currentUserId}
+                  </div>
+                )}
+
+                {assignmentError && (
+                  <div className="p-3 bg-rose-50 border border-rose-100 text-rose-700 rounded-xl text-xs font-medium">
+                    {assignmentError}
+                  </div>
+                )}
+
+                {assignmentMessage && (
+                  <div className="p-3 bg-emerald-50 border border-emerald-100 text-emerald-700 rounded-xl text-xs font-medium">
+                    {assignmentMessage}
+                  </div>
+                )}
+
+                {categoryMentorAssignments.length === 0 ? (
+                  <div className="p-3 rounded-xl border border-slate-100 bg-slate-50 text-xs text-slate-500 font-medium dark:border-slate-800 dark:bg-slate-950">
+                    Chưa có yêu cầu phân công từ API.
+                  </div>
+                ) : (
+                  categoryMentorAssignments.map((assignment) => (
+                    <div key={assignment.CategoryMentorId} className="p-3 border border-slate-100 rounded-xl bg-slate-50/50 dark:border-slate-800 dark:bg-slate-950/40 space-y-3">
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="min-w-0">
+                          <h5 className="font-bold text-slate-800 dark:text-slate-200 text-xs truncate">
+                            {getCategoryName(flowCategories, assignment.CategoryId)}
+                          </h5>
+                          <span className="text-[10px] text-slate-400 font-mono truncate block">
+                            {assignment.CategoryMentorId}
+                          </span>
+                        </div>
+                        <Badge className={`text-[9px] font-extrabold border ${getAssignmentStatusClass(assignment.Status)}`}>
+                          {assignment.Status}
+                        </Badge>
+                      </div>
+
+                      {assignment.Status === 'Pending' && (
+                        <div className="grid grid-cols-2 gap-2">
+                          <Button
+                            type="button"
+                            size="sm"
+                            className="bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold"
+                            disabled={assignmentActionId === assignment.CategoryMentorId}
+                            onClick={() => void handleAssignmentDecision(assignment.CategoryMentorId, 'approve')}
+                          >
+                            <CheckCircle2 className="w-3.5 h-3.5 mr-1.5" /> Đồng ý
+                          </Button>
+                          <Button
+                            type="button"
+                            size="sm"
+                            variant="destructive"
+                            className="rounded-xl text-xs font-bold"
+                            disabled={assignmentActionId === assignment.CategoryMentorId}
+                            onClick={() => void handleAssignmentDecision(assignment.CategoryMentorId, 'reject')}
+                          >
+                            <XCircle className="w-3.5 h-3.5 mr-1.5" /> Từ chối
+                          </Button>
+                        </div>
+                      )}
+                    </div>
+                  ))
+                )}
+              </CardContent>
+            </Card>
             
             {/* Assigned categories */}
             <Card className="bg-white border-slate-200 dark:bg-slate-900 dark:border-slate-800 shadow-sm">
@@ -173,6 +388,9 @@ export default function MentorPage() {
                   <div className="space-y-1.5">
                     <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider block">Chọn đội thi</label>
                     <select
+                      id="mentor-feedback-team"
+                      aria-label="Chọn đội thi để gửi phản hồi"
+                      title="Chọn đội thi để gửi phản hồi"
                       className="w-full h-10 px-3 rounded-xl border border-slate-200 bg-slate-50 text-xs font-semibold focus:outline-none dark:bg-slate-800 dark:border-slate-700"
                       value={selectedTeamId}
                       onChange={(e) => setSelectedTeamId(e.target.value)}

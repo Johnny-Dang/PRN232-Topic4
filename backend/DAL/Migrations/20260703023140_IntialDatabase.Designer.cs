@@ -12,8 +12,8 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace DataAccessLayer.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    [Migration("20260702120520_AddCalibrationWorkflow")]
-    partial class AddCalibrationWorkflow
+    [Migration("20260703023140_IntialDatabase")]
+    partial class IntialDatabase
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)

@@ -1,11 +1,16 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { ShieldCheck, RefreshCw, Activity, Trash2, GitCompare, AlertTriangle, Send } from 'lucide-react';
+import { ShieldCheck, RefreshCw, Activity, Trash2, GitCompare, AlertTriangle, Send, UserPlus } from 'lucide-react';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Input } from '@/components/ui/input';
 import { Skeleton } from '@/components/ui/skeleton';
+import { getCategoriesApi } from '@/services/api/competition';
+import { createCategoryMentorApi, getCategoryMentorsApi } from '@/services/api/mentor';
+import type { Category as FlowCategory } from '@/services/types/competition';
+import type { CategoryMentor } from '@/services/types/mentor';
 
 import {
   getRounds,
@@ -34,6 +39,25 @@ interface IrrSubmissionData {
   criteria: IrrCriteriaBreakdown[];
 }
 
+const getApiErrorMessage = (error: unknown, fallback: string): string => {
+  if (typeof error !== 'object' || error === null || !('response' in error)) {
+    return fallback;
+  }
+
+  const response = (error as { response?: { data?: { message?: string } } }).response;
+  return response?.data?.message || fallback;
+};
+
+const getAssignmentStatusClass = (status: CategoryMentor['Status']): string => {
+  if (status === 'Approved') return 'bg-emerald-50 text-emerald-700 border-emerald-100';
+  if (status === 'Rejected') return 'bg-rose-50 text-rose-700 border-rose-100';
+  return 'bg-amber-50 text-amber-700 border-amber-100';
+};
+
+const getCategoryName = (categories: FlowCategory[], categoryId: string): string => {
+  return categories.find((category) => category.CategoryId === categoryId)?.CategoryName || categoryId.substring(0, 8);
+};
+
 export default function CoordinatorPage() {
   const [loading, setLoading] = useState<boolean>(true);
   const [submittingDisq, setSubmittingDisq] = useState<boolean>(false);
@@ -42,11 +66,18 @@ export default function CoordinatorPage() {
   // Form states to Disqualify
   const [disqSubId, setDisqSubId] = useState<string>('');
   const [disqReason, setDisqReason] = useState<string>('');
+  const [selectedCategoryId, setSelectedCategoryId] = useState<string>('');
+  const [mentorUserId, setMentorUserId] = useState<string>('');
+  const [assigningMentor, setAssigningMentor] = useState<boolean>(false);
+  const [assignmentSuccess, setAssignmentSuccess] = useState<string>('');
+  const [assignmentError, setAssignmentError] = useState<string>('');
  
   // Loaded states
   const [submissions, setSubmissions] = useState<(ApiSubmission & { Team: Team })[]>([]);
   const [eliminations, setEliminations] = useState<Awaited<ReturnType<typeof getEliminations>>>([]);
   const [auditLogs, setAuditLogs] = useState<Awaited<ReturnType<typeof getAuditLogs>>>([]);
+  const [flowCategories, setFlowCategories] = useState<FlowCategory[]>([]);
+  const [mentorAssignments, setMentorAssignments] = useState<CategoryMentor[]>([]);
    
   // Statistical IRR calculations for all graded submissions
   const [irrData, setIrrData] = useState<IrrSubmissionData[]>([]);
@@ -69,6 +100,18 @@ export default function CoordinatorPage() {
       setSubmissions(fetchedSubs);
       setEliminations(fetchedEliminations);
       setAuditLogs(fetchedLogs);
+
+      try {
+        const [fetchedFlowCategories, fetchedMentorAssignments] = await Promise.all([
+          getCategoriesApi(),
+          getCategoryMentorsApi(),
+        ]);
+        setFlowCategories(fetchedFlowCategories);
+        setMentorAssignments(fetchedMentorAssignments);
+        setSelectedCategoryId((current) => current || fetchedFlowCategories[0]?.CategoryId || '');
+      } catch (flowError) {
+        console.error('Cannot load mentor assignment workflow data:', flowError);
+      }
 
       if (fetchedSubs.length > 0) {
         setDisqSubId(fetchedSubs[0].SubmissionID);
@@ -114,6 +157,34 @@ export default function CoordinatorPage() {
   useEffect(() => {
     void Promise.resolve().then(loadData);
   }, []);
+
+  const handleAssignMentor = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedCategoryId || !mentorUserId.trim()) return;
+
+    setAssigningMentor(true);
+    setAssignmentSuccess('');
+    setAssignmentError('');
+
+    try {
+      const createdAssignment = await createCategoryMentorApi({
+        CategoryId: selectedCategoryId,
+        UserId: mentorUserId.trim(),
+      });
+
+      setMentorAssignments((current) => [
+        createdAssignment,
+        ...current.filter((assignment) => assignment.CategoryMentorId !== createdAssignment.CategoryMentorId),
+      ]);
+      setMentorUserId('');
+      setAssignmentSuccess('Đã gửi yêu cầu phân công Mentor. Trạng thái hiện tại: Pending.');
+    } catch (error: unknown) {
+      console.error(error);
+      setAssignmentError(getApiErrorMessage(error, 'Không thể phân công Mentor cho Category đã chọn.'));
+    } finally {
+      setAssigningMentor(false);
+    }
+  };
 
   const handleDisqualify = (e: React.FormEvent) => {
     e.preventDefault();
@@ -205,6 +276,108 @@ export default function CoordinatorPage() {
           
           {/* Left panel: Disqualify console & eliminations */}
           <div className="lg:col-span-1 space-y-6">
+
+            <Card className="bg-white border-slate-200 dark:bg-slate-900 dark:border-slate-800 shadow-sm">
+              <CardHeader>
+                <CardTitle className="text-base font-bold flex items-center gap-2 text-indigo-600 dark:text-indigo-400">
+                  <UserPlus className="w-5 h-5" /> Phân công Mentor
+                </CardTitle>
+                <CardDescription className="text-xs text-slate-400 font-medium">
+                  Gửi đề xuất Mentor phụ trách Category. Mentor sẽ nhận yêu cầu ở trạng thái Pending.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="p-6 pt-0 space-y-5">
+                <form onSubmit={handleAssignMentor} className="space-y-4">
+                  <div className="space-y-1.5">
+                    <label htmlFor="mentor-category" className="text-xs font-semibold text-slate-500 uppercase tracking-wider block">
+                      Category thi đấu
+                    </label>
+                    <select
+                      id="mentor-category"
+                      aria-label="Chọn Category thi đấu để phân công Mentor"
+                      title="Chọn Category thi đấu để phân công Mentor"
+                      className="w-full h-10 px-3 rounded-xl border border-slate-200 bg-slate-50 text-xs font-semibold focus:outline-none dark:bg-slate-800 dark:border-slate-700"
+                      value={selectedCategoryId}
+                      onChange={(e) => setSelectedCategoryId(e.target.value)}
+                      disabled={flowCategories.length === 0}
+                    >
+                      {flowCategories.length === 0 ? (
+                        <option value="">Chưa tải được Category từ API</option>
+                      ) : (
+                        flowCategories.map((category) => (
+                          <option key={category.CategoryId} value={category.CategoryId}>
+                            {category.CategoryName}
+                          </option>
+                        ))
+                      )}
+                    </select>
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <label htmlFor="mentor-user-id" className="text-xs font-semibold text-slate-500 uppercase tracking-wider block">
+                      Mentor User ID
+                    </label>
+                    <Input
+                      id="mentor-user-id"
+                      className="rounded-xl h-10 bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-xs font-semibold"
+                      placeholder="00000000-0000-0000-0000-000000000009"
+                      value={mentorUserId}
+                      onChange={(e) => setMentorUserId(e.target.value)}
+                      required
+                    />
+                  </div>
+
+                  {assignmentError && (
+                    <div className="p-3 bg-rose-50 border border-rose-100 text-rose-700 rounded-xl text-xs font-medium">
+                      {assignmentError}
+                    </div>
+                  )}
+
+                  {assignmentSuccess && (
+                    <div className="p-3 bg-emerald-50 border border-emerald-100 text-emerald-700 rounded-xl text-xs font-medium">
+                      {assignmentSuccess}
+                    </div>
+                  )}
+
+                  <div className="flex justify-end">
+                    <Button
+                      type="submit"
+                      className="bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl h-10 font-bold px-5 text-xs transition-colors"
+                      disabled={assigningMentor || !selectedCategoryId}
+                    >
+                      <Send className="w-3.5 h-3.5 mr-2" /> {assigningMentor ? 'Đang gửi...' : 'Gửi phân công'}
+                    </Button>
+                  </div>
+                </form>
+
+                <div className="space-y-2">
+                  <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
+                    Phân công gần đây
+                  </div>
+                  {mentorAssignments.length === 0 ? (
+                    <div className="p-3 rounded-xl border border-slate-100 bg-slate-50 text-xs text-slate-500 font-medium dark:border-slate-800 dark:bg-slate-950">
+                      Chưa có dữ liệu phân công từ API.
+                    </div>
+                  ) : (
+                    mentorAssignments.slice(0, 5).map((assignment) => (
+                      <div key={assignment.CategoryMentorId} className="p-3 rounded-xl border border-slate-100 bg-slate-50/60 dark:border-slate-800 dark:bg-slate-950/40 space-y-2">
+                        <div className="flex items-center justify-between gap-2">
+                          <span className="text-xs font-bold text-slate-800 dark:text-slate-200 truncate">
+                            {getCategoryName(flowCategories, assignment.CategoryId)}
+                          </span>
+                          <Badge className={`text-[9px] font-extrabold border ${getAssignmentStatusClass(assignment.Status)}`}>
+                            {assignment.Status}
+                          </Badge>
+                        </div>
+                        <div className="text-[10px] text-slate-500 font-mono truncate">
+                          Mentor: {assignment.UserId}
+                        </div>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </CardContent>
+            </Card>
             
             {/* Disqualify trigger console */}
             <Card className="bg-white border-slate-200 dark:bg-slate-900 dark:border-slate-800 shadow-sm">
@@ -219,6 +392,9 @@ export default function CoordinatorPage() {
                   <div className="space-y-1.5">
                     <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider block">Chọn bài nộp của đội</label>
                     <select
+                      id="disqualify-submission"
+                      aria-label="Chọn bài nộp của đội để loại"
+                      title="Chọn bài nộp của đội để loại"
                       className="w-full h-10 px-3 rounded-xl border border-slate-200 bg-slate-50 text-xs font-semibold focus:outline-none dark:bg-slate-800 dark:border-slate-700"
                       value={disqSubId}
                       onChange={(e) => setDisqSubId(e.target.value)}

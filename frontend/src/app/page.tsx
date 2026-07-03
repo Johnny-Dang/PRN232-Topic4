@@ -141,6 +141,10 @@ export default function HomeLandingPage() {
     }
   };
 
+  const handleViewDetails = (comp: DetailedCompetition) => {
+    router.push(`/competitions/${comp.ID}`);
+  };
+
   // Filtered Competitions logic
   const filteredCompetitions = competitions.filter(comp => {
     // 1. Search Query
@@ -228,6 +232,7 @@ export default function HomeLandingPage() {
           setSelectedFilter={setSelectedFilter}
           setSearchQuery={setSearchQuery}
           handleAction={handleAction}
+          onViewDetails={handleViewDetails}
         />
 
         {/* 5. DEADLINE FOCUS */}
@@ -235,6 +240,7 @@ export default function HomeLandingPage() {
           deadlineCompetitions={deadlineCompetitions}
           loading={loading}
           handleAction={handleAction}
+          onViewDetails={handleViewDetails}
         />
 
         {/* 6. LATEST ANNOUNCEMENTS */}
@@ -272,6 +278,7 @@ export default function HomeLandingPage() {
         getDashboardLink={getDashboardLink}
         onRedirect={(url) => router.push(url)}
       />
+
 
     </div>
   );
