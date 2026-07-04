@@ -41,6 +41,22 @@ const normalizeRole = (role: AuthUser['Role']): NormalizedRole | AuthUser['Role'
   return role;
 };
 
+const getDashboardPath = (role: NormalizedRole | AuthUser['Role']): string => {
+  switch (normalizeRole(role)) {
+    case 'Coordinator':
+      return '/coordinator';
+    case 'Judge':
+      return '/judge';
+    case 'Mentor':
+      return '/mentor';
+    case 'Leader':
+      return '/leader';
+    case 'Member':
+      return '/member';
+    default:
+      return '/';
+  }
+};
 
 export default function AuthContainer({ initialMode }: { initialMode: 'login' | 'register' }) {
   const router = useRouter();
@@ -90,7 +106,7 @@ export default function AuthContainer({ initialMode }: { initialMode: 'login' | 
       localStorage.setItem('seal_user', JSON.stringify(matchedUser));
 
       setTimeout(() => {
-        router.push('/');
+        router.replace(getDashboardPath(matchedUser.Role));
       }, 800);
     } catch (err: unknown) {
       console.error(err);
@@ -302,7 +318,7 @@ export default function AuthContainer({ initialMode }: { initialMode: 'login' | 
               Chưa có tài khoản?{' '}
               <button
                 onClick={() => switchMode('register')}
-                className="text-indigo-650 hover:text-indigo-700 font-extrabold dark:text-indigo-400 cursor-pointer outline-none"
+                className="text-indigo-600 hover:text-indigo-700 font-extrabold dark:text-indigo-400 cursor-pointer outline-none"
               >
                 Đăng ký ngay
               </button>
@@ -346,7 +362,7 @@ export default function AuthContainer({ initialMode }: { initialMode: 'login' | 
                     id="register-email"
                     type="email"
                     placeholder="example@fpt.edu.vn"
-                    className="rounded-xl h-8.5 bg-slate-50 dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-[11px] font-semibold focus-visible:ring-indigo-650"
+                    className="rounded-xl h-8.5 bg-slate-50 dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-[11px] font-semibold focus-visible:ring-indigo-600"
                     value={regEmail}
                     onChange={(e) => setRegEmail(e.target.value)}
                     required={mode === 'register'}
@@ -361,7 +377,7 @@ export default function AuthContainer({ initialMode }: { initialMode: 'login' | 
                     id="register-password"
                     type="password"
                     placeholder="••••••••"
-                    className="rounded-xl h-8.5 bg-slate-50 dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-[11px] font-semibold focus-visible:ring-indigo-655"
+                    className="rounded-xl h-8.5 bg-slate-50 dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-[11px] font-semibold focus-visible:ring-indigo-600"
                     value={regPassword}
                     onChange={(e) => setRegPassword(e.target.value)}
                     required={mode === 'register'}
@@ -377,7 +393,7 @@ export default function AuthContainer({ initialMode }: { initialMode: 'login' | 
                     id="register-full-name"
                     type="text"
                     placeholder="Nguyễn Văn A"
-                    className="rounded-xl h-8.5 bg-slate-50 dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-[11px] font-semibold focus-visible:ring-indigo-650"
+                    className="rounded-xl h-8.5 bg-slate-50 dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-[11px] font-semibold focus-visible:ring-indigo-600"
                     value={regFullName}
                     onChange={(e) => setRegFullName(e.target.value)}
                     required={mode === 'register'}
@@ -392,7 +408,7 @@ export default function AuthContainer({ initialMode }: { initialMode: 'login' | 
                     id="register-phone"
                     type="tel"
                     placeholder="0901xxxxxx"
-                    className="rounded-xl h-8.5 bg-slate-50 dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-[11px] font-semibold focus-visible:ring-indigo-655"
+                    className="rounded-xl h-8.5 bg-slate-50 dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-[11px] font-semibold focus-visible:ring-indigo-600"
                     value={regPhone}
                     onChange={(e) => setRegPhone(e.target.value)}
                     required={mode === 'register'}

@@ -51,7 +51,7 @@ export default function CategoryExploration({
     <section className="space-y-8">
       <div className="space-y-1 border-b border-slate-200 pb-5 dark:border-slate-800/80">
         <div className="flex items-center gap-2">
-          <Compass className="w-6 h-6 text-indigo-650 dark:text-indigo-400" />
+          <Compass className="w-6 h-6 text-indigo-600 dark:text-indigo-400" />
           <h3 className="text-xl font-black text-slate-850 dark:text-white">
             Khám Phá Theo Lĩnh Vực (Category Compass)
           </h3>
@@ -75,7 +75,7 @@ export default function CategoryExploration({
                   <IconComp className={`w-6 h-6 ${data.color}`} />
                 </div>
                 <div>
-                  <h4 className="text-xs font-black text-slate-800 dark:text-white group-hover:text-indigo-650 transition-colors">
+                  <h4 className="text-xs font-black text-slate-800 dark:text-white group-hover:text-indigo-600 transition-colors">
                     {data.label}
                   </h4>
                   <p className="text-[9px] text-slate-400 font-extrabold uppercase mt-0.5">

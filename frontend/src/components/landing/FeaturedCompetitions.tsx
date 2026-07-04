@@ -171,7 +171,7 @@ export default function FeaturedCompetitions({
 
                   {/* Category and Title */}
                   <div className="space-y-2">
-                    <div className="flex items-center justify-between text-[10px] font-bold text-indigo-650 dark:text-indigo-400 uppercase tracking-widest">
+                    <div className="flex items-center justify-between text-[10px] font-bold text-indigo-600 dark:text-indigo-400 uppercase tracking-widest">
                       <span>{comp.CategoryLabel}</span>
                       <span className="text-slate-400 dark:text-slate-550">Đơn vị: {comp.Organizer}</span>
                     </div>

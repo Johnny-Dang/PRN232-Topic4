@@ -15,8 +15,7 @@ import {
   Award,
   ArrowRight,
   ShieldAlert,
-  Flame,
-  ArrowUpRight
+  Flame
 } from 'lucide-react';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -127,40 +126,6 @@ export default function CompetitionsPage() {
         };
     }
   };
-
-  // Define hardcoded criteria weights structure for display matching DB templates
-  const criteriaTemplates = [
-    {
-      id: 'F0000000-0000-0000-0000-000000000001',
-      name: 'Tiêu chuẩn Hackathon Chung (Default)',
-      description: 'Dành cho các hạng mục phát triển phần mềm và hệ thống ứng dụng Web/Mobile thông thường.',
-      criteria: [
-        { name: 'Sự cải tiến & Sáng tạo (Innovation)', weight: '40%' },
-        { name: 'Độ phức tạp kỹ thuật (Technical Complexity)', weight: '30%' },
-        { name: 'Trải nghiệm người dùng (UI/UX)', weight: '30%' }
-      ]
-    },
-    {
-      id: 'F0000000-0000-0000-0000-000000000002',
-      name: 'Tiêu chuẩn Giải pháp AI (AI Hackathon)',
-      description: 'Dành cho các hạng mục phát triển mô hình Trí tuệ nhân tạo (AI/ML Solution).',
-      criteria: [
-        { name: 'Độ chính xác của mô hình (AI Accuracy)', weight: '40%' },
-        { name: 'Hiệu suất vận hành mô hình (Model Performance)', weight: '30%' },
-        { name: 'Tác động thực tiễn & Doanh nghiệp (Business Impact)', weight: '30%' }
-      ]
-    },
-    {
-      id: 'F0000000-0000-0000-0000-000000000003',
-      name: 'Tiêu chuẩn Ứng dụng Di động (Mobile)',
-      description: 'Dành cho các dự án phát triển giải pháp thiết bị di động chuyên biệt.',
-      criteria: [
-        { name: 'Trải nghiệm người dùng (User Experience)', weight: '35%' },
-        { name: 'Hiệu năng ứng dụng di động (Performance)', weight: '35%' },
-        { name: 'Chất lượng mã nguồn (Code Quality)', weight: '30%' }
-      ]
-    }
-  ];
 
   return (
     <div className="space-y-8 animate-in fade-in duration-300">
@@ -579,32 +544,9 @@ export default function CompetitionsPage() {
                     </CardDescription>
                   </CardHeader>
                   <CardContent className="p-6 pt-0 space-y-6">
-                    {criteriaTemplates.map((tpl) => (
-                      <div key={tpl.id} className="space-y-2 pb-5 border-b last:border-b-0 border-slate-100 dark:border-slate-800/80 last:pb-0">
-                        <div className="flex items-start justify-between gap-1.5">
-                          <span className="font-extrabold text-xs text-slate-800 dark:text-slate-200 leading-tight">
-                            {tpl.name}
-                          </span>
-                        </div>
-                        <p className="text-[10px] text-slate-400 dark:text-slate-500 font-medium">
-                          {tpl.description}
-                        </p>
-                        
-                        <div className="bg-slate-50 dark:bg-slate-850/40 rounded-xl p-3 space-y-2 mt-2">
-                          {tpl.criteria.map((cr, idx) => (
-                            <div key={idx} className="flex justify-between items-center text-xs">
-                              <span className="text-slate-600 dark:text-slate-450 font-medium flex items-center gap-1">
-                                <ArrowUpRight className="w-3.5 h-3.5 text-indigo-500" />
-                                {cr.name}
-                              </span>
-                              <span className="font-bold text-slate-900 dark:text-slate-100 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700/50 rounded px-1.5 py-0.5 text-[10px]">
-                                {cr.weight}
-                              </span>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    ))}
+                    <div className="rounded-xl border border-slate-100 bg-slate-50 p-4 text-xs font-medium text-slate-500 dark:border-slate-800 dark:bg-slate-950">
+                      Chưa có API trả về tiêu chí và trọng số điểm thi.
+                    </div>
                   </CardContent>
                 </Card>
 

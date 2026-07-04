@@ -1,39 +1,140 @@
 import { z } from 'zod';
 
-export const roundSchema = z.object({
-  RoundId: z.string().uuid(),
-  EventId: z.string().uuid(),
-  RoundName: z.string(),
-  RoundOrder: z.number(),
-  SubmissionDeadline: z.string(),
-  StartDate: z.string(),
-  EndDate: z.string(),
-});
+const idSchema = z.string().min(1);
 
-export const eventSchema = z.object({
-  EventId: z.string().uuid(),
-  EventName: z.string(),
-  Season: z.string(),
-  Year: z.number(),
-  Description: z.string(),
-  StartDate: z.string(),
-  EndDate: z.string(),
-  Rounds: z.array(roundSchema).default([]),
-});
+type NormalizedRound = {
+  RoundId: string;
+  EventId: string;
+  RoundName: string;
+  RoundOrder: number;
+  SubmissionDeadline: string;
+  StartDate: string;
+  EndDate: string;
+};
+
+export const roundSchema = z
+  .object({
+    RoundId: idSchema.optional(),
+    roundId: idSchema.optional(),
+    EventId: idSchema.optional(),
+    eventId: idSchema.optional(),
+    RoundName: z.string().optional(),
+    roundName: z.string().optional(),
+    RoundOrder: z.number().optional(),
+    roundOrder: z.number().optional(),
+    SubmissionDeadline: z.string().optional(),
+    submissionDeadline: z.string().optional(),
+    StartDate: z.string().optional(),
+    startDate: z.string().optional(),
+    EndDate: z.string().optional(),
+    endDate: z.string().optional(),
+  })
+  .passthrough()
+  .transform((round): NormalizedRound => ({
+    RoundId: round.RoundId ?? round.roundId ?? '',
+    EventId: round.EventId ?? round.eventId ?? '',
+    RoundName: round.RoundName ?? round.roundName ?? '',
+    RoundOrder: round.RoundOrder ?? round.roundOrder ?? 0,
+    SubmissionDeadline: round.SubmissionDeadline ?? round.submissionDeadline ?? '',
+    StartDate: round.StartDate ?? round.startDate ?? '',
+    EndDate: round.EndDate ?? round.endDate ?? '',
+  }));
+
+type NormalizedEvent = {
+  EventId: string;
+  EventName: string;
+  Season: string;
+  Year: number;
+  Description: string;
+  StartDate: string;
+  EndDate: string;
+  Status: string;
+  IsPublished: boolean;
+  PublishedAt: string | null;
+  PublishedBy: string | null;
+  IsFeatured: boolean;
+  BannerUrl: string;
+  Organizer: string;
+  Format: string;
+  Audience: string;
+  Prize: string;
+  Rounds: NormalizedRound[];
+};
+
+export const eventSchema = z
+  .object({
+    EventId: idSchema.optional(),
+    eventId: idSchema.optional(),
+    EventName: z.string().optional(),
+    eventName: z.string().optional(),
+    Season: z.string().optional(),
+    season: z.string().optional(),
+    Year: z.number().optional(),
+    year: z.number().optional(),
+    Description: z.string().optional(),
+    description: z.string().optional(),
+    StartDate: z.string().optional(),
+    startDate: z.string().optional(),
+    EndDate: z.string().optional(),
+    endDate: z.string().optional(),
+    Status: z.string().optional(),
+    status: z.string().optional(),
+    IsPublished: z.boolean().optional(),
+    isPublished: z.boolean().optional(),
+    PublishedAt: z.string().nullable().optional(),
+    publishedAt: z.string().nullable().optional(),
+    PublishedBy: idSchema.nullable().optional(),
+    publishedBy: idSchema.nullable().optional(),
+    IsFeatured: z.boolean().optional(),
+    isFeatured: z.boolean().optional(),
+    BannerUrl: z.string().optional(),
+    bannerUrl: z.string().optional(),
+    Organizer: z.string().optional(),
+    organizer: z.string().optional(),
+    Format: z.string().optional(),
+    format: z.string().optional(),
+    Audience: z.string().optional(),
+    audience: z.string().optional(),
+    Prize: z.string().optional(),
+    prize: z.string().optional(),
+    Rounds: z.array(roundSchema).optional(),
+    rounds: z.array(roundSchema).optional(),
+  })
+  .passthrough()
+  .transform((event): NormalizedEvent => ({
+    EventId: event.EventId ?? event.eventId ?? '',
+    EventName: event.EventName ?? event.eventName ?? '',
+    Season: event.Season ?? event.season ?? '',
+    Year: event.Year ?? event.year ?? 0,
+    Description: event.Description ?? event.description ?? '',
+    StartDate: event.StartDate ?? event.startDate ?? '',
+    EndDate: event.EndDate ?? event.endDate ?? '',
+    Status: event.Status ?? event.status ?? 'Draft',
+    IsPublished: event.IsPublished ?? event.isPublished ?? false,
+    PublishedAt: event.PublishedAt ?? event.publishedAt ?? null,
+    PublishedBy: event.PublishedBy ?? event.publishedBy ?? null,
+    IsFeatured: event.IsFeatured ?? event.isFeatured ?? false,
+    BannerUrl: event.BannerUrl ?? event.bannerUrl ?? '',
+    Organizer: event.Organizer ?? event.organizer ?? '',
+    Format: event.Format ?? event.format ?? 'Online',
+    Audience: event.Audience ?? event.audience ?? 'Students',
+    Prize: event.Prize ?? event.prize ?? '',
+    Rounds: event.Rounds ?? event.rounds ?? [],
+  }));
 
 const normalizedCategorySchema = z.object({
-  CategoryId: z.string().uuid(),
-  EventId: z.string().uuid(),
+  CategoryId: idSchema,
+  EventId: idSchema,
   CategoryName: z.string(),
   Description: z.string(),
 });
 
 export const categorySchema = z
   .object({
-    CategoryId: z.string().uuid().optional(),
-    categoryId: z.string().uuid().optional(),
-    EventId: z.string().uuid().optional(),
-    eventId: z.string().uuid().optional(),
+    CategoryId: idSchema.optional(),
+    categoryId: idSchema.optional(),
+    EventId: idSchema.optional(),
+    eventId: idSchema.optional(),
     CategoryName: z.string().optional(),
     categoryName: z.string().optional(),
     Description: z.string().optional(),
@@ -48,6 +149,21 @@ export const categorySchema = z
   }))
   .pipe(normalizedCategorySchema);
 
+export const createEventRequestSchema = z.object({
+  EventName: z.string().min(2),
+  Season: z.string().min(2),
+  Year: z.number().int().min(2000).max(2100),
+  Description: z.string().default(''),
+  StartDate: z.string(),
+  EndDate: z.string(),
+  BannerUrl: z.string().default(''),
+  Organizer: z.string().default(''),
+  Format: z.enum(['Online', 'Offline', 'Hybrid']).default('Online'),
+  Audience: z.string().default('Sinh viên'),
+  Prize: z.string().default(''),
+});
+
 export type Round = z.infer<typeof roundSchema>;
 export type Event = z.infer<typeof eventSchema>;
 export type Category = z.infer<typeof categorySchema>;
+export type CreateEventRequest = z.infer<typeof createEventRequestSchema>;

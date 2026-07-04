@@ -57,6 +57,7 @@ export default function HomeLandingPage() {
   const [showSuccessModal, setShowSuccessModal] = useState<boolean>(false);
   const [actionTitle, setActionTitle] = useState<string>('');
   const [actionDesc, setActionDesc] = useState<string>('');
+  const [hasMounted, setHasMounted] = useState<boolean>(false);
 
   // Refs for smooth scroll
   const competitionsSectionRef = useRef<HTMLDivElement | null>(null);
@@ -64,6 +65,7 @@ export default function HomeLandingPage() {
 
   // Monitor scroll for header background
   useEffect(() => {
+    void Promise.resolve().then(() => setHasMounted(true));
     const handleScroll = () => {
       setIsScrolled(window.scrollY > 20);
     };
@@ -171,8 +173,7 @@ export default function HomeLandingPage() {
     } else if (selectedFilter === 'offline') {
       matchesFilter = comp.Format === 'Offline';
     } else if (selectedFilter === 'free') {
-      // Free mocks (Design, Language)
-      matchesFilter = comp.ID === 'DC004' || comp.ID === 'DC005';
+      matchesFilter = false;
     } else if (selectedFilter === 'prized') {
       matchesFilter = comp.Prize !== '';
     }
@@ -184,12 +185,13 @@ export default function HomeLandingPage() {
   const deadlineCompetitions = [...competitions]
     .filter(c => c.Status === 'expiring' || c.Status === 'open')
     .sort((a, b) => a.DaysLeft - b.DaysLeft);
+  const mountedUser = hasMounted ? currentUser : null;
 
   return (
     <div className="min-h-screen flex flex-col bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 font-sans antialiased selection:bg-indigo-600 selection:text-white transition-colors duration-200">
       
       <Header
-        currentUser={currentUser}
+        currentUser={mountedUser}
         isScrolled={isScrolled}
         isMobileMenuOpen={isMobileMenuOpen}
         setIsMobileMenuOpen={setIsMobileMenuOpen}
@@ -274,7 +276,7 @@ export default function HomeLandingPage() {
         onClose={() => setShowSuccessModal(false)}
         title={actionTitle}
         description={actionDesc}
-        currentUser={currentUser}
+        currentUser={mountedUser}
         getDashboardLink={getDashboardLink}
         onRedirect={(url) => router.push(url)}
       />

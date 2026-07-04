@@ -85,7 +85,7 @@ export default function AnnouncementsGrid({
                   </div>
 
                   <h4 className="text-sm font-extrabold text-slate-800 dark:text-white tracking-tight flex items-start gap-1.5 leading-snug">
-                    {isPinned && <Pin className="w-4 h-4 text-indigo-650 shrink-0 mt-0.5 rotate-45" />}
+                    {isPinned && <Pin className="w-4 h-4 text-indigo-600 shrink-0 mt-0.5 rotate-45" />}
                     <span>{ann.Title}</span>
                   </h4>
                 </CardHeader>

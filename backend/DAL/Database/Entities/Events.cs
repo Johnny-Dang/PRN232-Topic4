@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -15,6 +15,17 @@ namespace DataAccessLayer.Database.Entities
         public string Description { get; set; } = string.Empty;
         public DateTime StartDate { get; set; }
         public DateTime EndDate { get; set; }
+        public string Status { get; set; } = "Draft";
+        public bool IsPublished { get; set; }
+        public DateTime? PublishedAt { get; set; }
+        public Guid? PublishedBy { get; set; }
+        public bool IsFeatured { get; set; }
+        public string BannerUrl { get; set; } = string.Empty;
+        public string Organizer { get; set; } = string.Empty;
+        public string Format { get; set; } = "Online";
+        public string Audience { get; set; } = "Students";
+        public string Prize { get; set; } = string.Empty;
+        public bool IsDeleted { get; set; } = false;
 
         public virtual ICollection<Categories> Categories { get; set; } = new List<Categories>();
         public virtual ICollection<Rounds> Rounds { get; set; } = new List<Rounds>();

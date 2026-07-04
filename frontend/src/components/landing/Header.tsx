@@ -31,6 +31,22 @@ export default function Header({
 }: HeaderProps) {
   const router = useRouter();
   const [isDropdownOpen, setIsDropdownOpen] = React.useState(false);
+  const getDashboardPath = (role: SealUser['Role']): string => {
+    switch (role) {
+      case 'Coordinator':
+        return '/coordinator';
+      case 'Judge':
+        return '/judge';
+      case 'Mentor':
+        return '/mentor';
+      case 'Leader':
+        return '/leader';
+      case 'Member':
+        return '/member';
+      default:
+        return '/';
+    }
+  };
 
   return (
     <header className={`fixed top-0 z-50 w-full transition-all duration-300 ${isScrolled
@@ -107,7 +123,7 @@ export default function Header({
                     <button
                       onClick={() => {
                         setIsDropdownOpen(false);
-                        router.push('/member');
+                        router.push(getDashboardPath(currentUser.Role));
                       }}
                       className="w-full px-4 py-2 text-left text-xs font-bold text-slate-700 dark:text-slate-350 hover:bg-slate-50 dark:hover:bg-slate-900 hover:text-indigo-600 dark:hover:text-indigo-400 flex items-center gap-2 cursor-pointer transition-colors border-none bg-transparent"
                     >
@@ -184,7 +200,7 @@ export default function Header({
                 </div>
                 <div className="flex gap-2">
                   <Button
-                    onClick={() => { setIsMobileMenuOpen(false); router.push('/member'); }}
+                    onClick={() => { setIsMobileMenuOpen(false); router.push(getDashboardPath(currentUser.Role)); }}
                     className="flex-1 rounded-xl text-xs font-bold bg-indigo-600 hover:bg-indigo-700 text-white h-9 px-4"
                   >
                     Quản lý

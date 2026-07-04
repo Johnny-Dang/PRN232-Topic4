@@ -1,8 +1,8 @@
+using System.Security.Claims;
 using BusinessLogicLayer.DTOs.Requests;
 using BusinessLogicLayer.Services.Interfaces;
-using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Authorization;
-using System.Security.Claims;
+using Microsoft.AspNetCore.Mvc;
 
 namespace SEALHackathonSystem.Controllers
 {
@@ -18,13 +18,29 @@ namespace SEALHackathonSystem.Controllers
             _eventService = eventService;
         }
 
-        [HttpGet("{eventId}")]
+        [AllowAnonymous]
+        [HttpGet("published")]
+        public async Task<IActionResult> GetPublishedEvents()
+        {
+            try
+            {
+                var result = await _eventService.GetPublishedEventsAsync();
+                return Ok(result);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+        }
+
+        [HttpGet("{eventId:guid}")]
         public async Task<IActionResult> GetEventById(Guid eventId)
         {
             try
             {
                 var result = await _eventService.GetEventByIdAsync(eventId);
-                if (result == null) return NotFound();
+                if (result == null)
+                    return NotFound();
                 return Ok(result);
             }
             catch (Exception ex)
@@ -39,7 +55,8 @@ namespace SEALHackathonSystem.Controllers
             try
             {
                 var result = await _eventService.GetAllEventAsync();
-                if (result == null) return NotFound();
+                if (result == null)
+                    return NotFound();
                 return Ok(result);
             }
             catch (Exception ex)
@@ -72,12 +89,79 @@ namespace SEALHackathonSystem.Controllers
         /// </summary>
         [Authorize(Policy = "CoordinatorOnly")]
         [HttpPut("{eventId}")]
-        public async Task<IActionResult> UpdateEvent(Guid eventId, [FromBody] UpdateEventRequest request)
+        public async Task<IActionResult> UpdateEvent(
+            Guid eventId,
+            [FromBody] UpdateEventRequest request
+        )
         {
             try
             {
                 request.EventId = eventId;
                 var result = await _eventService.UpdateAsync(request);
+                return Ok(result);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+        }
+
+        [Authorize(Policy = "CoordinatorOnly")]
+        [HttpPost("{eventId}/publish")]
+        public async Task<IActionResult> PublishEvent(Guid eventId)
+        {
+            try
+            {
+                var userId = GetCurrentUserId();
+                var result = await _eventService.PublishAsync(eventId, userId);
+                return Ok(result);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+        }
+
+        [Authorize(Policy = "CoordinatorOnly")]
+        [HttpPost("{eventId}/unpublish")]
+        public async Task<IActionResult> UnpublishEvent(Guid eventId)
+        {
+            try
+            {
+                var userId = GetCurrentUserId();
+                var result = await _eventService.UnpublishAsync(eventId, userId);
+                return Ok(result);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+        }
+
+        [Authorize(Policy = "CoordinatorOnly")]
+        [HttpPost("{eventId}/feature")]
+        public async Task<IActionResult> FeatureEvent(Guid eventId)
+        {
+            try
+            {
+                var userId = GetCurrentUserId();
+                var result = await _eventService.SetFeaturedAsync(eventId, true, userId);
+                return Ok(result);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+        }
+
+        [Authorize(Policy = "CoordinatorOnly")]
+        [HttpPost("{eventId}/unfeature")]
+        public async Task<IActionResult> UnfeatureEvent(Guid eventId)
+        {
+            try
+            {
+                var userId = GetCurrentUserId();
+                var result = await _eventService.SetFeaturedAsync(eventId, false, userId);
                 return Ok(result);
             }
             catch (Exception ex)
@@ -123,10 +207,29 @@ namespace SEALHackathonSystem.Controllers
             }
         }
 
+        [Authorize(Policy = "CoordinatorOnly")]
+        [HttpDelete("{eventId}")]
+        public async Task<IActionResult> DeleteEvent(Guid eventId)
+        {
+            try
+            {
+                var userId = GetCurrentUserId();
+                var result = await _eventService.DeleteSoftAsync(eventId, userId);
+                return Ok(new { success = result, message = "Soft delete successful" });
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+        }
+
         private Guid GetCurrentUserId()
         {
             var userIdClaim = User.FindFirstValue(ClaimTypes.NameIdentifier);
-            if (string.IsNullOrWhiteSpace(userIdClaim) || !Guid.TryParse(userIdClaim, out var userId))
+            if (
+                string.IsNullOrWhiteSpace(userIdClaim)
+                || !Guid.TryParse(userIdClaim, out var userId)
+            )
                 throw new Exception("Invalid user token");
 
             return userId;

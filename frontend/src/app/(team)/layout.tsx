@@ -95,7 +95,7 @@ export default function TeamLayout({
                   Team Portal
                 </h2>
                 <p className="text-[10px] text-slate-400 font-semibold uppercase tracking-wider">
-                  Phoenix AI & Beta
+                  Team Workspace
                 </p>
               </div>
             </div>

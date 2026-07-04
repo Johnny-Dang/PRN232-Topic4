@@ -141,7 +141,7 @@ export default function CompetitionDetailPage({ params }: PageProps) {
       <div className="min-h-screen flex flex-col bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100">
         <div className="flex-1 flex items-center justify-center">
           <div className="text-center space-y-4">
-            <div className="w-10 h-10 border-4 border-indigo-650 border-t-transparent rounded-full animate-spin mx-auto" />
+            <div className="w-10 h-10 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin mx-auto" />
             <p className="text-xs font-bold text-slate-500">Đang tải thông tin cuộc thi...</p>
           </div>
         </div>
@@ -224,14 +224,14 @@ export default function CompetitionDetailPage({ params }: PageProps) {
         <div className="flex items-center gap-2 text-xs font-bold text-slate-400 dark:text-slate-550 mb-3.5 select-none">
           <span 
             onClick={() => router.push('/')}
-            className="hover:text-indigo-650 dark:hover:text-indigo-400 transition-colors cursor-pointer"
+            className="hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors cursor-pointer"
           >
             Trang chủ
           </span>
           <ChevronRight className="w-3.5 h-3.5 text-slate-350 dark:text-slate-750" />
           <span 
             onClick={() => router.push('/')}
-            className="hover:text-indigo-650 dark:hover:text-indigo-400 transition-colors cursor-pointer"
+            className="hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors cursor-pointer"
           >
             Cuộc thi
           </span>
@@ -299,7 +299,7 @@ export default function CompetitionDetailPage({ params }: PageProps) {
                   onClick={() => setActiveTab(tab.id)}
                   className={`py-2 px-4.5 text-xs font-extrabold rounded-xl transition-all duration-200 whitespace-nowrap cursor-pointer ${
                     activeTab === tab.id
-                      ? 'bg-indigo-650 text-white shadow-sm dark:bg-indigo-600'
+                      ? 'bg-indigo-600 text-white shadow-sm dark:bg-indigo-600'
                       : 'text-slate-500 hover:text-slate-700 dark:text-slate-450 dark:hover:text-slate-350 hover:bg-slate-100 dark:hover:bg-slate-900/50'
                   }`}
                 >
@@ -338,7 +338,7 @@ export default function CompetitionDetailPage({ params }: PageProps) {
                     
                     {/* Step 1 */}
                     <div className="relative">
-                      <div className="absolute -left-[31px] top-0 w-3.5 h-3.5 rounded-full bg-indigo-650 border-4 border-white dark:border-slate-950" />
+                      <div className="absolute -left-[31px] top-0 w-3.5 h-3.5 rounded-full bg-indigo-600 border-4 border-white dark:border-slate-950" />
                       <div className="space-y-1">
                         <div className="flex flex-wrap items-center gap-2">
                           <span className="font-bold text-slate-800 dark:text-white text-sm">Vòng Sơ Loại (Preliminary Round)</span>
@@ -467,7 +467,7 @@ export default function CompetitionDetailPage({ params }: PageProps) {
               </div>
 
               <div className="flex items-center gap-3">
-                <div className="w-9 h-9 rounded-xl bg-indigo-500/10 text-indigo-650 dark:text-indigo-400 flex items-center justify-center flex-shrink-0">
+                <div className="w-9 h-9 rounded-xl bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 flex items-center justify-center flex-shrink-0">
                   <Clock className="w-4.5 h-4.5" />
                 </div>
                 <div className="min-w-0">
@@ -506,7 +506,7 @@ export default function CompetitionDetailPage({ params }: PageProps) {
                     ? 'bg-slate-100 text-slate-450 dark:bg-slate-800 dark:text-slate-600 cursor-not-allowed border-none'
                     : isExpiring
                       ? 'bg-amber-500 hover:bg-amber-600 text-white'
-                      : 'bg-indigo-650 hover:bg-indigo-750 text-white dark:bg-indigo-600 dark:hover:bg-indigo-700'
+                      : 'bg-indigo-600 hover:bg-indigo-700 text-white dark:bg-indigo-600 dark:hover:bg-indigo-700'
                 }`}
               >
                 {isClosed ? 'Đã kết thúc' : 'Đăng ký ngay'}
@@ -544,7 +544,7 @@ export default function CompetitionDetailPage({ params }: PageProps) {
               ? 'bg-slate-100 text-slate-450 dark:bg-slate-800 dark:text-slate-600 cursor-not-allowed border-none'
               : isExpiring
                 ? 'bg-amber-500 hover:bg-amber-600 text-white'
-                : 'bg-indigo-650 hover:bg-indigo-750 text-white dark:bg-indigo-600 dark:hover:bg-indigo-700'
+                : 'bg-indigo-600 hover:bg-indigo-700 text-white dark:bg-indigo-600 dark:hover:bg-indigo-700'
           }`}
         >
           {isClosed ? 'Đã kết thúc' : 'Đăng ký'}

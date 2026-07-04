@@ -15,6 +15,16 @@ namespace BusinessLogicLayer.DTOs.Responses
         public string Description { get; set; } = string.Empty;
         public DateTime StartDate { get; set; }
         public DateTime EndDate { get; set; }
+        public string Status { get; set; } = string.Empty;
+        public bool IsPublished { get; set; }
+        public DateTime? PublishedAt { get; set; }
+        public Guid? PublishedBy { get; set; }
+        public bool IsFeatured { get; set; }
+        public string BannerUrl { get; set; } = string.Empty;
+        public string Organizer { get; set; } = string.Empty;
+        public string Format { get; set; } = string.Empty;
+        public string Audience { get; set; } = string.Empty;
+        public string Prize { get; set; } = string.Empty;
 
         public IEnumerable<RoundDto> Rounds { get; set; } = new List<RoundDto>();
     }
