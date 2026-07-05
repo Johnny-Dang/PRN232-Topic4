@@ -34,6 +34,13 @@ namespace DataAccessLayer.Database.Configurations
             builder.Property(x => x.Phone)
                 .HasMaxLength(30);
 
+            builder.Property(x => x.ShortId)
+                .IsRequired()
+                .HasMaxLength(6);
+
+            builder.HasIndex(x => x.ShortId)
+                .IsUnique();
+
             builder.Property(x => x.Role)
                 .HasMaxLength(50);
 

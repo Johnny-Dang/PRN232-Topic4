@@ -42,7 +42,7 @@ export default function HomeLandingPage() {
     try {
       return JSON.parse(stored) as User;
     } catch (e) {
-      console.error('Lá»—i phÃ¢n tÃ­ch cÃº phÃ¡p user session:', e);
+      console.error('Lỗi phân tích cú pháp user session:', e);
       return null;
     }
   });

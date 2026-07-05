@@ -15,5 +15,6 @@ namespace BusinessLogicLayer.Services.Interfaces
         Task<TeamDto> SetCategoryAsync(Guid teamId, Guid requesterUserId, SetTeamCategoryRequest request);
         Task DeleteAsync(Guid teamId);
         Task<TeamDto> AddMemberAsync(Guid teamId, Guid requesterUserId, AddTeamMemberRequest request);
+        Task<List<TeamMemberDetailDto>> GetMembersAsync(Guid teamId);
     }
 }

@@ -1,11 +1,11 @@
-using DataAccessLayer.Database.Configurations;
-using DataAccessLayer.Database.Entities;
-using Microsoft.EntityFrameworkCore;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using DataAccessLayer.Database.Configurations;
+using DataAccessLayer.Database.Entities;
+using Microsoft.EntityFrameworkCore;
 
 namespace DataAccessLayer.Database
 {
@@ -21,6 +21,7 @@ namespace DataAccessLayer.Database
         public DbSet<Criteria> Criterias { get; set; }
         public DbSet<Eliminations> Eliminations { get; set; }
         public DbSet<EventCriteria> EventCriteria { get; set; }
+        public DbSet<EventParticipants> EventParticipants { get; set; }
         public DbSet<Events> Events { get; set; }
         public DbSet<JudgeAssignments> JudgeAssignments { get; set; }
         public DbSet<Rankings> Rankings { get; set; }
@@ -34,20 +35,27 @@ namespace DataAccessLayer.Database
         public DbSet<Teams> Teams { get; set; }
         public DbSet<Users> Users { get; set; }
         public DbSet<Notifications> Notifications { get; set; }
+
         public new DbSet<T> Set<T>()
             where T : class => base.Set<T>();
+
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);
 
             modelBuilder.ApplyConfiguration<AdvancementRules>(new AdvancementRulesConfiguration());
             modelBuilder.ApplyConfiguration<AuditLogs>(new AuditLogsConfiguration());
-            modelBuilder.ApplyConfiguration<CalibrationScores>(new CalibrationScoresConfiguration());
+            modelBuilder.ApplyConfiguration<CalibrationScores>(
+                new CalibrationScoresConfiguration()
+            );
             modelBuilder.ApplyConfiguration<Categories>(new CategoriesConfiguration());
             modelBuilder.ApplyConfiguration<CategoryMentors>(new CategoryMentorsConfiguration());
             modelBuilder.ApplyConfiguration<Criteria>(new CriteriaConfiguration());
             modelBuilder.ApplyConfiguration<Eliminations>(new EliminationsConfiguration());
             modelBuilder.ApplyConfiguration<EventCriteria>(new EventCriteriaConfiguration());
+            modelBuilder.ApplyConfiguration<EventParticipants>(
+                new EventParticipantsConfiguration()
+            );
             modelBuilder.ApplyConfiguration<Events>(new EventsConfiguration());
             modelBuilder.ApplyConfiguration<JudgeAssignments>(new JudgeAssignmentsConfiguration());
             modelBuilder.ApplyConfiguration<Notifications>(new NotificationsConfiguration());
@@ -57,11 +65,12 @@ namespace DataAccessLayer.Database
             modelBuilder.ApplyConfiguration<Scores>(new ScoresConfiguration());
             modelBuilder.ApplyConfiguration<StudentProfiles>(new StudentProfilesConfiguration());
             modelBuilder.ApplyConfiguration<Submissions>(new SubmissionsConfiguration());
-            modelBuilder.ApplyConfiguration<SubmissionTemplates>(new SubmissionTemplatesConfiguration());
+            modelBuilder.ApplyConfiguration<SubmissionTemplates>(
+                new SubmissionTemplatesConfiguration()
+            );
             modelBuilder.ApplyConfiguration<TeamMembers>(new TeamMembersConfiguration());
             modelBuilder.ApplyConfiguration<Teams>(new TeamsConfiguration());
             modelBuilder.ApplyConfiguration<Users>(new UserConfiguration());
-            
         }
 
         public override Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)

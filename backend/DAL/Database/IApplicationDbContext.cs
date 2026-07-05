@@ -17,6 +17,7 @@ namespace DataAccessLayer.Database
         public DbSet<Criteria> Criterias { get; set; }
         public DbSet<Eliminations> Eliminations { get; set; }
         public DbSet<EventCriteria> EventCriteria { get; set; }
+        public DbSet<EventParticipants> EventParticipants { get; set; }
         public DbSet<Events> Events { get; set; }
         public DbSet<JudgeAssignments> JudgeAssignments { get; set; }
         public DbSet<Rankings> Rankings { get; set; }

@@ -52,6 +52,21 @@ const getStoredUserId = (): string => {
   }
 };
 
+const getStoredUserShortId = (): string => {
+  if (typeof window === 'undefined') return '';
+
+  const storedUser = localStorage.getItem('seal_user');
+  if (!storedUser) return '';
+
+  try {
+    const parsed = JSON.parse(storedUser) as Record<string, unknown>;
+    const shortId = parsed.ShortId || parsed.shortId;
+    return typeof shortId === 'string' ? shortId : '';
+  } catch {
+    return '';
+  }
+};
+
 const getAssignmentStatusClass = (status: CategoryMentor['Status']): string => {
   if (status === 'Approved') return 'bg-emerald-50 text-emerald-700 border-emerald-100';
   if (status === 'Rejected') return 'bg-rose-50 text-rose-700 border-rose-100';
@@ -73,6 +88,7 @@ function MentorDashboardContent() {
   const [error, setError] = useState('');
   const [message, setMessage] = useState('');
   const [currentUserId, setCurrentUserId] = useState('');
+  const [currentUserShortId, setCurrentUserShortId] = useState('');
   const [selectedTeamId, setSelectedTeamId] = useState('');
   const [feedbackText, setFeedbackText] = useState('');
   const [assignments, setAssignments] = useState<CategoryMentor[]>([]);
@@ -85,6 +101,7 @@ function MentorDashboardContent() {
     setError('');
     setMessage('');
     setCurrentUserId(getStoredUserId());
+    setCurrentUserShortId(getStoredUserShortId());
 
     try {
       const [fetchedAssignments, fetchedCategories, fetchedTeams, fetchedSubmissions] = await Promise.all([
@@ -194,7 +211,9 @@ function MentorDashboardContent() {
               </CardHeader>
               <CardContent className="space-y-4 p-6 pt-0">
                 {currentUserId && (
-                  <div className="truncate font-mono text-[10px] text-slate-400">Mentor ID: {currentUserId}</div>
+                  <div className="truncate font-mono text-[10px] text-slate-400">
+                    Mentor Code: {currentUserShortId || currentUserId}
+                  </div>
                 )}
                 {assignments.length === 0 ? (
                   <div className="rounded-xl border border-slate-100 bg-slate-50 p-3 text-xs font-medium text-slate-500 dark:border-slate-800 dark:bg-slate-950">

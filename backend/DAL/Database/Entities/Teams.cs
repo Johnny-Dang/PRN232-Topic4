@@ -11,10 +11,12 @@ namespace DataAccessLayer.Database.Entities
         public Guid TeamId { get; set; }
         public string TeamName { get; set; } = string.Empty;
         public Guid TeamLeaderId { get; set; }
+        public Guid? EventId { get; set; }
         public Guid? CategoryId { get; set; }
         public string TeamStatus { get; set; } = string.Empty;
 
         public virtual Users TeamLeader { get; set; } = null!;
+        public virtual Events? Event { get; set; }
         public virtual Categories? Category { get; set; }
 
         public virtual ICollection<TeamMembers> TeamMembers { get; set; } = new List<TeamMembers>();

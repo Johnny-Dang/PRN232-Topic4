@@ -248,6 +248,36 @@ namespace DataAccessLayer.Migrations
                     b.ToTable("EventCriteria", (string)null);
                 });
 
+            modelBuilder.Entity("DataAccessLayer.Database.Entities.EventParticipants", b =>
+                {
+                    b.Property<Guid>("EventParticipantId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("EventId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("RegisteredAt")
+                        .HasColumnType("datetime");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("EventParticipantId");
+
+                    b.HasIndex("EventId");
+
+                    b.HasIndex("UserId", "EventId")
+                        .IsUnique();
+
+                    b.ToTable("EventParticipants", (string)null);
+                });
+
             modelBuilder.Entity("DataAccessLayer.Database.Entities.Events", b =>
                 {
                     b.Property<Guid>("EventId")
@@ -671,6 +701,9 @@ namespace DataAccessLayer.Migrations
                     b.Property<Guid?>("CategoryId")
                         .HasColumnType("uniqueidentifier");
 
+                    b.Property<Guid?>("EventId")
+                        .HasColumnType("uniqueidentifier");
+
                     b.Property<Guid>("TeamLeaderId")
                         .HasColumnType("uniqueidentifier");
 
@@ -687,6 +720,8 @@ namespace DataAccessLayer.Migrations
                     b.HasKey("TeamId");
 
                     b.HasIndex("CategoryId");
+
+                    b.HasIndex("EventId");
 
                     b.HasIndex("TeamLeaderId");
 
@@ -732,9 +767,17 @@ namespace DataAccessLayer.Migrations
                         .HasMaxLength(50)
                         .HasColumnType("nvarchar(50)");
 
+                    b.Property<string>("ShortId")
+                        .IsRequired()
+                        .HasMaxLength(6)
+                        .HasColumnType("nvarchar(6)");
+
                     b.HasKey("UserId");
 
                     b.HasIndex("Email")
+                        .IsUnique();
+
+                    b.HasIndex("ShortId")
                         .IsUnique();
 
                     b.ToTable("Users", (string)null);
@@ -874,6 +917,25 @@ namespace DataAccessLayer.Migrations
                     b.Navigation("Criteria");
 
                     b.Navigation("Event");
+                });
+
+            modelBuilder.Entity("DataAccessLayer.Database.Entities.EventParticipants", b =>
+                {
+                    b.HasOne("DataAccessLayer.Database.Entities.Events", "Event")
+                        .WithMany("EventParticipants")
+                        .HasForeignKey("EventId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("DataAccessLayer.Database.Entities.Users", "User")
+                        .WithMany("EventParticipants")
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Event");
+
+                    b.Navigation("User");
                 });
 
             modelBuilder.Entity("DataAccessLayer.Database.Entities.JudgeAssignments", b =>
@@ -1038,6 +1100,11 @@ namespace DataAccessLayer.Migrations
                         .HasForeignKey("CategoryId")
                         .OnDelete(DeleteBehavior.Cascade);
 
+                    b.HasOne("DataAccessLayer.Database.Entities.Events", "Event")
+                        .WithMany("Teams")
+                        .HasForeignKey("EventId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
                     b.HasOne("DataAccessLayer.Database.Entities.Users", "TeamLeader")
                         .WithMany()
                         .HasForeignKey("TeamLeaderId")
@@ -1045,6 +1112,8 @@ namespace DataAccessLayer.Migrations
                         .IsRequired();
 
                     b.Navigation("Category");
+
+                    b.Navigation("Event");
 
                     b.Navigation("TeamLeader");
                 });
@@ -1073,7 +1142,11 @@ namespace DataAccessLayer.Migrations
 
                     b.Navigation("EventCriteria");
 
+                    b.Navigation("EventParticipants");
+
                     b.Navigation("Rounds");
+
+                    b.Navigation("Teams");
                 });
 
             modelBuilder.Entity("DataAccessLayer.Database.Entities.Rounds", b =>
@@ -1112,6 +1185,8 @@ namespace DataAccessLayer.Migrations
 
             modelBuilder.Entity("DataAccessLayer.Database.Entities.Users", b =>
                 {
+                    b.Navigation("EventParticipants");
+
                     b.Navigation("RefreshTokens");
 
                     b.Navigation("TeamMembers");

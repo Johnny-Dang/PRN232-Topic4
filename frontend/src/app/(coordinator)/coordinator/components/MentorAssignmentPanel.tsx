@@ -68,7 +68,9 @@ export default function MentorAssignmentPanel({
     }
 
     const mentor = mentorById.get(assignment.UserId);
-    return mentor ? `${mentor.FullName} (${mentor.Email})` : assignment.UserId;
+    return mentor
+      ? `${mentor.FullName} (${mentor.Email}${mentor.ShortId ? ` - ${mentor.ShortId}` : ''})`
+      : assignment.UserId;
   };
 
   return (
@@ -124,7 +126,7 @@ export default function MentorAssignmentPanel({
               <option value="">Chọn Mentor từ API</option>
               {mentors.map((mentor) => (
                 <option key={mentor.UserId} value={mentor.UserId}>
-                  {mentor.FullName} - {mentor.Email}
+                  {mentor.FullName} - {mentor.Email}{mentor.ShortId ? ` (${mentor.ShortId})` : ''}
                 </option>
               ))}
             </select>

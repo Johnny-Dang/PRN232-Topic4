@@ -5,6 +5,7 @@ export interface User {
   Email: string;
   FullName: string;
   Phone: string;
+  ShortId: string;
   Role: 'Leader' | 'Member' | 'Mentor' | 'Judge' | 'Coordinator';
   AccountStatus: string;
 }
@@ -25,6 +26,9 @@ export interface Event {
   Description: string;
   StartDate: string;
   EndDate: string;
+  Status: string;
+  IsPublished: boolean;
+  Format: string;
 }
 
 export interface Round {
@@ -48,6 +52,7 @@ export interface Team {
   TeamID: string;
   TeamName: string;
   TeamLeaderId: string;
+  EventID: string;
   CategoryID: string;
   TeamStatus: 'Active' | 'Pending' | 'Disqualified';
 }
@@ -238,6 +243,9 @@ export interface BackendTeam {
   TeamName?: string;
   teamLeaderId?: string;
   TeamLeaderId?: string;
+  eventId?: string;
+  EventId?: string;
+  EventID?: string;
   categoryId?: string;
   CategoryId?: string;
   CategoryID?: string;
@@ -348,6 +356,7 @@ const emptyUser = (userId = ''): User => ({
   Email: '',
   FullName: '',
   Phone: '',
+  ShortId: '',
   Role: 'Member',
   AccountStatus: '',
 });
@@ -383,6 +392,9 @@ const mapEvent = (event: BackendEvent): Event => ({
   Description: event.description || event.Description || '',
   StartDate: event.startDate || event.StartDate || '',
   EndDate: event.endDate || event.EndDate || '',
+  Status: event.status || event.Status || '',
+  IsPublished: event.isPublished ?? event.IsPublished ?? false,
+  Format: event.format || event.Format || '',
 });
 
 const mapRound = (round: BackendRound): Round => ({
@@ -406,6 +418,7 @@ const mapTeam = (team: BackendTeam): Team => ({
   TeamID: team.teamId || team.TeamId || team.TeamID || '',
   TeamName: team.teamName || team.TeamName || '',
   TeamLeaderId: team.teamLeaderId || team.TeamLeaderId || '',
+  EventID: team.eventId || team.EventId || team.EventID || '',
   CategoryID: team.categoryId || team.CategoryId || team.CategoryID || '',
   TeamStatus: (team.teamStatus || team.TeamStatus || 'Pending') as Team['TeamStatus'],
 });
@@ -556,9 +569,116 @@ export async function getTeams(): Promise<Team[]> {
   }
 }
 
-export async function getTeamMembers(_teamId: string): Promise<(TeamMember & { User: User; StudentProfile?: StudentProfile })[]> {
-  void _teamId;
-  return [];
+export interface BackendTeamMemberDetail {
+  teamMemberId?: string;
+  teamId?: string;
+  userId?: string;
+  joinDate?: string;
+  user?: {
+    userId?: string;
+    email?: string;
+    fullName?: string;
+    phone?: string;
+    shortId?: string;
+    role?: string;
+    accountStatus?: string;
+  };
+  studentProfile?: {
+    profileId?: string;
+    userId?: string;
+    studentType?: string;
+    studentCode?: string;
+    universityName?: string;
+  };
+}
+
+export async function getTeamMembers(teamId: string): Promise<(TeamMember & { User: User; StudentProfile?: StudentProfile })[]> {
+  if (!useLiveApi || !teamId) return [];
+  try {
+    const response = await apiClient.get<BackendTeamMemberDetail[]>(`/Teams/${teamId}/members`);
+    return response.data.map((member) => ({
+      TeamMemberId: member.teamMemberId || '',
+      TeamID: member.teamId || '',
+      UserId: member.userId || '',
+      JoinDate: member.joinDate || '',
+      User: {
+        UserID: member.user?.userId || '',
+        Email: member.user?.email || '',
+        FullName: member.user?.fullName || '',
+        Phone: member.user?.phone || '',
+        ShortId: member.user?.shortId || '',
+        Role: (member.user?.role || 'Member') as User['Role'],
+        AccountStatus: member.user?.accountStatus || '',
+      },
+      StudentProfile: member.studentProfile ? {
+        ProfileID: member.studentProfile.profileId || '',
+        UserID: member.studentProfile.userId || '',
+        StudentType: (member.studentProfile.studentType || 'External') as StudentProfile['StudentType'],
+        StudentCode: member.studentProfile.studentCode || '',
+        UniversityName: member.studentProfile.universityName || '',
+      } : undefined
+    }));
+  } catch (error: unknown) {
+    logApiError('getTeamMembers', error);
+    return [];
+  }
+}
+
+function buildAddTeamMemberPayload(userLookup: string) {
+  const value = userLookup.trim();
+  const guidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+  if (guidPattern.test(value)) {
+    return { UserId: value };
+  }
+
+  if (value.includes('@')) {
+    return { Email: value };
+  }
+
+  return { ShortId: value };
+}
+
+export async function addTeamMember(teamId: string, userLookup: string): Promise<Team | null> {
+  if (!useLiveApi || !teamId || !userLookup.trim()) return null;
+  try {
+    const response = await apiClient.post<BackendTeam>(
+      `/Teams/${teamId}/members`,
+      buildAddTeamMemberPayload(userLookup)
+    );
+    return mapTeam(response.data);
+  } catch (error: unknown) {
+    logApiError('addTeamMember', error);
+    throw error;
+  }
+}
+
+export async function createTeam(teamName: string): Promise<Team | null> {
+  if (!useLiveApi || !teamName.trim()) return null;
+  try {
+    const response = await apiClient.post<BackendTeam>('/Teams', {
+      TeamName: teamName.trim(),
+      TeamStatus: 'Active'
+    });
+    return mapTeam(response.data);
+  } catch (error: unknown) {
+    logApiError('createTeam', error);
+    throw error;
+  }
+}
+
+export async function setTeamCategory(teamId: string, categoryId: string, eventId: string): Promise<Team | null> {
+  if (!useLiveApi || !teamId || !categoryId || !eventId) return null;
+  try {
+    const response = await apiClient.put<BackendTeam>(`/Teams/${teamId}/category`, {
+      CategoryId: categoryId,
+      EventId: eventId
+    });
+    return mapTeam(response.data);
+  } catch (error: unknown) {
+    logApiError('setTeamCategory', error);
+    throw error;
+  }
 }
 
 export async function getSubmissions(roundId?: string): Promise<(Submission & { Team: Team })[]> {
@@ -572,6 +692,7 @@ export async function getSubmissions(roundId?: string): Promise<(Submission & { 
         TeamID: mappedSubmission.TeamID,
         TeamName: '',
         TeamLeaderId: '',
+        EventID: '',
         CategoryID: '',
         TeamStatus: 'Pending' as const,
       };
@@ -712,6 +833,7 @@ export async function getRankings(roundId?: string): Promise<(Ranking & { Team: 
             TeamID: mappedRanking.TeamId,
             TeamName: '',
             TeamLeaderId: '',
+            EventID: '',
             CategoryID: '',
             TeamStatus: 'Pending' as const,
           },

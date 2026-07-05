@@ -28,6 +28,8 @@ namespace DataAccessLayer.Database.Entities
         public bool IsDeleted { get; set; } = false;
 
         public virtual ICollection<Categories> Categories { get; set; } = new List<Categories>();
+        public virtual ICollection<EventParticipants> EventParticipants { get; set; } = new List<EventParticipants>();
+        public virtual ICollection<Teams> Teams { get; set; } = new List<Teams>();
         public virtual ICollection<Rounds> Rounds { get; set; } = new List<Rounds>();
         public virtual ICollection<EventCriteria> EventCriteria { get; set; } = new List<EventCriteria>();
     }

@@ -122,6 +122,20 @@ namespace SEALHackathonSystem.Controllers
             }
         }
 
+        [HttpGet("{teamId}/members")]
+        public async Task<IActionResult> GetMembers(Guid teamId)
+        {
+            try
+            {
+                var result = await _teamService.GetMembersAsync(teamId);
+                return Ok(result);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+        }
+
         private Guid GetCurrentUserId()
         {
             var userIdClaim = User.FindFirstValue(ClaimTypes.NameIdentifier);
