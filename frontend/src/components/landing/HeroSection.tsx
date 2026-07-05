@@ -1,10 +1,10 @@
-'use client';
+"use client";
 
-import React from 'react';
-import { Sparkles, Search, ArrowRight, Clock, ChevronDown } from 'lucide-react';
-import { Card, CardHeader, CardContent } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
+import React from "react";
+import { Sparkles, Search, ArrowRight, Clock, ChevronDown } from "lucide-react";
+import { Card, CardHeader, CardContent } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 
 interface HeroSectionProps {
   searchQuery: string;
@@ -32,11 +32,11 @@ export default function HeroSection({
       <div className="absolute top-1/3 left-1/4 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-indigo-500/10 rounded-full blur-3xl" />
 
       <div className="w-full max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-12 items-center relative z-10">
-
         {/* Left Column content */}
         <div className="lg:col-span-7 space-y-6 text-left">
           <Badge className="bg-indigo-500/20 text-indigo-300 border-none text-[10px] font-black tracking-widest uppercase px-3 py-1 rounded-full w-fit flex items-center gap-1.5">
-            <Sparkles className="w-3.5 h-3.5" /> Mở Đăng Ký SEAL Hackathon & Academic Leagues
+            <Sparkles className="w-3.5 h-3.5" /> Mở Đăng Ký SEAL Hackathon &
+            Academic Leagues
           </Badge>
 
           <h2 className="text-3xl md:text-5xl lg:text-6xl font-black tracking-tight leading-tight text-transparent bg-clip-text bg-gradient-to-r from-white via-indigo-50 to-indigo-200">
@@ -44,7 +44,9 @@ export default function HeroSection({
           </h2>
 
           <p className="text-slate-350 text-xs md:text-sm max-w-xl leading-relaxed font-semibold">
-            Cập nhật nhanh thông báo, thể lệ, thời hạn đăng ký và kết quả các cuộc thi học thuật, sáng tạo, công nghệ và kỹ năng hàng đầu toàn quốc.
+            Cập nhật nhanh thông báo, thể lệ, thời hạn đăng ký và kết quả các
+            cuộc thi học thuật, sáng tạo, công nghệ và kỹ năng hàng đầu toàn
+            quốc.
           </p>
 
           {/* Quick Hero Search Input */}
@@ -56,7 +58,7 @@ export default function HeroSection({
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               onKeyDown={(e) => {
-                if (e.key === 'Enter') {
+                if (e.key === "Enter") {
                   scrollToSection(competitionsSectionRef);
                 }
               }}
@@ -73,7 +75,10 @@ export default function HeroSection({
           {/* Hero CTAs */}
           <div className="flex flex-wrap items-center gap-4 pt-2">
             <Button
-              onClick={() => { setSelectedFilter('open'); scrollToSection(competitionsSectionRef); }}
+              onClick={() => {
+                setSelectedFilter("open");
+                scrollToSection(competitionsSectionRef);
+              }}
               size="lg"
               className="rounded-xl text-xs font-bold bg-white text-indigo-900 hover:bg-slate-100 px-6 h-11 cursor-pointer"
             >
@@ -93,7 +98,6 @@ export default function HeroSection({
         {/* Right Column: Featured Mockup Card */}
         <div className="lg:col-span-5 flex justify-center lg:justify-end">
           <Card className="w-full max-w-sm bg-slate-900/60 border-slate-800 backdrop-blur-md p-5 rounded-2xl relative shadow-2xl overflow-hidden group hover:border-slate-700 transition-all duration-300">
-
             {/* Expiring tag highlight banner */}
             <div className="absolute right-0 top-0 bg-gradient-to-l from-amber-500 to-amber-600 text-white text-[9px] font-black px-4 py-1.5 rounded-bl-xl tracking-wider uppercase z-10 flex items-center gap-1 shadow-md shadow-amber-950/40 animate-pulse">
               <Clock className="w-3 h-3" /> CÒN 2 NGÀY
@@ -114,26 +118,44 @@ export default function HeroSection({
 
             <CardContent className="p-0 pt-4 space-y-4 text-xs text-slate-300">
               <p className="text-[11px] text-slate-400 leading-relaxed font-semibold">
-                Bệ phóng đầu tư trị giá <strong>100.000.000 VND</strong> dành cho các dự án kinh doanh sáng tạo áp dụng Agile League.
+                Bệ phóng đầu tư trị giá <strong>100.000.000 VND</strong> dành
+                cho các dự án kinh doanh sáng tạo áp dụng Agile League.
               </p>
 
               <div className="space-y-2 bg-white/5 rounded-xl p-3 border border-white/5">
                 <div className="flex justify-between items-center text-[11px]">
-                  <span className="text-slate-400 font-semibold">Hình thức thi:</span>
-                  <span className="font-extrabold text-white">Hybrid (Online & Offline)</span>
+                  <span className="text-slate-400 font-semibold">
+                    Hình thức thi:
+                  </span>
+                  <span className="font-extrabold text-white">
+                    Hybrid (Online & Offline)
+                  </span>
                 </div>
                 <div className="flex justify-between items-center text-[11px]">
-                  <span className="text-slate-400 font-semibold">Giải thưởng:</span>
-                  <span className="font-extrabold text-amber-300">100.000.000 VND</span>
+                  <span className="text-slate-400 font-semibold">
+                    Giải thưởng:
+                  </span>
+                  <span className="font-extrabold text-amber-300">
+                    100.000.000 VND
+                  </span>
                 </div>
                 <div className="flex justify-between items-center text-[11px]">
-                  <span className="text-slate-400 font-semibold">Hạn đăng ký:</span>
-                  <span className="font-extrabold text-slate-200">03/07/2026</span>
+                  <span className="text-slate-400 font-semibold">
+                    Hạn đăng ký:
+                  </span>
+                  <span className="font-extrabold text-slate-200">
+                    03/07/2026
+                  </span>
                 </div>
               </div>
 
               <Button
-                onClick={() => handleAction('Đăng ký Ý tưởng Khởi nghiệp Trẻ 2026', 'Yêu cầu tham gia cuộc thi Khởi nghiệp của bạn đang được xét duyệt.')}
+                onClick={() =>
+                  handleAction(
+                    "Đăng ký Ý tưởng Khởi nghiệp Trẻ 2026",
+                    "Yêu cầu tham gia cuộc thi Khởi nghiệp của bạn đang được xét duyệt.",
+                  )
+                }
                 className="w-full rounded-xl bg-indigo-600 hover:bg-indigo-700 text-xs font-bold h-9 mt-2 cursor-pointer"
               >
                 Đăng Ký Tham Gia Ngay
@@ -141,15 +163,16 @@ export default function HeroSection({
             </CardContent>
           </Card>
         </div>
-
       </div>
 
       {/* Scroll Indicator */}
-      <div 
+      <div
         className="absolute bottom-6 left-1/2 -translate-x-1/2 z-10 flex flex-col items-center gap-1.5 animate-bounce cursor-pointer opacity-70 hover:opacity-100 transition-opacity"
         onClick={() => scrollToSection(competitionsSectionRef)}
       >
-        <span className="text-[9px] font-bold uppercase tracking-widest text-indigo-300">Cuộn xuống</span>
+        <span className="text-[9px] font-bold uppercase tracking-widest text-indigo-300">
+          Cuộn xuống
+        </span>
         <ChevronDown className="w-4 h-4 text-indigo-400" />
       </div>
     </section>

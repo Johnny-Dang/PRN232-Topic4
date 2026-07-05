@@ -1,9 +1,9 @@
-using BusinessLogicLayer.DTOs.Requests;
-using BusinessLogicLayer.Services.Interfaces;
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Authorization;
 using System;
 using System.Security.Claims;
+using BusinessLogicLayer.DTOs.Requests;
+using BusinessLogicLayer.Services.Interfaces;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 
 namespace SEALHackathonSystem.Controllers
 {
@@ -41,7 +41,8 @@ namespace SEALHackathonSystem.Controllers
             try
             {
                 var result = await _categoryMentorService.GetByIdAsync(categoryMentorId);
-                if (result == null) return NotFound();
+                if (result == null)
+                    return NotFound();
                 return Ok(result);
             }
             catch (Exception ex)
@@ -50,12 +51,20 @@ namespace SEALHackathonSystem.Controllers
             }
         }
 
+        [Authorize(Policy = "MentorOrCoordinator")]
         [HttpGet]
         public async Task<IActionResult> GetAll()
         {
             try
             {
-                var result = await _categoryMentorService.GetAllAsync();
+                var currentUserId = GetCurrentUserId();
+                var role = User.FindFirstValue(ClaimTypes.Role);
+
+                var result =
+                    role == "Mentor"
+                        ? await _categoryMentorService.GetByMentorUserIdAsync(currentUserId)
+                        : await _categoryMentorService.GetAllAsync();
+
                 return Ok(result);
             }
             catch (Exception ex)
@@ -66,7 +75,10 @@ namespace SEALHackathonSystem.Controllers
 
         [Authorize(Policy = "CoordinatorOnly")]
         [HttpPut("{categoryMentorId}")]
-        public async Task<IActionResult> Update(Guid categoryMentorId, [FromBody] UpdateCategoryMentorRequest request)
+        public async Task<IActionResult> Update(
+            Guid categoryMentorId,
+            [FromBody] UpdateCategoryMentorRequest request
+        )
         {
             try
             {
@@ -102,7 +114,10 @@ namespace SEALHackathonSystem.Controllers
             try
             {
                 var mentorUserId = GetCurrentUserId();
-                var result = await _categoryMentorService.ApproveAsync(categoryMentorId, mentorUserId);
+                var result = await _categoryMentorService.ApproveAsync(
+                    categoryMentorId,
+                    mentorUserId
+                );
                 return Ok(result);
             }
             catch (Exception ex)
@@ -118,7 +133,10 @@ namespace SEALHackathonSystem.Controllers
             try
             {
                 var mentorUserId = GetCurrentUserId();
-                var result = await _categoryMentorService.RejectAsync(categoryMentorId, mentorUserId);
+                var result = await _categoryMentorService.RejectAsync(
+                    categoryMentorId,
+                    mentorUserId
+                );
                 return Ok(result);
             }
             catch (Exception ex)
@@ -130,7 +148,10 @@ namespace SEALHackathonSystem.Controllers
         private Guid GetCurrentUserId()
         {
             var userIdClaim = User.FindFirstValue(ClaimTypes.NameIdentifier);
-            if (string.IsNullOrWhiteSpace(userIdClaim) || !Guid.TryParse(userIdClaim, out var userId))
+            if (
+                string.IsNullOrWhiteSpace(userIdClaim)
+                || !Guid.TryParse(userIdClaim, out var userId)
+            )
                 throw new Exception("Invalid user token");
 
             return userId;

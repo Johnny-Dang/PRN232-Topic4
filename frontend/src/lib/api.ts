@@ -149,7 +149,7 @@ export interface DetailedCompetition {
   ID: string;
   Name: string;
   Description: string;
-  Category: 'Technology' | 'Design' | 'Academic' | 'Startup' | 'Language' | 'Science' | 'Environment' | 'SoftSkills' | 'Volunteer' | 'Art';
+  Category: string;
   CategoryLabel: string;
   Status: 'open' | 'expiring' | 'upcoming' | 'closed';
   Deadline: string;

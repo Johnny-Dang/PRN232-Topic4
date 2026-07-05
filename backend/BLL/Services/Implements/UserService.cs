@@ -7,6 +7,7 @@ using DataAccessLayer.Repositories.Interfaces;
 using Microsoft.Extensions.Configuration;
 using Microsoft.IdentityModel.Tokens;
 using System;
+using System.Collections.Generic;
 using System.IdentityModel.Tokens.Jwt;
 using System.Linq;
 using System.Security.Claims;
@@ -23,7 +24,7 @@ namespace BusinessLogicLayer.Services.Implements
         private readonly IUnitOfWork _unitOfWork;
         private readonly IConfiguration _configuration;
 
-        private static readonly string[] CoordinatorAllowedRoles = new[] { "TeamMember", "TeamLeader", "Mentor", "Judge", "EventCoordinator", "Researcher" };
+        private static readonly string[] CoordinatorAllowedRoles = new[] { "TeamMember", "TeamLeader", "Mentor", "Judge", "Coordinator", "EventCoordinator", "Researcher" };
 
         public UserService(IUnitOfWork unitOfWork, IConfiguration configuration)
         {
@@ -114,6 +115,12 @@ namespace BusinessLogicLayer.Services.Implements
             var user = await _userRepository.GetByIdAsync(userId);
             if (user == null) return null;
             return MapToDto(user);
+        }
+
+        public async Task<List<UserDto>> GetByRoleAsync(string role)
+        {
+            var users = await _userRepository.FindAsync(user => user.Role == role);
+            return users.Select(MapToDto).ToList();
         }
 
         public async Task<AuthResponse> RefreshTokenAsync(RefreshTokenRequest request)

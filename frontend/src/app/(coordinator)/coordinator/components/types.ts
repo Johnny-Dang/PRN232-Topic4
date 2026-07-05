@@ -1,4 +1,5 @@
 import type { getAuditLogs, getEliminations, Submission as ApiSubmission, Team } from '@/lib/api';
+import type { User } from '@/services/types/auth';
 import type { Category as FlowCategory, Event as FlowEvent } from '@/services/types/competition';
 import type { CategoryMentor } from '@/services/types/mentor';
 
@@ -31,3 +32,4 @@ export interface ApiErrorShape {
 export type CoordinatorEvent = FlowEvent;
 export type CoordinatorCategory = FlowCategory;
 export type CoordinatorMentorAssignment = CategoryMentor;
+export type CoordinatorMentorUser = User;

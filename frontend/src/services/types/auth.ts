@@ -1,5 +1,7 @@
 import { z } from 'zod';
 
+const idSchema = z.string().min(1);
+
 const roleSchema = z.enum([
   'Leader',
   'Member',
@@ -12,7 +14,7 @@ const roleSchema = z.enum([
 ]);
 
 const normalizedUserSchema = z.object({
-  UserId: z.string().uuid(),
+  UserId: idSchema,
   Email: z.string().email(),
   FullName: z.string(),
   Phone: z.string(),
@@ -23,9 +25,9 @@ const normalizedUserSchema = z.object({
 
 export const userSchema = z
   .object({
-    UserId: z.string().uuid().optional(),
-    userId: z.string().uuid().optional(),
-    UserID: z.string().uuid().optional(),
+    UserId: idSchema.optional(),
+    userId: idSchema.optional(),
+    UserID: idSchema.optional(),
     Email: z.string().email().optional(),
     email: z.string().email().optional(),
     FullName: z.string().optional(),

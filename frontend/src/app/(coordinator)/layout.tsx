@@ -1,9 +1,9 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, Suspense } from 'react';
 import Link from 'next/link';
-import { usePathname, useRouter } from 'next/navigation';
-import { ShieldCheck, HelpCircle, ChevronRight, LogOut, Menu, ChevronLeft, Home } from 'lucide-react';
+import { usePathname, useRouter, useSearchParams } from 'next/navigation';
+import { ShieldCheck, HelpCircle, ChevronRight, LogOut, Menu, ChevronLeft, Home, Calendar, Users, Ban, Percent } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -12,13 +12,21 @@ const isCoordinatorRole = (role?: string): boolean => {
   return role === 'Coordinator' || role === 'EventCoordinator';
 };
 
-export default function CoordinatorLayout({
+const getAccessToken = (session: Record<string, unknown>): string => {
+  const token = session.AccessToken || session.accessToken || session.token;
+  return typeof token === 'string' ? token : '';
+};
+
+function CoordinatorLayoutContent({
   children,
 }: {
   children: React.ReactNode;
 }) {
   const pathname = usePathname();
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const currentTab = searchParams.get('tab') || 'events';
+
   const [authorized, setAuthorized] = useState<boolean>(false);
   const [authChecked, setAuthChecked] = useState<boolean>(false);
   const [isCollapsed, setIsCollapsed] = useState(() => {
@@ -44,12 +52,22 @@ export default function CoordinatorLayout({
     }
 
     try {
-      const user = JSON.parse(session) as { Role?: string };
+      const user = JSON.parse(session) as { Role?: string } & Record<string, unknown>;
       if (!isCoordinatorRole(user.Role)) {
         void Promise.resolve().then(() => {
           setAuthorized(false);
           setAuthChecked(true);
           router.push('/');
+        });
+        return;
+      }
+
+      if (!getAccessToken(user)) {
+        localStorage.removeItem('seal_user');
+        void Promise.resolve().then(() => {
+          setAuthorized(false);
+          setAuthChecked(true);
+          router.push('/login');
         });
         return;
       }
@@ -71,11 +89,40 @@ export default function CoordinatorLayout({
 
   const navItems = [
     {
-      label: 'Quản trị cuộc thi',
-      href: '/coordinator',
-      icon: ShieldCheck,
-      description: 'Nhật ký kiểm toán & thống kê IRR',
+      label: 'Quản lý sự kiện',
+      href: '/coordinator?tab=events',
+      icon: Calendar,
+      description: 'Tạo Event & quản lý trang chủ',
+      tabValue: 'events'
     },
+    {
+      label: 'Phân công Mentor',
+      href: '/coordinator?tab=mentor-assignment',
+      icon: Users,
+      description: 'Phân công Mentor vào Category',
+      tabValue: 'mentor-assignment'
+    },
+    {
+      label: 'Xử lý vi phạm',
+      href: '/coordinator?tab=disqualify',
+      icon: Ban,
+      description: 'Loại bỏ bài nộp không hợp lệ',
+      tabValue: 'disqualify'
+    },
+    {
+      label: 'Đối soát IRR',
+      href: '/coordinator?tab=irr-monitor',
+      icon: Percent,
+      description: 'Giám sát chênh lệch điểm số',
+      tabValue: 'irr-monitor'
+    },
+    {
+      label: 'Kiểm toán hoạt động',
+      href: '/coordinator?tab=audit-logs',
+      icon: ShieldCheck,
+      description: 'Nhật ký kiểm toán hệ thống',
+      tabValue: 'audit-logs'
+    }
   ];
 
   return (
@@ -107,7 +154,7 @@ export default function CoordinatorLayout({
           <nav className="flex-1 px-4 py-6 space-y-1">
             {navItems.map((item) => {
               const Icon = item.icon;
-              const isActive = pathname === item.href;
+              const isActive = pathname === '/coordinator' && currentTab === item.tabValue;
               return (
                 <Link
                   key={item.href}
@@ -194,5 +241,17 @@ export default function CoordinatorLayout({
         </div>
       </main>
     </div>
+  );
+}
+
+export default function CoordinatorLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
+  return (
+    <Suspense fallback={<div className="flex min-h-screen bg-slate-50 dark:bg-slate-950 items-center justify-center text-slate-500">Đang tải bố cục...</div>}>
+      <CoordinatorLayoutContent>{children}</CoordinatorLayoutContent>
+    </Suspense>
   );
 }

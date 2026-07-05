@@ -54,15 +54,15 @@ namespace SEAL_Hackathon
                     .RequireAuthenticatedUser()
                     .Build();
 
-                options.AddPolicy("CoordinatorOnly", policy => policy.RequireRole("Coordinator"));
+                options.AddPolicy("CoordinatorOnly", policy => policy.RequireRole("Coordinator", "EventCoordinator"));
                 options.AddPolicy("JudgeOnly", policy => policy.RequireRole("Judge"));
                 options.AddPolicy("MentorOnly", policy => policy.RequireRole("Mentor"));
                 options.AddPolicy("TeamLeaderOnly", policy => policy.RequireRole("TeamLeader"));
                 options.AddPolicy("TeamMemberOnly", policy => policy.RequireRole("TeamMember"));
-                options.AddPolicy("JudgeOrCoordinator", policy => policy.RequireRole("Judge", "Coordinator"));
-                options.AddPolicy("MentorOrCoordinator", policy => policy.RequireRole("Mentor", "Coordinator"));
-                options.AddPolicy("CalibrationViewer", policy => policy.RequireRole("Judge", "Coordinator", "Researcher"));
-                options.AddPolicy("ResearcherOrCoordinator", policy => policy.RequireRole("Researcher", "Coordinator"));
+                options.AddPolicy("JudgeOrCoordinator", policy => policy.RequireRole("Judge", "Coordinator", "EventCoordinator"));
+                options.AddPolicy("MentorOrCoordinator", policy => policy.RequireRole("Mentor", "Coordinator", "EventCoordinator"));
+                options.AddPolicy("CalibrationViewer", policy => policy.RequireRole("Judge", "Coordinator", "EventCoordinator", "Researcher"));
+                options.AddPolicy("ResearcherOrCoordinator", policy => policy.RequireRole("Researcher", "Coordinator", "EventCoordinator"));
             });
 
             builder.Services.AddSwaggerGen(c =>

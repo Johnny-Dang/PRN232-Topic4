@@ -1,18 +1,19 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { Send, UserPlus } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
 import { createCategoryMentorApi } from '@/services/api/mentor';
 import { getApiErrorMessage, getAssignmentStatusClass, getCategoryName } from './helpers';
-import type { CoordinatorCategory, CoordinatorMentorAssignment } from './types';
+import type { CoordinatorCategory, CoordinatorMentorAssignment, CoordinatorMentorUser } from './types';
 
 interface MentorAssignmentPanelProps {
   categories: CoordinatorCategory[];
+  mentors: CoordinatorMentorUser[];
   assignments: CoordinatorMentorAssignment[];
+  assignmentsLoading: boolean;
   selectedCategoryId: string;
   onSelectedCategoryChange: (categoryId: string) => void;
   onAssignmentCreated: (assignment: CoordinatorMentorAssignment) => void;
@@ -20,7 +21,9 @@ interface MentorAssignmentPanelProps {
 
 export default function MentorAssignmentPanel({
   categories,
+  mentors,
   assignments,
+  assignmentsLoading,
   selectedCategoryId,
   onSelectedCategoryChange,
   onAssignmentCreated,
@@ -30,9 +33,13 @@ export default function MentorAssignmentPanel({
   const [success, setSuccess] = useState('');
   const [error, setError] = useState('');
 
+  const mentorById = useMemo(() => {
+    return new Map(mentors.map((mentor) => [mentor.UserId, mentor]));
+  }, [mentors]);
+
   const handleAssignMentor = async (event: React.FormEvent) => {
     event.preventDefault();
-    if (!selectedCategoryId || !mentorUserId.trim()) return;
+    if (!selectedCategoryId || !mentorUserId) return;
 
     setAssigning(true);
     setSuccess('');
@@ -41,7 +48,7 @@ export default function MentorAssignmentPanel({
     try {
       const createdAssignment = await createCategoryMentorApi({
         CategoryId: selectedCategoryId,
-        UserId: mentorUserId.trim(),
+        UserId: mentorUserId,
       });
 
       onAssignmentCreated(createdAssignment);
@@ -53,6 +60,15 @@ export default function MentorAssignmentPanel({
     } finally {
       setAssigning(false);
     }
+  };
+
+  const getMentorLabel = (assignment: CoordinatorMentorAssignment) => {
+    if (assignment.MentorFullName || assignment.MentorEmail) {
+      return `${assignment.MentorFullName || assignment.UserId}${assignment.MentorEmail ? ` (${assignment.MentorEmail})` : ''}`;
+    }
+
+    const mentor = mentorById.get(assignment.UserId);
+    return mentor ? `${mentor.FullName} (${mentor.Email})` : assignment.UserId;
   };
 
   return (
@@ -94,16 +110,29 @@ export default function MentorAssignmentPanel({
 
           <div className="space-y-1.5">
             <label htmlFor="mentor-user-id" className="block text-xs font-semibold uppercase tracking-wider text-slate-500">
-              Mentor User ID
+              Mentor
             </label>
-            <Input
+            <select
               id="mentor-user-id"
-              className="h-10 rounded-xl border-slate-200 bg-slate-50 text-xs font-semibold dark:border-slate-700 dark:bg-slate-800"
-              placeholder="Nhập User ID Mentor từ API"
+              aria-label="Chọn Mentor để phân công"
+              className="h-10 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 text-xs font-semibold focus:outline-none dark:border-slate-700 dark:bg-slate-800"
               value={mentorUserId}
               onChange={(event) => setMentorUserId(event.target.value)}
+              disabled={mentors.length === 0}
               required
-            />
+            >
+              <option value="">Chọn Mentor từ API</option>
+              {mentors.map((mentor) => (
+                <option key={mentor.UserId} value={mentor.UserId}>
+                  {mentor.FullName} - {mentor.Email}
+                </option>
+              ))}
+            </select>
+            {mentors.length === 0 && (
+              <p className="text-[10px] font-medium text-amber-600">
+                Chưa tải được danh sách Mentor từ API.
+              </p>
+            )}
           </div>
 
           {error && (
@@ -122,7 +151,7 @@ export default function MentorAssignmentPanel({
             <Button
               type="submit"
               className="h-10 rounded-xl bg-indigo-600 px-5 text-xs font-bold text-white transition-colors hover:bg-indigo-700"
-              disabled={assigning || !selectedCategoryId}
+              disabled={assigning || !selectedCategoryId || !mentorUserId}
             >
               <Send className="mr-2 h-3.5 w-3.5" />
               {assigning ? 'Đang gửi...' : 'Gửi phân công'}
@@ -132,11 +161,15 @@ export default function MentorAssignmentPanel({
 
         <div className="space-y-2">
           <div className="text-[10px] font-black uppercase tracking-widest text-slate-400">
-            Phân công gần đây
+            Phân công của Category đang chọn
           </div>
-          {assignments.length === 0 ? (
+          {assignmentsLoading ? (
             <div className="rounded-xl border border-slate-100 bg-slate-50 p-3 text-xs font-medium text-slate-500 dark:border-slate-800 dark:bg-slate-950">
-              Chưa có dữ liệu phân công từ API.
+              Đang tải phân công Mentor của Category...
+            </div>
+          ) : assignments.length === 0 ? (
+            <div className="rounded-xl border border-slate-100 bg-slate-50 p-3 text-xs font-medium text-slate-500 dark:border-slate-800 dark:bg-slate-950">
+              Chưa có phân công Mentor cho Category này.
             </div>
           ) : (
             assignments.slice(0, 5).map((assignment) => (
@@ -146,14 +179,14 @@ export default function MentorAssignmentPanel({
               >
                 <div className="flex items-center justify-between gap-2">
                   <span className="truncate text-xs font-bold text-slate-800 dark:text-slate-200">
-                    {getCategoryName(categories, assignment.CategoryId)}
+                    {assignment.CategoryName || getCategoryName(categories, assignment.CategoryId)}
                   </span>
                   <Badge className={`border text-[9px] font-extrabold ${getAssignmentStatusClass(assignment.Status)}`}>
                     {assignment.Status}
                   </Badge>
                 </div>
-                <div className="truncate font-mono text-[10px] text-slate-500">
-                  Mentor: {assignment.UserId}
+                <div className="truncate text-[10px] font-semibold text-slate-500">
+                  Mentor: {getMentorLabel(assignment)}
                 </div>
               </div>
             ))

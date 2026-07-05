@@ -1,12 +1,14 @@
 'use client';
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { 
   getDetailedCompetitions, 
   getAnnouncements, 
+  getCategories,
   Announcement, 
   DetailedCompetition,
+  Category,
   User
 } from '@/lib/api';
 
@@ -30,6 +32,7 @@ export default function HomeLandingPage() {
   const [loading, setLoading] = useState<boolean>(true);
   const [competitions, setCompetitions] = useState<DetailedCompetition[]>([]);
   const [announcements, setAnnouncements] = useState<Announcement[]>([]);
+  const [categories, setCategories] = useState<Category[]>([]);
   const [currentUser, setCurrentUser] = useState<User | null>(() => {
     if (typeof window === 'undefined') return null;
 
@@ -87,14 +90,27 @@ export default function HomeLandingPage() {
     }
   }, []);
 
-  // Fetch competitions & announcements from API
+  // Fetch homepage data from API
   useEffect(() => {
     void Promise.resolve().then(() => {
       setLoading(true);
-      Promise.all([getDetailedCompetitions(), getAnnouncements()])
-      .then(([comps, anns]) => {
-        setCompetitions(comps);
+      Promise.all([getDetailedCompetitions(), getAnnouncements(), getCategories()])
+      .then(([comps, anns, cats]) => {
+        const competitionsWithCategories = comps.map((comp) => {
+          const category = cats.find((item) => item.EventID === comp.ID);
+
+          return category
+            ? {
+                ...comp,
+                Category: category.CategoryID,
+                CategoryLabel: category.CategoryName,
+              }
+            : comp;
+        });
+
+        setCompetitions(competitionsWithCategories);
         setAnnouncements(anns);
+        setCategories(cats);
         setLoading(false);
       })
       .catch(err => {
@@ -103,6 +119,21 @@ export default function HomeLandingPage() {
       });
     });
   }, []);
+
+  const categoryCompetitionCounts = useMemo(() => {
+    const counts = categories.reduce<Record<string, number>>((result, category) => {
+      result[category.CategoryID] = 0;
+      return result;
+    }, {});
+
+    competitions.forEach((competition) => {
+      if (competition.Category && Object.prototype.hasOwnProperty.call(counts, competition.Category)) {
+        counts[competition.Category] += 1;
+      }
+    });
+
+    return counts;
+  }, [categories, competitions]);
 
   // Logout handler
   const handleLogout = () => {
@@ -228,6 +259,7 @@ export default function HomeLandingPage() {
         <FeaturedCompetitions
           competitionsSectionRef={competitionsSectionRef}
           selectedCategory={selectedCategory}
+          categories={categories}
           setSelectedCategory={setSelectedCategory}
           loading={loading}
           filteredCompetitions={filteredCompetitions}
@@ -254,6 +286,9 @@ export default function HomeLandingPage() {
 
         {/* 7. CATEGORY EXPLORATION */}
         <CategoryExploration
+          categories={categories}
+          categoryCounts={categoryCompetitionCounts}
+          loading={loading}
           setSelectedCategory={setSelectedCategory}
           scrollToSection={scrollToSection}
           competitionsSectionRef={competitionsSectionRef}

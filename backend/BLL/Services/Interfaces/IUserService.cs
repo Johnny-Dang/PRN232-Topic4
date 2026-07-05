@@ -1,5 +1,6 @@
 using BusinessLogicLayer.DTOs.Requests;
 using BusinessLogicLayer.DTOs.Responses;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 
 namespace BusinessLogicLayer.Services.Interfaces
@@ -12,5 +13,6 @@ namespace BusinessLogicLayer.Services.Interfaces
         Task<AuthResponse> RefreshTokenAsync(RefreshTokenRequest request);
         Task<bool> RevokeRefreshTokenAsync(string refreshToken);
         Task<UserDto?> GetByIdAsync(System.Guid userId);
+        Task<List<UserDto>> GetByRoleAsync(string role);
     }
 }

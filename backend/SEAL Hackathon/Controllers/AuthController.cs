@@ -62,6 +62,21 @@ namespace SEALHackathonSystem.Controllers
             }
         }
 
+        [Authorize(Policy = "CoordinatorOnly")]
+        [HttpGet("mentors")]
+        public async Task<IActionResult> GetMentors()
+        {
+            try
+            {
+                var mentors = await _userService.GetByRoleAsync("Mentor");
+                return Ok(mentors);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+        }
+
         [AllowAnonymous]
         [HttpPost("refresh")]
         public async Task<IActionResult> RefreshToken([FromBody] RefreshTokenRequest request)

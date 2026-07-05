@@ -1,9 +1,11 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useState, Suspense } from 'react';
 import { Skeleton } from '@/components/ui/skeleton';
+import { useSearchParams } from 'next/navigation';
+import { getMentorsApi } from '@/services/api/auth';
 import { getCategoriesApi, getEventsApi } from '@/services/api/competition';
-import { getCategoryMentorsApi } from '@/services/api/mentor';
+import { getCategoryMentorsByCategoryApi } from '@/services/api/mentor';
 import {
   calculateMean,
   calculateStdDev,
@@ -25,13 +27,18 @@ import type {
   CoordinatorCategory,
   CoordinatorEvent,
   CoordinatorMentorAssignment,
+  CoordinatorMentorUser,
   EliminationList,
   IrrSubmissionData,
   SubmissionWithTeam,
 } from './components/types';
 
-export default function CoordinatorPage() {
+function CoordinatorDashboardContent() {
+  const searchParams = useSearchParams();
+  const activeTab = searchParams.get('tab') || 'events';
+
   const [loading, setLoading] = useState(true);
+  const [assignmentLoading, setAssignmentLoading] = useState(false);
   const [dashboardError, setDashboardError] = useState('');
   const [selectedCategoryId, setSelectedCategoryId] = useState('');
   const [events, setEvents] = useState<CoordinatorEvent[]>([]);
@@ -39,8 +46,28 @@ export default function CoordinatorPage() {
   const [eliminations, setEliminations] = useState<EliminationList>([]);
   const [auditLogs, setAuditLogs] = useState<AuditLogList>([]);
   const [categories, setCategories] = useState<CoordinatorCategory[]>([]);
+  const [mentors, setMentors] = useState<CoordinatorMentorUser[]>([]);
   const [mentorAssignments, setMentorAssignments] = useState<CoordinatorMentorAssignment[]>([]);
   const [irrData, setIrrData] = useState<IrrSubmissionData[]>([]);
+
+  const loadAssignmentsByCategory = useCallback(async (categoryId: string) => {
+    if (!categoryId) {
+      setMentorAssignments([]);
+      return;
+    }
+
+    setAssignmentLoading(true);
+    try {
+      const assignments = await getCategoryMentorsByCategoryApi(categoryId);
+      setMentorAssignments(assignments);
+    } catch (error) {
+      console.error('Cannot load mentor assignments for category:', error);
+      setMentorAssignments([]);
+      setDashboardError('Không thể tải danh sách phân công Mentor cho Category từ API.');
+    } finally {
+      setAssignmentLoading(false);
+    }
+  }, []);
 
   const loadData = useCallback(async () => {
     setLoading(true);
@@ -55,18 +82,33 @@ export default function CoordinatorPage() {
       setEliminations(fetchedEliminations);
       setAuditLogs(fetchedLogs);
 
-      try {
-        const [fetchedCategories, fetchedMentorAssignments] = await Promise.all([
-          getCategoriesApi(),
-          getCategoryMentorsApi(),
-        ]);
+      const [categoriesResult, mentorsResult] = await Promise.allSettled([getCategoriesApi(), getMentorsApi()]);
+      const mentorWorkflowErrors: string[] = [];
+      let nextCategoryId = '';
 
-        setCategories(fetchedCategories);
-        setMentorAssignments(fetchedMentorAssignments);
-        setSelectedCategoryId((current) => current || fetchedCategories[0]?.CategoryId || '');
-      } catch (mentorError) {
-        console.error('Không thể tải dữ liệu phân công Mentor:', mentorError);
+      if (categoriesResult.status === 'fulfilled') {
+        setCategories(categoriesResult.value);
+        nextCategoryId = categoriesResult.value[0]?.CategoryId || '';
+        setSelectedCategoryId(nextCategoryId);
+      } else {
+        console.error('Cannot load categories for mentor assignment:', categoriesResult.reason);
+        setCategories([]);
+        mentorWorkflowErrors.push('Không thể tải Category từ API.');
       }
+
+      if (mentorsResult.status === 'fulfilled') {
+        setMentors(mentorsResult.value);
+      } else {
+        console.error('Cannot load mentors for mentor assignment:', mentorsResult.reason);
+        setMentors([]);
+        mentorWorkflowErrors.push('Không thể tải danh sách Mentor từ API.');
+      }
+
+      if (mentorWorkflowErrors.length > 0) {
+        setDashboardError(mentorWorkflowErrors.join(' '));
+      }
+
+      await loadAssignmentsByCategory(nextCategoryId);
 
       const computedIrr: IrrSubmissionData[] = [];
       for (const submission of fetchedSubmissions) {
@@ -103,11 +145,16 @@ export default function CoordinatorPage() {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [loadAssignmentsByCategory]);
 
   useEffect(() => {
     void Promise.resolve().then(loadData);
   }, [loadData]);
+
+  const handleSelectedCategoryChange = (categoryId: string) => {
+    setSelectedCategoryId(categoryId);
+    void loadAssignmentsByCategory(categoryId);
+  };
 
   const handleEventCreated = (event: CoordinatorEvent) => {
     setEvents((current) => [event, ...current.filter((item) => item.EventId !== event.EventId)]);
@@ -122,10 +169,12 @@ export default function CoordinatorPage() {
   };
 
   const handleAssignmentCreated = (assignment: CoordinatorMentorAssignment) => {
-    setMentorAssignments((current) => [
-      assignment,
-      ...current.filter((item) => item.CategoryMentorId !== assignment.CategoryMentorId),
-    ]);
+    if (assignment.CategoryId === selectedCategoryId) {
+      setMentorAssignments((current) => [
+        assignment,
+        ...current.filter((item) => item.CategoryMentorId !== assignment.CategoryMentorId),
+      ]);
+    }
   };
 
   return (
@@ -144,38 +193,63 @@ export default function CoordinatorPage() {
           <Skeleton className="h-56 w-full rounded-2xl bg-slate-200 dark:bg-slate-800" />
         </div>
       ) : (
-        <div className="grid grid-cols-1 items-start gap-8 lg:grid-cols-3">
-          <div className="space-y-6 lg:col-span-1">
+        <div className="w-full space-y-6">
+          {activeTab === 'events' && (
             <EventHomeManager
               events={events}
               onEventCreated={handleEventCreated}
               onEventUpdated={handleEventUpdated}
               onEventDeleted={handleEventDeleted}
             />
+          )}
 
+          {activeTab === 'mentor-assignment' && (
             <MentorAssignmentPanel
               categories={categories}
+              mentors={mentors}
               assignments={mentorAssignments}
+              assignmentsLoading={assignmentLoading}
               selectedCategoryId={selectedCategoryId}
-              onSelectedCategoryChange={setSelectedCategoryId}
+              onSelectedCategoryChange={handleSelectedCategoryChange}
               onAssignmentCreated={handleAssignmentCreated}
             />
+          )}
 
-            <DisqualifyPanel submissions={submissions} />
-          </div>
+          {activeTab === 'disqualify' && (
+            <div className="space-y-6">
+              <DisqualifyPanel submissions={submissions} />
 
-          <div className="space-y-6 lg:col-span-2">
+              {eliminations.length > 0 && (
+                <div className="rounded-2xl border border-slate-200 bg-white p-4 text-xs text-slate-500 shadow-sm dark:border-slate-800 dark:bg-slate-900 dark:text-slate-400">
+                  Đã ghi nhận {eliminations.length} quyết định loại bài trong phiên dữ liệu hiện tại.
+                </div>
+              )}
+            </div>
+          )}
+
+          {activeTab === 'irr-monitor' && (
             <IrrMonitor data={irrData} />
-            <AuditLogMonitor logs={auditLogs} />
+          )}
 
-            {eliminations.length > 0 && (
-              <div className="rounded-2xl border border-slate-200 bg-white p-4 text-xs text-slate-500 shadow-sm dark:border-slate-800 dark:bg-slate-900 dark:text-slate-400">
-                Đã ghi nhận {eliminations.length} quyết định loại bài trong phiên dữ liệu hiện tại.
-              </div>
-            )}
-          </div>
+          {activeTab === 'audit-logs' && (
+            <AuditLogMonitor logs={auditLogs} />
+          )}
         </div>
       )}
     </div>
+  );
+}
+
+export default function CoordinatorPage() {
+  return (
+    <Suspense fallback={
+      <div className="space-y-6">
+        <Skeleton className="h-10 w-1/3 bg-slate-200 dark:bg-slate-800 rounded-xl" />
+        <Skeleton className="h-44 w-full rounded-2xl bg-slate-200 dark:bg-slate-800" />
+        <Skeleton className="h-56 w-full rounded-2xl bg-slate-200 dark:bg-slate-800" />
+      </div>
+    }>
+      <CoordinatorDashboardContent />
+    </Suspense>
   );
 }

@@ -11,6 +11,23 @@ declare const process: {
 
 const BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5279/api';
 
+const readAccessToken = (session: unknown): string => {
+  if (typeof session !== 'object' || session === null) return '';
+
+  const record = session as Record<string, unknown>;
+  const directToken = record.AccessToken || record.accessToken || record.token;
+  if (typeof directToken === 'string') return directToken;
+
+  const auth = record.Auth || record.auth;
+  if (typeof auth === 'object' && auth !== null) {
+    const authRecord = auth as Record<string, unknown>;
+    const nestedToken = authRecord.AccessToken || authRecord.accessToken || authRecord.token;
+    if (typeof nestedToken === 'string') return nestedToken;
+  }
+
+  return '';
+};
+
 export const apiClient = axios.create({
   baseURL: BASE_URL,
   headers: {
@@ -26,7 +43,7 @@ apiClient.interceptors.request.use(
       if (storedUser) {
         try {
           const parsed = JSON.parse(storedUser);
-          const token = parsed.AccessToken || parsed.token;
+          const token = readAccessToken(parsed);
           if (token && config.headers) {
             config.headers.Authorization = `Bearer ${token}`;
           }
