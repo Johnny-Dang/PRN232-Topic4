@@ -96,6 +96,29 @@ namespace BusinessLogicLayer.Services.Implements
                 .Select(MapSubmissionToDto);
         }
 
+        public async Task<CalibrationSubmissionDto?> GetSampleSubmissionByIdAsync(Guid submissionId)
+        {
+            var submission = await _submissionRepository.FirstOrDefaultAsync(x => 
+                x.SubmissionId == submissionId && x.IsCalibrationSample);
+            return submission == null ? null : MapSubmissionToDto(submission);
+        }
+
+        public async Task<IEnumerable<CalibrationScoreDto>> GetScoresAsync(Guid submissionId)
+        {
+            await GetCalibrationSubmissionAsync(submissionId);
+            var scores = await _calibrationScoreRepository.FindAsync(x => x.SubmissionId == submissionId);
+            return scores.Select(s => MapScoreToDto(s)).ToList();
+        }
+
+        public async Task<(bool hasScored, IEnumerable<CalibrationScoreDto> scores)> GetMyScoresAsync(Guid submissionId, Guid judgeUserId)
+        {
+            await GetCalibrationSubmissionAsync(submissionId);
+            var scores = await _calibrationScoreRepository.FindAsync(x =>
+                x.SubmissionId == submissionId && x.JudgeId == judgeUserId);
+            var hasScored = scores.Any();
+            return (hasScored, scores.Select(s => MapScoreToDto(s)).ToList());
+        }
+
         public async Task<IEnumerable<CalibrationScoreDto>> SubmitScoresAsync(Guid submissionId, Guid judgeUserId, SubmitScoresRequest request)
         {
             var submission = await GetCalibrationSubmissionAsync(submissionId);
@@ -131,7 +154,7 @@ namespace BusinessLogicLayer.Services.Implements
             }
 
             await _unitOfWork.SaveChangesAsync();
-            return result.Select(MapScoreToDto);
+            return result.Select(s => MapScoreToDto(s)).ToList();
         }
 
         public async Task<IEnumerable<CalibrationScoreDto>> UpdateScoresAsync(Guid submissionId, Guid judgeUserId, SubmitScoresRequest request)
@@ -161,7 +184,7 @@ namespace BusinessLogicLayer.Services.Implements
             }
 
             await _unitOfWork.SaveChangesAsync();
-            return result.Select(MapScoreToDto);
+            return result.Select(s => MapScoreToDto(s)).ToList();
         }
 
         public async Task<CalibrationAnalysisDto> GetAnalysisAsync(Guid submissionId)
@@ -175,7 +198,7 @@ namespace BusinessLogicLayer.Services.Implements
             var criteriaById = criteria.ToDictionary(x => x.CriteriaId, x => x);
             var judgeIds = scores.Select(x => x.JudgeId).Distinct().OrderBy(x => x).ToList();
             var judgeCodeById = judgeIds
-                .Select((judgeId, index) => new { judgeId, code = $"Judge {ToAlphabeticCode(index)}" })
+                .Select((guid, index) => new { judgeId = guid, code = $"Judge {ToAlphabeticCode(index)}" })
                 .ToDictionary(x => x.judgeId, x => x.code);
 
             var overallMean = scores.Any()
@@ -285,6 +308,26 @@ namespace BusinessLogicLayer.Services.Implements
             return builder.ToString();
         }
 
+        public async Task DeleteSampleSubmissionAsync(Guid submissionId, Guid userId)
+        {
+            var submission = await GetCalibrationSubmissionAsync(submissionId);
+            
+            var scores = await _calibrationScoreRepository.FindAsync(x => x.SubmissionId == submissionId);
+            foreach (var score in scores)
+            {
+                _calibrationScoreRepository.Delete(score);
+            }
+
+            await WriteAuditLogAsync(userId, "CALIBRATION_SAMPLE_DELETE", JsonSerializer.Serialize(new
+            {
+                submission.SubmissionId,
+                submission.CalibrationTitle
+            }), null);
+
+            _submissionRepository.Delete(submission);
+            await _unitOfWork.SaveChangesAsync();
+        }
+
         private async Task<Submissions> GetCalibrationSubmissionAsync(Guid submissionId)
         {
             var submission = await _submissionRepository.GetByIdAsync(submissionId);
@@ -383,18 +426,22 @@ namespace BusinessLogicLayer.Services.Implements
                 DemoURL = submission.DemoURL,
                 SlideURL = submission.SlideURL,
                 SubmittedAt = submission.SubmittedAt,
-                Status = submission.Status
+                Status = submission.Status,
+                JudgeCount = 0
             };
         }
 
-        private static CalibrationScoreDto MapScoreToDto(CalibrationScores score)
+        private static CalibrationScoreDto MapScoreToDto(CalibrationScores score, string? judgeCode = null, string? criteriaName = null)
         {
             return new CalibrationScoreDto
             {
+                CalibrationScoreId = score.CalibrationId,
                 CalibrationId = score.CalibrationId,
                 SubmissionId = score.SubmissionId,
                 JudgeId = score.JudgeId,
+                JudgeCode = judgeCode,
                 CriteriaId = score.CriteriaId,
+                CriteriaName = criteriaName,
                 ScoreValue = score.ScoreValue,
                 Comment = score.Comment,
                 ScoredAt = score.ScoredAt

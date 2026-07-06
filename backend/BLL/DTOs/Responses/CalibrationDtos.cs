@@ -8,23 +8,36 @@ namespace BusinessLogicLayer.DTOs.Responses
         public Guid SubmissionId { get; set; }
         public Guid TeamId { get; set; }
         public Guid RoundId { get; set; }
+        public string? RoundName { get; set; }
+        public Guid? EventId { get; set; }
+        public string? EventName { get; set; }
         public string CalibrationTitle { get; set; } = string.Empty;
         public string RepositoryURL { get; set; } = string.Empty;
         public string DemoURL { get; set; } = string.Empty;
         public string SlideURL { get; set; } = string.Empty;
         public DateTime SubmittedAt { get; set; }
         public string Status { get; set; } = string.Empty;
+        public int JudgeCount { get; set; }
     }
 
     public class CalibrationScoreDto
     {
+        public Guid CalibrationScoreId { get; set; }
         public Guid CalibrationId { get; set; }
         public Guid SubmissionId { get; set; }
         public Guid JudgeId { get; set; }
+        public string? JudgeCode { get; set; }
         public Guid CriteriaId { get; set; }
+        public string? CriteriaName { get; set; }
         public decimal ScoreValue { get; set; }
-        public string Comment { get; set; } = string.Empty;
+        public string? Comment { get; set; }
         public DateTime ScoredAt { get; set; }
+    }
+
+    public class CalibrationScoreResponseDto
+    {
+        public bool hasScored { get; set; }
+        public List<CalibrationScoreDto> scores { get; set; } = new();
     }
 
     public class CalibrationAnalysisDto

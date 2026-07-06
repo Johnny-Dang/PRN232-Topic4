@@ -52,6 +52,54 @@ namespace SEALHackathonSystem.Controllers
             }
         }
 
+        [Authorize(Policy = "CalibrationViewer")]
+        [HttpGet("submissions/{submissionId}")]
+        public async Task<IActionResult> GetSampleSubmission(Guid submissionId)
+        {
+            try
+            {
+                var result = await _calibrationService.GetSampleSubmissionByIdAsync(submissionId);
+                if (result == null)
+                    return NotFound(new { message = "Calibration submission not found" });
+                return Ok(result);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+        }
+
+        [Authorize(Policy = "CalibrationViewer")]
+        [HttpGet("submissions/{submissionId}/scores")]
+        public async Task<IActionResult> GetScores(Guid submissionId)
+        {
+            try
+            {
+                var result = await _calibrationService.GetScoresAsync(submissionId);
+                return Ok(result);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+        }
+
+        [Authorize(Policy = "JudgeOnly")]
+        [HttpGet("submissions/{submissionId}/my-score")]
+        public async Task<IActionResult> GetMyScore(Guid submissionId)
+        {
+            try
+            {
+                var judgeUserId = GetCurrentUserId();
+                var (hasScored, scores) = await _calibrationService.GetMyScoresAsync(submissionId, judgeUserId);
+                return Ok(new { hasScored, scores });
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+        }
+
         [Authorize(Policy = "JudgeOnly")]
         [HttpPost("submissions/{submissionId}/scores")]
         public async Task<IActionResult> SubmitScores(Guid submissionId, [FromBody] SubmitScoresRequest request)
@@ -109,6 +157,22 @@ namespace SEALHackathonSystem.Controllers
                 var csv = await _calibrationService.ExportDatasetCsvAsync(submissionId, userId);
                 var fileName = $"calibration-{submissionId}.csv";
                 return File(Encoding.UTF8.GetBytes(csv), "text/csv", fileName);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+        }
+
+        [Authorize(Policy = "CoordinatorOnly")]
+        [HttpDelete("submissions/{submissionId}")]
+        public async Task<IActionResult> DeleteSampleSubmission(Guid submissionId)
+        {
+            try
+            {
+                var userId = GetCurrentUserId();
+                await _calibrationService.DeleteSampleSubmissionAsync(submissionId, userId);
+                return NoContent();
             }
             catch (Exception ex)
             {
