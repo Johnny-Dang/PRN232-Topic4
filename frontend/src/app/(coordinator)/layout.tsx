@@ -3,7 +3,7 @@
 import React, { useEffect, useState, Suspense } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
-import { ShieldCheck, HelpCircle, ChevronRight, LogOut, Menu, ChevronLeft, Home, Calendar, Users, Ban, Percent } from 'lucide-react';
+import { ShieldCheck, HelpCircle, ChevronRight, LogOut, Menu, ChevronLeft, Home, Calendar, Users, Ban, Percent, ListChecks, Trophy, UserCog, SlidersHorizontal } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -122,6 +122,34 @@ function CoordinatorLayoutContent({
       icon: ShieldCheck,
       description: 'Nhật ký kiểm toán hệ thống',
       tabValue: 'audit-logs'
+    },
+    {
+      label: 'Cấu hình Criteria',
+      href: '/coordinator?tab=event-criteria',
+      icon: SlidersHorizontal,
+      description: 'Cấu hình tiêu chí chấm điểm',
+      tabValue: 'event-criteria'
+    },
+    {
+      label: 'Quy tắc loại vào',
+      href: '/coordinator?tab=advancement-rules',
+      icon: ListChecks,
+      description: 'Cấu hình quy tắc vào vòng tiếp',
+      tabValue: 'advancement-rules'
+    },
+    {
+      label: 'Phân công Judge',
+      href: '/coordinator?tab=judge-assignment',
+      icon: UserCog,
+      description: 'Gán Judge cho các vòng thi',
+      tabValue: 'judge-assignment'
+    },
+    {
+      label: 'Bảng xếp hạng',
+      href: '/coordinator?tab=ranking-board',
+      icon: Trophy,
+      description: 'Xem & quản lý xếp hạng',
+      tabValue: 'ranking-board'
     }
   ];
 
