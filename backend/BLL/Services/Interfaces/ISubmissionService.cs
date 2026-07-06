@@ -11,6 +11,8 @@ namespace BusinessLogicLayer.Services.Interfaces
         Task<SubmissionDto> CreateAsync(AddSubmissionRequest request, Guid userId);
         Task<SubmissionDto?> GetByIdAsync(Guid submissionId);
         Task<IEnumerable<SubmissionDto>> GetAllAsync();
+        Task<IEnumerable<SubmissionDto>> GetByTeamIdAsync(Guid teamId);
+        Task<SubmissionDto?> GetByTeamAndRoundAsync(Guid teamId, Guid roundId);
         Task<SubmissionDto> UpdateAsync(UpdateSubmissionRequest request, Guid userId);
         Task DeleteAsync(Guid submissionId, Guid userId);
     }

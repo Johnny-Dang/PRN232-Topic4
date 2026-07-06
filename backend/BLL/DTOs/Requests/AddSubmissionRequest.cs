@@ -23,11 +23,15 @@ namespace BusinessLogicLayer.DTOs.Requests
         [StringLength(500)]
         public string SlideURL { get; set; } = string.Empty;
 
+        public Guid? VideoAssetId { get; set; }
+
+        public Guid? SlideAssetId { get; set; }
+
         public IEnumerable<ValidationResult> Validate(ValidationContext validationContext)
         {
-            if (string.IsNullOrWhiteSpace(RepositoryURL) && string.IsNullOrWhiteSpace(DemoURL) && string.IsNullOrWhiteSpace(SlideURL))
+            if (string.IsNullOrWhiteSpace(RepositoryURL) && string.IsNullOrWhiteSpace(DemoURL) && string.IsNullOrWhiteSpace(SlideURL) && VideoAssetId == null && SlideAssetId == null)
             {
-                yield return new ValidationResult("At least one URL must be provided.", new[] { nameof(RepositoryURL), nameof(DemoURL), nameof(SlideURL) });
+                yield return new ValidationResult("At least one URL or uploaded asset must be provided.", new[] { nameof(RepositoryURL), nameof(DemoURL), nameof(SlideURL), nameof(VideoAssetId), nameof(SlideAssetId) });
             }
         }
     }

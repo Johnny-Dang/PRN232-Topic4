@@ -45,6 +45,7 @@ namespace BusinessLogicLayer.Extensions
             serviceCollection.AddScoped<ITeamService, TeamService>();
             serviceCollection.AddScoped<IRoundService, RoundService>();
             serviceCollection.AddScoped<ISubmissionService, SubmissionService>();
+            serviceCollection.AddScoped<ISubmissionAssetService, SubmissionAssetService>();
             serviceCollection.AddScoped<IScoresService, ScoresService>();
             serviceCollection.AddScoped<IJudgeAssignmentService, JudgeAssignmentService>();
             serviceCollection.AddScoped<INotificationService, NotificationService>();

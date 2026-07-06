@@ -30,6 +30,7 @@ namespace DataAccessLayer.Database
         public DbSet<Scores> Scores { get; set; }
         public DbSet<StudentProfiles> StudentProfiles { get; set; }
         public DbSet<Submissions> Submissions { get; set; }
+        public DbSet<SubmissionAssets> SubmissionAssets { get; set; }
         public DbSet<SubmissionTemplates> SubmissionTemplates { get; set; }
         public DbSet<TeamMembers> TeamMembers { get; set; }
         public DbSet<Teams> Teams { get; set; }
@@ -65,6 +66,7 @@ namespace DataAccessLayer.Database
             modelBuilder.ApplyConfiguration<Scores>(new ScoresConfiguration());
             modelBuilder.ApplyConfiguration<StudentProfiles>(new StudentProfilesConfiguration());
             modelBuilder.ApplyConfiguration<Submissions>(new SubmissionsConfiguration());
+            modelBuilder.ApplyConfiguration<SubmissionAssets>(new SubmissionAssetsConfiguration());
             modelBuilder.ApplyConfiguration<SubmissionTemplates>(
                 new SubmissionTemplatesConfiguration()
             );

@@ -31,6 +31,7 @@ export default function Header({
 }: HeaderProps) {
   const router = useRouter();
   const [isDropdownOpen, setIsDropdownOpen] = React.useState(false);
+  
   const getDashboardPath = (role: SealUser['Role']): string => {
     switch (role) {
       case 'Coordinator':
@@ -61,24 +62,76 @@ export default function Header({
             S
           </div>
           <div>
-            <h1 className="font-extrabold text-slate-850 dark:text-slate-150 tracking-tight leading-none text-base">
+            <h1 className={`font-extrabold tracking-tight leading-none text-base transition-colors duration-300 ${
+              isScrolled ? 'text-slate-850 dark:text-slate-150' : 'text-white'
+            }`}>
               SEAL LEAGUE
             </h1>
-            <p className="text-[9px] text-slate-400 dark:text-slate-500 font-extrabold uppercase tracking-widest mt-0.5">
+            <p className={`text-[9px] font-extrabold uppercase tracking-widest mt-0.5 transition-colors duration-300 ${
+              isScrolled ? 'text-slate-400 dark:text-slate-500' : 'text-slate-350'
+            }`}>
               Competition Hub
             </p>
           </div>
         </div>
 
         {/* Desktop Nav Links */}
-        <nav className="hidden md:flex items-center gap-8 text-xs font-bold text-slate-655 dark:text-slate-350">
-          <a href="#" className="hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors">Trang chủ</a>
-          <button onClick={() => scrollToSection(competitionsSectionRef)} className="hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors cursor-pointer bg-transparent border-none">Cuộc thi</button>
-          <button onClick={() => scrollToSection(announcementsSectionRef)} className="hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors cursor-pointer bg-transparent border-none">Thông báo</button>
-          <button onClick={() => handleAction('Tra cứu Lịch thi', 'Hệ thống lịch thi đồng bộ đang được tạo dựng bởi ban tổ chức.', false)} className="hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors cursor-pointer bg-transparent border-none">Lịch thi</button>
-          <button onClick={() => handleAction('Xem Kết quả', 'Tính năng công bố kết quả tự động đang được hoàn thiện.', false)} className="hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors cursor-pointer bg-transparent border-none">Kết quả</button>
-          <button onClick={() => handleAction('Tải Hướng dẫn', 'Tài liệu hướng dẫn cuộc thi và tiêu chí kỹ thuật.', false)} className="hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors cursor-pointer bg-transparent border-none">Hướng dẫn</button>
-          <a href="#footer" className="hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors">Liên hệ</a>
+        <nav className={`hidden md:flex items-center gap-8 text-xs font-bold transition-colors duration-300 ${
+          isScrolled ? 'text-slate-655 dark:text-slate-350' : 'text-slate-200/90'
+        }`}>
+          <a href="#" className={`hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors duration-200 ${
+            isScrolled ? '' : 'hover:!text-white'
+          }`}>
+            Trang chủ
+          </a>
+          <button 
+            onClick={() => scrollToSection(competitionsSectionRef)} 
+            className={`transition-colors duration-200 cursor-pointer bg-transparent border-none ${
+              isScrolled ? 'hover:text-indigo-600 dark:hover:text-indigo-400' : 'hover:!text-white'
+            }`}
+          >
+            Cuộc thi
+          </button>
+          <button 
+            onClick={() => scrollToSection(announcementsSectionRef)} 
+            className={`transition-colors duration-200 cursor-pointer bg-transparent border-none ${
+              isScrolled ? 'hover:text-indigo-600 dark:hover:text-indigo-400' : 'hover:!text-white'
+            }`}
+          >
+            Thông báo
+          </button>
+          <button 
+            onClick={() => handleAction('Tra cứu Lịch thi', 'Hệ thống lịch thi đồng bộ đang được tạo dựng bởi ban tổ chức.', false)} 
+            className={`transition-colors duration-200 cursor-pointer bg-transparent border-none ${
+              isScrolled ? 'hover:text-indigo-600 dark:hover:text-indigo-400' : 'hover:!text-white'
+            }`}
+          >
+            Lịch thi
+          </button>
+          <button 
+            onClick={() => handleAction('Xem Kết quả', 'Tính năng công bố kết quả tự động đang được hoàn thiện.', false)} 
+            className={`transition-colors duration-200 cursor-pointer bg-transparent border-none ${
+              isScrolled ? 'hover:text-indigo-600 dark:hover:text-indigo-400' : 'hover:!text-white'
+            }`}
+          >
+            Kết quả
+          </button>
+          <button 
+            onClick={() => handleAction('Tải Hướng dẫn', 'Tài liệu hướng dẫn cuộc thi và tiêu chí kỹ thuật.', false)} 
+            className={`transition-colors duration-200 cursor-pointer bg-transparent border-none ${
+              isScrolled ? 'hover:text-indigo-600 dark:hover:text-indigo-400' : 'hover:!text-white'
+            }`}
+          >
+            Hướng dẫn
+          </button>
+          <a 
+            href="#footer" 
+            className={`hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors duration-200 ${
+              isScrolled ? '' : 'hover:!text-white'
+            }`}
+          >
+            Liên hệ
+          </a>
         </nav>
 
         {/* User Auth Action (Desktop) */}
@@ -88,20 +141,34 @@ export default function Header({
               {/* Dropdown Trigger */}
               <button
                 onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-                className="flex items-center gap-2 px-3 py-1.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/50 hover:bg-slate-100 dark:hover:bg-slate-800/80 transition-all cursor-pointer outline-none select-none text-left"
+                className={`flex items-center gap-2 px-3 py-1.5 rounded-xl border transition-all duration-300 cursor-pointer outline-none select-none text-left ${
+                  isScrolled 
+                    ? 'border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/50 hover:bg-slate-100 dark:hover:bg-slate-800/80 text-slate-800 dark:text-slate-200' 
+                    : 'border-white/10 bg-white/5 hover:bg-white/10 text-white'
+                }`}
               >
-                <div className="w-8 h-8 rounded-full bg-indigo-100 dark:bg-indigo-900/40 text-indigo-600 dark:text-indigo-400 flex items-center justify-center font-extrabold text-xs border border-indigo-200/20">
+                <div className={`w-8 h-8 rounded-full flex items-center justify-center font-extrabold text-xs border transition-colors duration-300 ${
+                  isScrolled 
+                    ? 'bg-indigo-100 dark:bg-indigo-900/40 text-indigo-600 dark:text-indigo-400 border-indigo-200/20' 
+                    : 'bg-white/10 text-white border-white/10'
+                }`}>
                   {currentUser.FullName ? currentUser.FullName.charAt(0).toUpperCase() : 'U'}
                 </div>
                 <div className="flex flex-col">
-                  <span className="text-xs font-bold text-slate-800 dark:text-slate-200 max-w-[120px] truncate">
+                  <span className={`text-xs font-bold max-w-[120px] truncate transition-colors duration-300 ${
+                    isScrolled ? 'text-slate-800 dark:text-slate-200' : 'text-white'
+                  }`}>
                     {currentUser.FullName}
                   </span>
-                  <span className="text-[9px] text-slate-400 dark:text-slate-500 font-extrabold uppercase tracking-wider">
+                  <span className={`text-[9px] font-extrabold uppercase tracking-wider transition-colors duration-300 ${
+                    isScrolled ? 'text-slate-400 dark:text-slate-500' : 'text-slate-300'
+                  }`}>
                     {currentUser.Role}
                   </span>
                 </div>
-                <ChevronDown className={`w-3.5 h-3.5 text-slate-400 transition-transform duration-200 ${isDropdownOpen ? 'rotate-180' : ''}`} />
+                <ChevronDown className={`w-3.5 h-3.5 transition-all duration-300 ${isDropdownOpen ? 'rotate-180' : ''} ${
+                  isScrolled ? 'text-slate-400' : 'text-slate-300'
+                }`} />
               </button>
 
               {/* Dropdown Menu Overlay */}
@@ -149,7 +216,11 @@ export default function Header({
               <Button
                 variant="ghost"
                 onClick={() => router.push('/login')}
-                className="text-xs font-bold h-9 px-4 text-slate-700 hover:bg-slate-100 dark:text-slate-350 dark:hover:bg-slate-800 rounded-xl cursor-pointer"
+                className={`text-xs font-bold h-9 px-4 rounded-xl cursor-pointer transition-colors duration-300 ${
+                  isScrolled 
+                    ? 'text-slate-700 hover:bg-slate-100 dark:text-slate-355 dark:hover:bg-slate-800' 
+                    : 'text-slate-200 hover:bg-white/10 hover:text-white'
+                }`}
               >
                 Đăng nhập
               </Button>
@@ -166,7 +237,11 @@ export default function Header({
         {/* Mobile hamburger menu button */}
         <button
           onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-          className="md:hidden p-2 rounded-lg text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer bg-transparent border-none"
+          className={`md:hidden p-2 rounded-lg transition-colors cursor-pointer bg-transparent border-none ${
+            isScrolled 
+              ? 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800' 
+              : 'text-white hover:bg-white/10'
+          }`}
         >
           {isMobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
         </button>

@@ -93,6 +93,7 @@ export default function MentorAssignmentPanel({
             <select
               id="mentor-category"
               aria-label="Chọn Category thi đấu để phân công Mentor"
+              title="Chọn Category thi đấu để phân công Mentor"
               className="h-10 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 text-xs font-semibold focus:outline-none dark:border-slate-700 dark:bg-slate-800"
               value={selectedCategoryId}
               onChange={(event) => onSelectedCategoryChange(event.target.value)}
@@ -117,6 +118,7 @@ export default function MentorAssignmentPanel({
             <select
               id="mentor-user-id"
               aria-label="Chọn Mentor để phân công"
+              title="Chọn Mentor để phân công"
               className="h-10 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 text-xs font-semibold focus:outline-none dark:border-slate-700 dark:bg-slate-800"
               value={mentorUserId}
               onChange={(event) => setMentorUserId(event.target.value)}

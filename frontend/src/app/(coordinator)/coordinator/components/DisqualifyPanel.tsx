@@ -47,6 +47,7 @@ export default function DisqualifyPanel({ submissions }: DisqualifyPanelProps) {
             <select
               id="disqualify-submission"
               aria-label="Chọn bài nộp của đội để loại"
+              title="Chọn bài nộp của đội để loại"
               className="h-10 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 text-xs font-semibold focus:outline-none dark:border-slate-700 dark:bg-slate-800"
               value={selectedSubmissionId}
               onChange={(event) => setSubmissionId(event.target.value)}

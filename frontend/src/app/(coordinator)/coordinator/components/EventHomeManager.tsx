@@ -243,6 +243,8 @@ export default function EventHomeManager({
               </label>
               <select
                 id="event-format"
+                aria-label="Chọn hình thức tổ chức sự kiện"
+                title="Chọn hình thức tổ chức sự kiện"
                 value={form.Format}
                 onChange={(event) => updateForm('Format', event.target.value)}
                 className="w-full h-10 px-3 rounded-xl border border-slate-200 bg-slate-50 text-xs font-semibold focus:outline-none dark:bg-slate-800 dark:border-slate-700"

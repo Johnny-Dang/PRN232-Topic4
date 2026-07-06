@@ -26,5 +26,6 @@ namespace DataAccessLayer.Database.Entities
         public virtual ICollection<Scores> Scores { get; set; } = new List<Scores>();
         public virtual ICollection<CalibrationScores> CalibrationScores { get; set; } = new List<CalibrationScores>();
         public virtual ICollection<Eliminations> Eliminations { get; set; } = new List<Eliminations>();
+        public virtual ICollection<SubmissionAssets> SubmissionAssets { get; set; } = new List<SubmissionAssets>();
     }
 }

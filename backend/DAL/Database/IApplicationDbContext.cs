@@ -25,6 +25,7 @@ namespace DataAccessLayer.Database
         public DbSet<Scores> Scores { get; set; }
         public DbSet<StudentProfiles> StudentProfiles { get; set; }
         public DbSet<Submissions> Submissions { get; set; }
+        public DbSet<SubmissionAssets> SubmissionAssets { get; set; }
         public DbSet<SubmissionTemplates> SubmissionTemplates { get; set; }
         public DbSet<TeamMembers> TeamMembers { get; set; }
         public DbSet<Teams> Teams { get; set; }

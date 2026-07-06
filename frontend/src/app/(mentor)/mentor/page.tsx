@@ -409,8 +409,11 @@ function MentorDashboardContent() {
               <CardContent className="p-6 pt-0">
                 <form onSubmit={handleSendFeedback} className="space-y-4">
                   <div className="space-y-1.5">
-                    <label className="block text-xs font-semibold uppercase tracking-wider text-slate-500">Chọn đội thi</label>
+                    <label htmlFor="mentor-feedback-team" className="block text-xs font-semibold uppercase tracking-wider text-slate-500">Chọn đội thi</label>
                     <select
+                      id="mentor-feedback-team"
+                      aria-label="Chọn đội thi để gửi phản hồi"
+                      title="Chọn đội thi để gửi phản hồi"
                       className="h-10 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 text-xs font-semibold focus:outline-none dark:border-slate-700 dark:bg-slate-800"
                       value={selectedTeamId}
                       onChange={(event) => setSelectedTeamId(event.target.value)}
@@ -428,10 +431,13 @@ function MentorDashboardContent() {
                     </select>
                   </div>
                   <div className="space-y-1.5">
-                    <label className="block text-xs font-semibold uppercase tracking-wider text-slate-500">
+                    <label htmlFor="mentor-feedback-text" className="block text-xs font-semibold uppercase tracking-wider text-slate-500">
                       Nội dung tư vấn / Nhận xét
                     </label>
                     <textarea
+                      id="mentor-feedback-text"
+                      aria-label="Nội dung tư vấn hoặc nhận xét"
+                      title="Nội dung tư vấn hoặc nhận xét"
                       rows={4}
                       className="w-full rounded-xl border border-slate-200 bg-slate-50 p-3 text-xs font-medium focus:outline-none dark:border-slate-700 dark:bg-slate-800"
                       value={feedbackText}

@@ -21,6 +21,7 @@ namespace DataAccessLayer.Database.Entities
 
         public virtual ICollection<TeamMembers> TeamMembers { get; set; } = new List<TeamMembers>();
         public virtual ICollection<Submissions> Submissions { get; set; } = new List<Submissions>();
+        public virtual ICollection<SubmissionAssets> SubmissionAssets { get; set; } = new List<SubmissionAssets>();
         public virtual ICollection<Rankings> Rankings { get; set; } = new List<Rankings>();
     }
 }

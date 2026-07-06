@@ -75,6 +75,43 @@ export interface Submission {
   Status: 'Submitted' | 'Updated' | 'Graded' | 'Disqualified';
 }
 
+export type SubmissionAssetType = 'VideoDemo' | 'SlideDocument';
+
+export interface SubmissionAsset {
+  SubmissionAssetId: string;
+  SubmissionId: string;
+  TeamID: string;
+  RoundID: string;
+  AssetType: SubmissionAssetType;
+  Provider: string;
+  CloudinaryAssetId: string;
+  PublicId: string;
+  SecureUrl: string;
+  ResourceType: 'video' | 'raw';
+  OriginalFileName: string;
+  Format: string;
+  ContentType: string;
+  FileSize: number;
+  DurationSeconds?: number | null;
+  UploadStatus: 'Pending' | 'Uploaded' | 'Failed' | 'Deleted';
+  CreatedAt: string;
+  UploadedAt?: string | null;
+}
+
+export interface CloudinaryUploadSignature {
+  SubmissionAssetId: string;
+  CloudName: string;
+  ApiKey: string;
+  Timestamp: number;
+  Signature: string;
+  Folder: string;
+  PublicId: string;
+  ResourceType: 'video' | 'raw';
+  UploadUrl: string;
+  AllowedFormats: string[];
+  MaxFileSize: number;
+}
+
 export interface Criteria {
   CriteriaID: string;
   TemplateID: string;
@@ -278,6 +315,82 @@ export interface BackendSubmission {
   Status?: string;
 }
 
+export interface BackendSubmissionAsset {
+  submissionAssetId?: string;
+  SubmissionAssetId?: string;
+  submissionId?: string | null;
+  SubmissionId?: string | null;
+  teamId?: string;
+  TeamId?: string;
+  TeamID?: string;
+  roundId?: string;
+  RoundId?: string;
+  RoundID?: string;
+  assetType?: string;
+  AssetType?: string;
+  provider?: string;
+  Provider?: string;
+  cloudinaryAssetId?: string;
+  CloudinaryAssetId?: string;
+  publicId?: string;
+  PublicId?: string;
+  secureUrl?: string;
+  SecureUrl?: string;
+  resourceType?: string;
+  ResourceType?: string;
+  originalFileName?: string;
+  OriginalFileName?: string;
+  format?: string;
+  Format?: string;
+  contentType?: string;
+  ContentType?: string;
+  fileSize?: number;
+  FileSize?: number;
+  durationSeconds?: number | null;
+  DurationSeconds?: number | null;
+  uploadStatus?: string;
+  UploadStatus?: string;
+  createdAt?: string;
+  CreatedAt?: string;
+  uploadedAt?: string | null;
+  UploadedAt?: string | null;
+}
+
+export interface BackendCloudinaryUploadSignature {
+  submissionAssetId?: string;
+  SubmissionAssetId?: string;
+  cloudName?: string;
+  CloudName?: string;
+  apiKey?: string;
+  ApiKey?: string;
+  timestamp?: number;
+  Timestamp?: number;
+  signature?: string;
+  Signature?: string;
+  folder?: string;
+  Folder?: string;
+  publicId?: string;
+  PublicId?: string;
+  resourceType?: string;
+  ResourceType?: string;
+  uploadUrl?: string;
+  UploadUrl?: string;
+  allowedFormats?: string[];
+  AllowedFormats?: string[];
+  maxFileSize?: number;
+  MaxFileSize?: number;
+}
+
+interface CloudinaryUploadResponse {
+  asset_id?: string;
+  public_id?: string;
+  secure_url?: string;
+  resource_type?: string;
+  format?: string;
+  bytes?: number;
+  duration?: number;
+}
+
 export interface BackendScore {
   scoreId?: string;
   ScoreId?: string;
@@ -432,6 +545,41 @@ const mapSubmission = (submission: BackendSubmission): Submission => ({
   SlideURL: submission.slideURL || submission.slideUrl || submission.SlideURL || '',
   SubmittedAt: submission.submittedAt || submission.SubmittedAt || '',
   Status: (submission.status || submission.Status || 'Submitted') as Submission['Status'],
+});
+
+const mapSubmissionAsset = (asset: BackendSubmissionAsset): SubmissionAsset => ({
+  SubmissionAssetId: asset.submissionAssetId || asset.SubmissionAssetId || '',
+  SubmissionId: asset.submissionId || asset.SubmissionId || '',
+  TeamID: asset.teamId || asset.TeamId || asset.TeamID || '',
+  RoundID: asset.roundId || asset.RoundId || asset.RoundID || '',
+  AssetType: (asset.assetType || asset.AssetType || 'VideoDemo') as SubmissionAssetType,
+  Provider: asset.provider || asset.Provider || 'Cloudinary',
+  CloudinaryAssetId: asset.cloudinaryAssetId || asset.CloudinaryAssetId || '',
+  PublicId: asset.publicId || asset.PublicId || '',
+  SecureUrl: asset.secureUrl || asset.SecureUrl || '',
+  ResourceType: (asset.resourceType || asset.ResourceType || 'raw') as SubmissionAsset['ResourceType'],
+  OriginalFileName: asset.originalFileName || asset.OriginalFileName || '',
+  Format: asset.format || asset.Format || '',
+  ContentType: asset.contentType || asset.ContentType || '',
+  FileSize: asset.fileSize || asset.FileSize || 0,
+  DurationSeconds: asset.durationSeconds ?? asset.DurationSeconds ?? null,
+  UploadStatus: (asset.uploadStatus || asset.UploadStatus || 'Pending') as SubmissionAsset['UploadStatus'],
+  CreatedAt: asset.createdAt || asset.CreatedAt || '',
+  UploadedAt: asset.uploadedAt ?? asset.UploadedAt ?? null,
+});
+
+const mapCloudinaryUploadSignature = (signature: BackendCloudinaryUploadSignature): CloudinaryUploadSignature => ({
+  SubmissionAssetId: signature.submissionAssetId || signature.SubmissionAssetId || '',
+  CloudName: signature.cloudName || signature.CloudName || '',
+  ApiKey: signature.apiKey || signature.ApiKey || '',
+  Timestamp: signature.timestamp || signature.Timestamp || 0,
+  Signature: signature.signature || signature.Signature || '',
+  Folder: signature.folder || signature.Folder || '',
+  PublicId: signature.publicId || signature.PublicId || '',
+  ResourceType: (signature.resourceType || signature.ResourceType || 'raw') as CloudinaryUploadSignature['ResourceType'],
+  UploadUrl: signature.uploadUrl || signature.UploadUrl || '',
+  AllowedFormats: signature.allowedFormats || signature.AllowedFormats || [],
+  MaxFileSize: signature.maxFileSize || signature.MaxFileSize || 0,
 });
 
 const mapScore = (score: BackendScore): Score => ({
@@ -707,10 +855,169 @@ export async function getSubmissions(roundId?: string): Promise<(Submission & { 
   }
 }
 
+const emptyTeamForSubmission = (submission: Submission): Team => ({
+  TeamID: submission.TeamID,
+  TeamName: '',
+  TeamLeaderId: '',
+  EventID: '',
+  CategoryID: '',
+  TeamStatus: 'Pending',
+});
+
+export async function getTeamSubmissions(teamId: string): Promise<(Submission & { Team: Team })[]> {
+  if (!useLiveApi || !teamId) return [];
+  try {
+    const response = await apiClient.get<BackendSubmission[]>(`/Submissions/team/${teamId}`);
+    const teams = await getTeams();
+    const team = teams.find((item) => item.TeamID === teamId);
+
+    return response.data.map((submission) => {
+      const mappedSubmission = mapSubmission(submission);
+      return {
+        ...mappedSubmission,
+        Team: team || emptyTeamForSubmission(mappedSubmission),
+      };
+    });
+  } catch (error: unknown) {
+    logApiError('getTeamSubmissions', error);
+    return [];
+  }
+}
+
+export async function getTeamSubmissionByRound(
+  teamId: string,
+  roundId: string
+): Promise<(Submission & { Team: Team }) | null> {
+  if (!useLiveApi || !teamId || !roundId) return null;
+  try {
+    const response = await apiClient.get<BackendSubmission>(`/Submissions/team/${teamId}/round/${roundId}`);
+    const mappedSubmission = mapSubmission(response.data);
+    const teams = await getTeams();
+    const team = teams.find((item) => item.TeamID === mappedSubmission.TeamID);
+
+    return {
+      ...mappedSubmission,
+      Team: team || emptyTeamForSubmission(mappedSubmission),
+    };
+  } catch (error: unknown) {
+    const status =
+      typeof error === 'object' && error !== null && 'response' in error
+        ? (error as { response?: { status?: number } }).response?.status
+        : undefined;
+    if (status !== 404) logApiError('getTeamSubmissionByRound', error);
+    return null;
+  }
+}
+
+export async function getSubmissionAssets(submissionId: string): Promise<SubmissionAsset[]> {
+  if (!useLiveApi || !submissionId) return [];
+  try {
+    const response = await apiClient.get<BackendSubmissionAsset[]>(`/SubmissionAssets/submission/${submissionId}`);
+    return response.data.map(mapSubmissionAsset);
+  } catch (error: unknown) {
+    logApiError('getSubmissionAssets', error);
+    return [];
+  }
+}
+
+export async function getSubmissionAssetsByTeamRound(teamId: string, roundId: string): Promise<SubmissionAsset[]> {
+  if (!useLiveApi || !teamId || !roundId) return [];
+  try {
+    const response = await apiClient.get<BackendSubmissionAsset[]>(`/SubmissionAssets/team/${teamId}/round/${roundId}`);
+    return response.data.map(mapSubmissionAsset);
+  } catch (error: unknown) {
+    logApiError('getSubmissionAssetsByTeamRound', error);
+    return [];
+  }
+}
+
+export async function signSubmissionAssetUpload(
+  teamId: string,
+  roundId: string,
+  assetType: SubmissionAssetType,
+  file: File
+): Promise<CloudinaryUploadSignature | null> {
+  if (!useLiveApi || !teamId || !roundId || !file) return null;
+  try {
+    const response = await apiClient.post<BackendCloudinaryUploadSignature>('/SubmissionAssets/sign-upload', {
+      TeamId: teamId,
+      RoundId: roundId,
+      AssetType: assetType,
+      FileName: file.name,
+      ContentType: file.type,
+      FileSize: file.size,
+    });
+    return mapCloudinaryUploadSignature(response.data);
+  } catch (error: unknown) {
+    logApiError('signSubmissionAssetUpload', error);
+    throw error;
+  }
+}
+
+export async function uploadFileToCloudinary(signature: CloudinaryUploadSignature, file: File): Promise<CloudinaryUploadResponse> {
+  const formData = new FormData();
+  formData.append('file', file);
+  formData.append('api_key', signature.ApiKey);
+  formData.append('timestamp', String(signature.Timestamp));
+  formData.append('signature', signature.Signature);
+  formData.append('folder', signature.Folder);
+  formData.append('public_id', signature.PublicId);
+
+  const response = await fetch(signature.UploadUrl, {
+    method: 'POST',
+    body: formData,
+  });
+
+  if (!response.ok) {
+    const message = await response.text();
+    throw new Error(message || 'Cloudinary upload failed.');
+  }
+
+  return (await response.json()) as CloudinaryUploadResponse;
+}
+
+export async function completeSubmissionAssetUpload(
+  submissionAssetId: string,
+  uploadResult: CloudinaryUploadResponse
+): Promise<SubmissionAsset | null> {
+  if (!useLiveApi || !submissionAssetId) return null;
+  try {
+    const response = await apiClient.post<BackendSubmissionAsset>('/SubmissionAssets/complete', {
+      SubmissionAssetId: submissionAssetId,
+      CloudinaryAssetId: uploadResult.asset_id || '',
+      PublicId: uploadResult.public_id || '',
+      SecureUrl: uploadResult.secure_url || '',
+      ResourceType: uploadResult.resource_type || '',
+      Format: uploadResult.format || '',
+      FileSize: uploadResult.bytes || 0,
+      DurationSeconds: uploadResult.duration ?? null,
+    });
+    return mapSubmissionAsset(response.data);
+  } catch (error: unknown) {
+    logApiError('completeSubmissionAssetUpload', error);
+    throw error;
+  }
+}
+
+export async function uploadSubmissionAsset(
+  teamId: string,
+  roundId: string,
+  assetType: SubmissionAssetType,
+  file: File
+): Promise<SubmissionAsset | null> {
+  const signature = await signSubmissionAssetUpload(teamId, roundId, assetType, file);
+  if (!signature) return null;
+  const uploadResult = await uploadFileToCloudinary(signature, file);
+  return completeSubmissionAssetUpload(signature.SubmissionAssetId, uploadResult);
+}
+
 export async function createSubmissionLinks(
   teamId: string,
   roundId: string,
-  links: Pick<Submission, 'RepositoryURL' | 'DemoURL' | 'SlideURL'>
+  links: Pick<Submission, 'RepositoryURL' | 'DemoURL' | 'SlideURL'> & {
+    VideoAssetId?: string;
+    SlideAssetId?: string;
+  }
 ): Promise<Submission | null> {
   if (!useLiveApi || !teamId || !roundId) return null;
   try {
@@ -720,6 +1027,8 @@ export async function createSubmissionLinks(
       RepositoryURL: links.RepositoryURL,
       DemoURL: links.DemoURL,
       SlideURL: links.SlideURL,
+      VideoAssetId: links.VideoAssetId || null,
+      SlideAssetId: links.SlideAssetId || null,
     });
 
     return mapSubmission(response.data);
@@ -731,7 +1040,10 @@ export async function createSubmissionLinks(
 
 export async function updateSubmissionLinks(
   submissionId: string,
-  links: Pick<Submission, 'RepositoryURL' | 'DemoURL' | 'SlideURL'>
+  links: Pick<Submission, 'RepositoryURL' | 'DemoURL' | 'SlideURL'> & {
+    VideoAssetId?: string;
+    SlideAssetId?: string;
+  }
 ): Promise<Submission | null> {
   if (!useLiveApi || !submissionId) return null;
   try {
@@ -740,6 +1052,8 @@ export async function updateSubmissionLinks(
       RepositoryURL: links.RepositoryURL,
       DemoURL: links.DemoURL,
       SlideURL: links.SlideURL,
+      VideoAssetId: links.VideoAssetId || null,
+      SlideAssetId: links.SlideAssetId || null,
     });
 
     return mapSubmission(response.data);

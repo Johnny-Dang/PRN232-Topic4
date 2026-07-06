@@ -125,10 +125,13 @@ export const TeamProfileCard: React.FC<TeamProfileCardProps> = ({
                   <div className="space-y-4">
                     {!tempCategoryName ? (
                       <div className="space-y-2">
-                        <label className="text-[10px] font-semibold text-slate-450 uppercase block">
+                        <label htmlFor="team-category-select" className="text-[10px] font-semibold text-slate-450 uppercase block">
                           Chọn hạng mục chuyên môn (Category)
                         </label>
                         <select
+                          id="team-category-select"
+                          aria-label="Chọn hạng mục chuyên môn"
+                          title="Chọn hạng mục chuyên môn"
                           className="h-9 w-full rounded-lg border border-slate-200 bg-slate-50 px-3 text-xs font-medium focus:outline-none dark:border-slate-700 dark:bg-slate-800"
                           onChange={(e) => setTempCategoryName(e.target.value)}
                           defaultValue=""

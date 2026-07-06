@@ -50,9 +50,8 @@ const getDashboardPath = (role: NormalizedRole | AuthUser['Role']): string => {
     case 'Mentor':
       return '/mentor';
     case 'Leader':
-      return '/leader';
     case 'Member':
-      return '/member';
+      return '/';
     default:
       return '/';
   }

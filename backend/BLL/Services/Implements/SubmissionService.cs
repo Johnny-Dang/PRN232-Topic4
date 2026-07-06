@@ -17,13 +17,15 @@ namespace BusinessLogicLayer.Services.Implements
         private readonly IGenericRepository<Rounds> _roundRepository;
         private readonly IGenericRepository<Teams> _teamRepository;
         private readonly INotificationService _notificationService;
+        private readonly ISubmissionAssetService _submissionAssetService;
         private readonly IUnitOfWork _unitOfWork;
         private readonly IGenericRepository<AuditLogs> _auditLogRepository;
 
-        public SubmissionService(IUnitOfWork unitOfWork, INotificationService notificationService)
+        public SubmissionService(IUnitOfWork unitOfWork, INotificationService notificationService, ISubmissionAssetService submissionAssetService)
         {
             _unitOfWork = unitOfWork;
             _notificationService = notificationService;
+            _submissionAssetService = submissionAssetService;
             _submissionRepository = _unitOfWork.GetRepository<Submissions>();
             _roundRepository = _unitOfWork.GetRepository<Rounds>();
             _teamRepository = _unitOfWork.GetRepository<Teams>();
@@ -87,14 +89,8 @@ namespace BusinessLogicLayer.Services.Implements
             await _auditLogRepository.AddAsync(auditLog);
 
             await _unitOfWork.SaveChangesAsync();
-
-            var assignmentRepository = _unitOfWork.GetRepository<JudgeAssignments>();
-            var assignments = await assignmentRepository.FindAsync(x => x.RoundId == request.RoundId);
-            foreach (var assignment in assignments)
-            {
-                var msg = $"[NOTIFICATION] Đội thi {team.TeamName} đã nộp bài dự thi cho vòng {round.RoundName}. Vui lòng truy cập để chấm điểm.";
-                await _notificationService.CreateNotificationAsync(assignment.UserId, msg);
-            }
+            await _submissionAssetService.AttachAssetsToSubmissionAsync(created.SubmissionId, request.TeamId, request.RoundId, request.VideoAssetId, request.SlideAssetId, userId);
+            await NotifyAssignedJudgesAsync(request.RoundId, $"[NOTIFICATION] Đội thi {team.TeamName} đã nộp bài dự thi cho vòng {round.RoundName}. Vui lòng truy cập để chấm điểm.");
 
             return MapToDto(created);
         }
@@ -102,14 +98,27 @@ namespace BusinessLogicLayer.Services.Implements
         public async Task<SubmissionDto?> GetByIdAsync(Guid submissionId)
         {
             var submission = await _submissionRepository.GetByIdAsync(submissionId);
-            if (submission == null) return null;
-            return MapToDto(submission);
+            return submission == null ? null : MapToDto(submission);
         }
 
         public async Task<IEnumerable<SubmissionDto>> GetAllAsync()
         {
             var submissions = await _submissionRepository.GetAllAsync();
             return submissions.Select(MapToDto);
+        }
+
+        public async Task<IEnumerable<SubmissionDto>> GetByTeamIdAsync(Guid teamId)
+        {
+            var submissions = await _submissionRepository.FindAsync(x => x.TeamId == teamId);
+            return submissions
+                .OrderByDescending(x => x.SubmittedAt)
+                .Select(MapToDto);
+        }
+
+        public async Task<SubmissionDto?> GetByTeamAndRoundAsync(Guid teamId, Guid roundId)
+        {
+            var submission = await _submissionRepository.FirstOrDefaultAsync(x => x.TeamId == teamId && x.RoundId == roundId);
+            return submission == null ? null : MapToDto(submission);
         }
 
         public async Task<SubmissionDto> UpdateAsync(UpdateSubmissionRequest request, Guid userId)
@@ -170,14 +179,8 @@ namespace BusinessLogicLayer.Services.Implements
             await _auditLogRepository.AddAsync(auditLog);
 
             await _unitOfWork.SaveChangesAsync();
-
-            var assignmentRepository = _unitOfWork.GetRepository<JudgeAssignments>();
-            var assignments = await assignmentRepository.FindAsync(x => x.RoundId == submission.RoundId);
-            foreach (var assignment in assignments)
-            {
-                var msg = $"[NOTIFICATION] Đội thi {updatedTeam.TeamName} đã cập nhật bài dự thi cho vòng {round.RoundName}. Vui lòng kiểm tra lại.";
-                await _notificationService.CreateNotificationAsync(assignment.UserId, msg);
-            }
+            await _submissionAssetService.AttachAssetsToSubmissionAsync(submission.SubmissionId, submission.TeamId, submission.RoundId, request.VideoAssetId, request.SlideAssetId, userId);
+            await NotifyAssignedJudgesAsync(submission.RoundId, $"[NOTIFICATION] Đội thi {updatedTeam.TeamName} đã cập nhật bài dự thi cho vòng {round.RoundName}. Vui lòng kiểm tra lại.");
 
             return MapToDto(submission);
         }
@@ -197,6 +200,16 @@ namespace BusinessLogicLayer.Services.Implements
 
             _submissionRepository.Delete(submission);
             await _unitOfWork.SaveChangesAsync();
+        }
+
+        private async Task NotifyAssignedJudgesAsync(Guid roundId, string message)
+        {
+            var assignmentRepository = _unitOfWork.GetRepository<JudgeAssignments>();
+            var assignments = await assignmentRepository.FindAsync(x => x.RoundId == roundId);
+            foreach (var assignment in assignments)
+            {
+                await _notificationService.CreateNotificationAsync(assignment.UserId, message);
+            }
         }
 
         private static SubmissionDto MapToDto(Submissions submission)

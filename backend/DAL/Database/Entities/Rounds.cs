@@ -20,6 +20,7 @@ namespace DataAccessLayer.Database.Entities
 
         public virtual ICollection<JudgeAssignments> JudgeAssignments { get; set; } = new List<JudgeAssignments>();
         public virtual ICollection<Submissions> Submissions { get; set; } = new List<Submissions>();
+        public virtual ICollection<SubmissionAssets> SubmissionAssets { get; set; } = new List<SubmissionAssets>();
         public virtual ICollection<Rankings> Rankings { get; set; } = new List<Rankings>();
         public virtual ICollection<AdvancementRules> AdvancementRules { get; set; } = new List<AdvancementRules>();
     }
