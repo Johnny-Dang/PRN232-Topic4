@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { Award, BarChart3, ClipboardList, Edit2, FileCode2, FileText, RefreshCw, Save, Send, Video } from 'lucide-react';
+import { Award, BarChart3, ClipboardList, Edit2, FileCode2, FileText, RefreshCw, Save, Send, Target, Video } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -24,8 +24,9 @@ import {
   updateScores,
   JudgeAssignedSubmission,
 } from '@/lib/api';
+import { JudgeCalibrationList } from './components';
 
-type TabType = 'scoring' | 'ranking';
+type TabType = 'scoring' | 'ranking' | 'calibration';
 
 export default function JudgePage() {
   const [activeTab, setActiveTab] = useState<TabType>('scoring');
@@ -226,6 +227,17 @@ export default function JudgePage() {
             >
               <BarChart3 className="h-3.5 w-3.5" />
               Bang xep hang
+            </button>
+            <button
+              onClick={() => setActiveTab('calibration')}
+              className={`flex items-center gap-1.5 rounded-r-xl px-3 py-2 text-xs font-semibold transition-colors ${
+                activeTab === 'calibration'
+                  ? 'bg-emerald-600 text-white'
+                  : 'text-slate-600 hover:bg-slate-50 dark:text-slate-400 dark:hover:bg-slate-800'
+              }`}
+            >
+              <Target className="h-3.5 w-3.5" />
+              Calibration
             </button>
           </div>
 
@@ -443,7 +455,7 @@ export default function JudgePage() {
             )}
           </div>
         </div>
-      ) : (
+      ) : activeTab === 'ranking' ? (
         <div className="space-y-6">
           <div className="flex items-center gap-4">
             <label className="text-sm font-semibold text-slate-700 dark:text-slate-300">Chon vong thi:</label>
@@ -523,7 +535,11 @@ export default function JudgePage() {
             </Card>
           )}
         </div>
-      )}
+      ) : activeTab === 'calibration' ? (
+        <div className="space-y-6">
+          <JudgeCalibrationList />
+        </div>
+      ) : null}
     </div>
   );
 }

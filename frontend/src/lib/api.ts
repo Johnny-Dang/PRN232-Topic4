@@ -137,6 +137,185 @@ export interface Score {
   ScoredAt: string;
 }
 
+// ============================================================================
+// CALIBRATION TYPES
+// ============================================================================
+
+export interface CalibrationSubmission {
+  CalibrationId: string;
+  EventId?: string;
+  EventName?: string;
+  RoundId: string;
+  RoundName?: string;
+  CalibrationTitle: string;
+  RepositoryURL?: string;
+  DemoURL?: string;
+  SlideURL?: string;
+  SubmittedAt: string;
+  Status: "Pending" | "InProgress" | "Completed";
+  JudgeCount: number;
+  TotalJudges?: number;
+}
+
+export interface CalibrationScoreInput {
+  CriteriaId: string;
+  ScoreValue: number;
+  Comment?: string;
+}
+
+export interface CalibrationScoreOutput {
+  CalibrationScoreId: string;
+  CalibrationId: string;
+  JudgeId: string;
+  JudgeCode: string;
+  CriteriaId: string;
+  CriteriaName: string;
+  ScoreValue: number;
+  Comment?: string;
+  ScoredAt: string;
+}
+
+export interface CalibrationScoreWithMyScore {
+  scores: CalibrationScoreOutput[];
+  myScore?: CalibrationScoreOutput[];
+  hasScored?: boolean;
+}
+
+export interface CriteriaVariance {
+  CriteriaId: string;
+  CriteriaName: string;
+  MeanScore: number;
+  Variance: number;
+  StandardDeviation: number;
+  MinScore: number;
+  MaxScore: number;
+  ScoreRange: number;
+}
+
+export interface JudgeSummary {
+  JudgeId: string;
+  JudgeCode: string;
+  AverageScore: number;
+  DeviationFromGroupMean: number;
+  ConsistencyLabel: "Harsher" | "Neutral" | "Lenient";
+}
+
+export interface CalibrationAnalysis {
+  SubmissionId: string;
+  CalibrationTitle: string;
+  JudgeCount: number;
+  CriteriaCount: number;
+  OverallMean: number;
+  CriteriaVariance: CriteriaVariance[];
+  JudgeSummaries: JudgeSummary[];
+  InconsistencyFlags: string[];
+}
+
+export interface BackendCalibrationSubmission {
+  calibrationId?: string;
+  CalibrationId?: string;
+  eventId?: string;
+  EventId?: string;
+  eventName?: string;
+  EventName?: string;
+  roundId?: string;
+  RoundId?: string;
+  roundName?: string;
+  RoundName?: string;
+  calibrationTitle?: string;
+  CalibrationTitle?: string;
+  repositoryURL?: string;
+  RepositoryURL?: string;
+  demoURL?: string;
+  DemoURL?: string;
+  slideURL?: string;
+  SlideURL?: string;
+  submittedAt?: string;
+  SubmittedAt?: string;
+  status?: string;
+  Status?: string;
+  judgeCount?: number;
+  JudgeCount?: number;
+  totalJudges?: number;
+  TotalJudges?: number;
+}
+
+export interface BackendCalibrationScore {
+  calibrationScoreId?: string;
+  CalibrationScoreId?: string;
+  calibrationId?: string;
+  CalibrationId?: string;
+  judgeId?: string;
+  JudgeId?: string;
+  judgeCode?: string;
+  JudgeCode?: string;
+  criteriaId?: string;
+  CriteriaId?: string;
+  criteriaName?: string;
+  CriteriaName?: string;
+  scoreValue?: number;
+  ScoreValue?: number;
+  comment?: string;
+  Comment?: string;
+  scoredAt?: string;
+  ScoredAt?: string;
+}
+
+export interface BackendCalibrationAnalysis {
+  submissionId?: string;
+  SubmissionId?: string;
+  calibrationTitle?: string;
+  CalibrationTitle?: string;
+  judgeCount?: number;
+  JudgeCount?: number;
+  criteriaCount?: number;
+  CriteriaCount?: number;
+  overallMean?: number;
+  OverallMean?: number;
+  criteriaVariance?: BackendCriteriaVariance[];
+  CriteriaVariance?: BackendCriteriaVariance[];
+  judgeSummaries?: BackendJudgeSummary[];
+  JudgeSummaries?: BackendJudgeSummary[];
+  inconsistencyFlags?: string[];
+  InconsistencyFlags?: string[];
+}
+
+export interface BackendCriteriaVariance {
+  criteriaId?: string;
+  CriteriaId?: string;
+  criteriaName?: string;
+  CriteriaName?: string;
+  meanScore?: number;
+  MeanScore?: number;
+  variance?: number;
+  Variance?: number;
+  standardDeviation?: number;
+  StandardDeviation?: number;
+  minScore?: number;
+  MinScore?: number;
+  maxScore?: number;
+  MaxScore?: number;
+  scoreRange?: number;
+  ScoreRange?: number;
+}
+
+export interface BackendJudgeSummary {
+  judgeId?: string;
+  JudgeId?: string;
+  judgeCode?: string;
+  JudgeCode?: string;
+  averageScore?: number;
+  AverageScore?: number;
+  deviationFromGroupMean?: number;
+  DeviationFromGroupMean?: number;
+  consistencyLabel?: string;
+  ConsistencyLabel?: string;
+}
+
+// ============================================================================
+// EXISTING INTERFACES (keeping for reference)
+// ============================================================================
+
 export interface CalibrationScore {
   CalibrationId: string;
   JudgeID: string;
@@ -714,6 +893,82 @@ const mapEventCriteria = (criteria: BackendEventCriteria): Criteria => ({
   TemplateID: criteria.eventCriteriaId || criteria.EventCriteriaId || "",
   CriteriaName: criteria.criteriaName || criteria.CriteriaName || "",
   Weight: criteria.weight || criteria.Weight || 0,
+});
+
+// ============================================================================
+// CALIBRATION MAPPING FUNCTIONS
+// ============================================================================
+
+const mapCalibrationSubmission = (
+  data: BackendCalibrationSubmission
+): CalibrationSubmission => ({
+  CalibrationId:
+    data.calibrationId || data.CalibrationId || "",
+  EventId: data.eventId || data.EventId || "",
+  EventName: data.eventName || data.EventName || "",
+  RoundId: data.roundId || data.RoundId || "",
+  RoundName: data.roundName || data.RoundName || "",
+  CalibrationTitle: data.calibrationTitle || data.CalibrationTitle || "",
+  RepositoryURL: data.repositoryURL || data.RepositoryURL || "",
+  DemoURL: data.demoURL || data.DemoURL || "",
+  SlideURL: data.slideURL || data.SlideURL || "",
+  SubmittedAt: data.submittedAt || data.SubmittedAt || "",
+  Status: (data.status || data.Status || "Pending") as CalibrationSubmission["Status"],
+  JudgeCount: data.judgeCount || data.JudgeCount || 0,
+  TotalJudges: data.totalJudges || data.TotalJudges || 0,
+});
+
+const mapCalibrationScore = (
+  score: BackendCalibrationScore
+): CalibrationScoreOutput => ({
+  CalibrationScoreId: score.calibrationScoreId || score.CalibrationScoreId || "",
+  CalibrationId: score.calibrationId || score.CalibrationId || "",
+  JudgeId: score.judgeId || score.JudgeId || "",
+  JudgeCode: score.judgeCode || score.JudgeCode || "",
+  CriteriaId: score.criteriaId || score.CriteriaId || "",
+  CriteriaName: score.criteriaName || score.CriteriaName || "",
+  ScoreValue: score.scoreValue || score.ScoreValue || 0,
+  Comment: score.comment || score.Comment || "",
+  ScoredAt: score.scoredAt || score.ScoredAt || "",
+});
+
+const mapCriteriaVariance = (
+  data: BackendCriteriaVariance
+): CriteriaVariance => ({
+  CriteriaId: data.criteriaId || data.CriteriaId || "",
+  CriteriaName: data.criteriaName || data.CriteriaName || "",
+  MeanScore: data.meanScore || data.MeanScore || 0,
+  Variance: data.variance || data.Variance || 0,
+  StandardDeviation: data.standardDeviation || data.StandardDeviation || 0,
+  MinScore: data.minScore || data.MinScore || 0,
+  MaxScore: data.maxScore || data.MaxScore || 0,
+  ScoreRange: data.scoreRange || data.ScoreRange || 0,
+});
+
+const mapJudgeSummary = (data: BackendJudgeSummary): JudgeSummary => ({
+  JudgeId: data.judgeId || data.JudgeId || "",
+  JudgeCode: data.judgeCode || data.JudgeCode || "",
+  AverageScore: data.averageScore || data.AverageScore || 0,
+  DeviationFromGroupMean: data.deviationFromGroupMean || data.DeviationFromGroupMean || 0,
+  ConsistencyLabel:
+    (data.consistencyLabel || data.ConsistencyLabel || "Neutral") as JudgeSummary["ConsistencyLabel"],
+});
+
+const mapCalibrationAnalysis = (
+  data: BackendCalibrationAnalysis
+): CalibrationAnalysis => ({
+  SubmissionId: data.submissionId || data.SubmissionId || "",
+  CalibrationTitle: data.calibrationTitle || data.CalibrationTitle || "",
+  JudgeCount: data.judgeCount || data.JudgeCount || 0,
+  CriteriaCount: data.criteriaCount || data.CriteriaCount || 0,
+  OverallMean: data.overallMean || data.OverallMean || 0,
+  CriteriaVariance: (data.criteriaVariance || data.CriteriaVariance || []).map(
+    mapCriteriaVariance
+  ),
+  JudgeSummaries: (data.judgeSummaries || data.JudgeSummaries || []).map(
+    mapJudgeSummary
+  ),
+  InconsistencyFlags: data.inconsistencyFlags || data.InconsistencyFlags || [],
 });
 
 const normalizeDate = (value: string): Date | null => {
@@ -1325,15 +1580,172 @@ export async function getAssignedSubmissions(): Promise<
   }
 }
 
-export async function getCalibrationScores(): Promise<
-  (CalibrationScore & {
-    Judge: User;
-    Criteria: Criteria;
-    Submission: Submission;
-    Team: Team;
-  })[]
-> {
-  return [];
+// ============================================================================
+// CALIBRATION API FUNCTIONS
+// ============================================================================
+
+export async function getCalibrationSubmissions(
+  filters?: { roundId?: string; eventId?: string; status?: string }
+): Promise<CalibrationSubmission[]> {
+  if (!useLiveApi) return [];
+  try {
+    const response = await apiClient.get<BackendCalibrationSubmission[]>(
+      "/Calibration/submissions",
+      { params: filters }
+    );
+    return response.data.map(mapCalibrationSubmission);
+  } catch (error: unknown) {
+    logApiError("getCalibrationSubmissions", error);
+    return [];
+  }
+}
+
+export async function getCalibrationSubmission(
+  id: string
+): Promise<CalibrationSubmission | null> {
+  if (!useLiveApi || !id) return null;
+  try {
+    const response = await apiClient.get<BackendCalibrationSubmission>(
+      `/Calibration/submissions/${id}`
+    );
+    return mapCalibrationSubmission(response.data);
+  } catch (error: unknown) {
+    logApiError("getCalibrationSubmission", error);
+    return null;
+  }
+}
+
+export async function createCalibrationSubmission(data: {
+  roundId: string;
+  calibrationTitle: string;
+  repositoryURL?: string;
+  demoURL?: string;
+  slideURL?: string;
+}): Promise<CalibrationSubmission | null> {
+  if (!useLiveApi) return null;
+  try {
+    const response = await apiClient.post<BackendCalibrationSubmission>(
+      "/Calibration/submissions",
+      {
+        roundId: data.roundId,
+        calibrationTitle: data.calibrationTitle,
+        repositoryURL: data.repositoryURL,
+        demoURL: data.demoURL,
+        slideURL: data.slideURL,
+      }
+    );
+    return mapCalibrationSubmission(response.data);
+  } catch (error: unknown) {
+    logApiError("createCalibrationSubmission", error);
+    throw error;
+  }
+}
+
+export async function getCalibrationScores(
+  calibrationId: string
+): Promise<CalibrationScoreWithMyScore> {
+  if (!useLiveApi || !calibrationId) {
+    return { scores: [], myScore: [], hasScored: false };
+  }
+  try {
+    const response = await apiClient.get<{
+      scores: BackendCalibrationScore[];
+      myScore?: BackendCalibrationScore[];
+    }>(`/Calibration/submissions/${calibrationId}/scores`);
+
+    const scores = (response.data.scores || []).map(mapCalibrationScore);
+    const myScore = (response.data.myScore || []).map(mapCalibrationScore);
+
+    return {
+      scores,
+      myScore,
+      hasScored: myScore.length > 0,
+    };
+  } catch (error: unknown) {
+    logApiError("getCalibrationScores", error);
+    return { scores: [], myScore: [], hasScored: false };
+  }
+}
+
+export async function getMyCalibrationScore(
+  calibrationId: string
+): Promise<{ hasScored: boolean; scores: CalibrationScoreOutput[] }> {
+  if (!useLiveApi || !calibrationId) {
+    return { hasScored: false, scores: [] };
+  }
+  try {
+    const response = await apiClient.get<{
+      hasScored: boolean;
+      scores: BackendCalibrationScore[];
+    }>(`/Calibration/submissions/${calibrationId}/my-score`);
+
+    return {
+      hasScored: response.data.hasScored || false,
+      scores: (response.data.scores || []).map(mapCalibrationScore),
+    };
+  } catch (error: unknown) {
+    logApiError("getMyCalibrationScore", error);
+    return { hasScored: false, scores: [] };
+  }
+}
+
+export async function submitCalibrationScore(
+  calibrationId: string,
+  scores: CalibrationScoreInput[]
+): Promise<CalibrationScoreOutput[]> {
+  const response = await apiClient.post<BackendCalibrationScore[]>(
+    `/Calibration/submissions/${calibrationId}/scores`,
+    { scores }
+  );
+  return response.data.map(mapCalibrationScore);
+}
+
+export async function updateCalibrationScore(
+  calibrationId: string,
+  scores: CalibrationScoreInput[]
+): Promise<CalibrationScoreOutput[]> {
+  const response = await apiClient.put<BackendCalibrationScore[]>(
+    `/Calibration/submissions/${calibrationId}/scores`,
+    { scores }
+  );
+  return response.data.map(mapCalibrationScore);
+}
+
+export async function getCalibrationAnalysis(
+  calibrationId: string
+): Promise<CalibrationAnalysis | null> {
+  if (!useLiveApi || !calibrationId) return null;
+  try {
+    const response = await apiClient.get<BackendCalibrationAnalysis>(
+      `/Calibration/submissions/${calibrationId}/analysis`
+    );
+    return mapCalibrationAnalysis(response.data);
+  } catch (error: unknown) {
+    logApiError("getCalibrationAnalysis", error);
+    return null;
+  }
+}
+
+export async function exportCalibrationCSV(
+  calibrationId: string
+): Promise<Blob | null> {
+  if (!useLiveApi || !calibrationId) return null;
+  try {
+    const response = await apiClient.get(
+      `/Calibration/submissions/${calibrationId}/export`,
+      { responseType: "blob" }
+    );
+    return response.data as Blob;
+  } catch (error: unknown) {
+    logApiError("exportCalibrationCSV", error);
+    throw error;
+  }
+}
+
+export async function deleteCalibrationSubmission(
+  id: string
+): Promise<void> {
+  await apiClient.delete(`/Calibration/submissions/${id}`);
 }
 
 export async function getAdvancementRules(
