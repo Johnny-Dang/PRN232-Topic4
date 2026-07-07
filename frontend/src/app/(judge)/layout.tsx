@@ -31,6 +31,7 @@ export default function JudgeLayout({
     if (typeof window === 'undefined') return false;
     return localStorage.getItem('sidebar_collapsed') === 'true';
   });
+  const [currentUser, setCurrentUser] = useState<{ FullName?: string; fullName?: string } | null>(null);
 
   const toggleSidebar = () => {
     const nextValue = !isCollapsed;
@@ -44,10 +45,11 @@ export default function JudgeLayout({
       router.push('/login');
     } else {
       try {
-        const user = JSON.parse(session) as { Role?: string };
+        const user = JSON.parse(session) as { Role?: string; FullName?: string; fullName?: string };
         if (user.Role !== 'Judge') {
           router.push('/');
         }
+        setCurrentUser(user);
       } catch {
         localStorage.removeItem('seal_user');
         router.push('/login');
@@ -83,7 +85,7 @@ export default function JudgeLayout({
                   Judge Portal
                 </h2>
                 <p className="text-[10px] text-slate-400 font-semibold uppercase tracking-wider">
-                  Lê Minh Hải
+                  {currentUser?.FullName || currentUser?.fullName || 'Judge'}
                 </p>
               </div>
             </div>
