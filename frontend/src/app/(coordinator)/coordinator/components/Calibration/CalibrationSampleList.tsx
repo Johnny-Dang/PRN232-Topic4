@@ -250,7 +250,7 @@ export default function CalibrationSampleList({
               <TableHead className="text-center">Số Judge</TableHead>
               <TableHead className="text-center">Trạng thái</TableHead>
               <TableHead>Ngày tạo</TableHead>
-              <TableHead className="w-[80px]"></TableHead>
+              <TableHead className="w-[100px]"></TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -314,7 +314,7 @@ export default function CalibrationSampleList({
                   <TableCell className="text-muted-foreground">
                     {formatDate(submission.SubmittedAt)}
                   </TableCell>
-                  <TableCell>
+                  <TableCell className="w-[100px] text-center">
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
                         <Button
@@ -329,7 +329,7 @@ export default function CalibrationSampleList({
                           )}
                         </Button>
                       </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
+                      <DropdownMenuContent align="end" className="z-[100] overflow-visible">
                         <DropdownMenuItem
                           onClick={() => handleViewDetail(submission)}
                         >
@@ -346,15 +346,7 @@ export default function CalibrationSampleList({
                         <CalibrationExportButton
                           calibrationId={submission.CalibrationId}
                           calibrationTitle={submission.CalibrationTitle}
-                          trigger={
-                            <DropdownMenuItem
-                              onSelect={(e) => e.preventDefault()}
-                              disabled={submission.JudgeCount === 0}
-                            >
-                              <FileSpreadsheet className="size-4" />
-                              Export CSV
-                            </DropdownMenuItem>
-                          }
+                          disabled={submission.JudgeCount === 0}
                         />
                         <DropdownMenuSeparator />
                         <DropdownMenuItem

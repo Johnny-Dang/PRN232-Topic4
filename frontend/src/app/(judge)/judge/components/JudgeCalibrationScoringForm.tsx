@@ -31,6 +31,7 @@ import {
   submitCalibrationScore,
   updateCalibrationScore,
   getCalibrationScores,
+  getEventCriteria,
 } from '@/lib/api';
 
 interface JudgeCalibrationScoringFormProps {
@@ -73,15 +74,34 @@ export default function JudgeCalibrationScoringForm({
     setErrors({});
 
     try {
-      const [myScoreResult, allScoresResult] = await Promise.all([
+      // Get criteria from API or use default
+      let criteriaData: ScoreFormData[] = [];
+      
+      if (submission.EventId) {
+        try {
+          const criteriaResult = await getEventCriteria(submission.EventId);
+          criteriaData = criteriaResult.map((criteria) => ({
+            criteriaId: criteria.CriteriaID,
+            criteriaName: criteria.CriteriaName,
+            scoreValue: 0,
+            comment: '',
+            minScore: 0,
+            maxScore: 10,
+          }));
+        } catch (e) {
+          console.warn('Failed to load criteria from API:', e);
+        }
+      }
+
+      // Fallback to default if no criteria from API
+      const defaultFormData = criteriaData.length > 0 ? criteriaData : getDefaultFormData();
+
+      const [myScoreResult] = await Promise.all([
         getMyCalibrationScore(submission.CalibrationId),
-        getCalibrationScores(submission.CalibrationId),
       ]);
 
       setExistingScores(myScoreResult.scores);
       setHasExistingScores(myScoreResult.hasScored);
-
-      const defaultFormData = getDefaultFormData();
 
       if (myScoreResult.hasScored && myScoreResult.scores.length > 0) {
         const mapped = defaultFormData.map((item) => {

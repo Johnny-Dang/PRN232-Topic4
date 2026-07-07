@@ -1,28 +1,29 @@
 'use client';
 
 import { useState } from 'react';
-import { Download, FileSpreadsheet, Loader2 } from 'lucide-react';
+import { FileSpreadsheet, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 
-import { Button } from '@/components/ui/button';
+import { DropdownMenuItem } from '@/components/ui/dropdown-menu';
 import { exportCalibrationCSV } from '@/lib/api';
 
 interface CalibrationExportButtonProps {
   calibrationId: string;
   calibrationTitle: string;
-  trigger?: React.ReactNode;
+  disabled?: boolean;
   onSuccess?: (filename: string) => void;
 }
 
 export default function CalibrationExportButton({
   calibrationId,
   calibrationTitle,
-  trigger,
+  disabled,
   onSuccess,
 }: CalibrationExportButtonProps) {
   const [loading, setLoading] = useState(false);
 
   const handleExport = async () => {
+    if (disabled || loading) return;
     setLoading(true);
 
     try {
@@ -61,33 +62,17 @@ export default function CalibrationExportButton({
     }
   };
 
-  if (trigger) {
+  if (disabled) {
     return (
-      <div onClick={(e) => e.stopPropagation()}>
-        {loading ? (
-          <Button
-            variant="ghost"
-            size="sm"
-            disabled
-            className="w-full justify-start"
-          >
-            <Loader2 className="size-4 animate-spin" />
-            Đang xuất...
-          </Button>
-        ) : (
-          <div onClick={handleExport}>{trigger}</div>
-        )}
-      </div>
+      <DropdownMenuItem disabled className="cursor-not-allowed opacity-50">
+        <FileSpreadsheet className="size-4" />
+        Export CSV
+      </DropdownMenuItem>
     );
   }
 
   return (
-    <Button
-      variant="outline"
-      size="sm"
-      onClick={handleExport}
-      disabled={loading}
-    >
+    <DropdownMenuItem onClick={handleExport} disabled={loading} className="cursor-pointer">
       {loading ? (
         <>
           <Loader2 className="size-4 animate-spin" />
@@ -95,10 +80,10 @@ export default function CalibrationExportButton({
         </>
       ) : (
         <>
-          <Download className="size-4" />
+          <FileSpreadsheet className="size-4" />
           Export CSV
         </>
       )}
-    </Button>
+    </DropdownMenuItem>
   );
 }

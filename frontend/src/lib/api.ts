@@ -214,6 +214,8 @@ export interface CalibrationAnalysis {
 export interface BackendCalibrationSubmission {
   calibrationId?: string;
   CalibrationId?: string;
+  submissionId?: string;
+  SubmissionId?: string;
   eventId?: string;
   EventId?: string;
   eventName?: string;
@@ -918,7 +920,7 @@ const mapEventCriteria = (criteria: BackendEventCriteria): Criteria => ({
 const mapCalibrationSubmission = (
   data: BackendCalibrationSubmission,
 ): CalibrationSubmission => ({
-  CalibrationId: data.calibrationId || data.CalibrationId || "",
+  CalibrationId: data.submissionId || data.SubmissionId || data.calibrationId || data.CalibrationId || "",
   EventId: data.eventId || data.EventId || "",
   EventName: data.eventName || data.EventName || "",
   RoundId: data.roundId || data.RoundId || "",

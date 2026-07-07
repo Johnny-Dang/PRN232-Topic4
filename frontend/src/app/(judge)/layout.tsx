@@ -15,22 +15,8 @@ export default function JudgeLayout({
 }) {
   const pathname = usePathname();
   const router = useRouter();
-  const [authorized] = useState<boolean>(() => {
-    if (typeof window === 'undefined') return false;
-    const session = localStorage.getItem('seal_user');
-    if (!session) return false;
-
-    try {
-      const user = JSON.parse(session) as { Role?: string };
-      return user.Role === 'Judge';
-    } catch {
-      return false;
-    }
-  });
-  const [isCollapsed, setIsCollapsed] = useState(() => {
-    if (typeof window === 'undefined') return false;
-    return localStorage.getItem('sidebar_collapsed') === 'true';
-  });
+  const [authorized, setAuthorized] = useState(false);
+  const [isCollapsed, setIsCollapsed] = useState(false);
   const [currentUser, setCurrentUser] = useState<{ FullName?: string; fullName?: string } | null>(null);
 
   const toggleSidebar = () => {
@@ -40,6 +26,8 @@ export default function JudgeLayout({
   };
 
   useEffect(() => {
+    setIsCollapsed(localStorage.getItem('sidebar_collapsed') === 'true');
+
     const session = localStorage.getItem('seal_user');
     if (!session) {
       router.push('/login');
@@ -49,6 +37,7 @@ export default function JudgeLayout({
         if (user.Role !== 'Judge') {
           router.push('/');
         }
+        setAuthorized(user.Role === 'Judge');
         setCurrentUser(user);
       } catch {
         localStorage.removeItem('seal_user');

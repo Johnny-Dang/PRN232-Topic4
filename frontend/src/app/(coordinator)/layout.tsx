@@ -29,10 +29,7 @@ function CoordinatorLayoutContent({
 
   const [authorized, setAuthorized] = useState<boolean>(false);
   const [authChecked, setAuthChecked] = useState<boolean>(false);
-  const [isCollapsed, setIsCollapsed] = useState(() => {
-    if (typeof window === 'undefined') return false;
-    return localStorage.getItem('sidebar_collapsed') === 'true';
-  });
+  const [isCollapsed, setIsCollapsed] = useState(false);
 
   const toggleSidebar = () => {
     const nextValue = !isCollapsed;
@@ -41,6 +38,8 @@ function CoordinatorLayoutContent({
   };
 
   useEffect(() => {
+    setIsCollapsed(localStorage.getItem('sidebar_collapsed') === 'true');
+
     const session = localStorage.getItem('seal_user');
     if (!session) {
       void Promise.resolve().then(() => {

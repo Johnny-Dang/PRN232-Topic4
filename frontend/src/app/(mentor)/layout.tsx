@@ -32,10 +32,7 @@ function MentorLayoutContent({ children }: { children: React.ReactNode }) {
   const currentTab = searchParams.get('tab') || 'assignments';
 
   const [authorized, setAuthorized] = useState(false);
-  const [isCollapsed, setIsCollapsed] = useState(() => {
-    if (typeof window === 'undefined') return false;
-    return localStorage.getItem('sidebar_collapsed') === 'true';
-  });
+  const [isCollapsed, setIsCollapsed] = useState(false);
 
   const toggleSidebar = () => {
     const nextValue = !isCollapsed;
@@ -44,6 +41,8 @@ function MentorLayoutContent({ children }: { children: React.ReactNode }) {
   };
 
   useEffect(() => {
+    setIsCollapsed(localStorage.getItem('sidebar_collapsed') === 'true');
+
     const session = localStorage.getItem('seal_user');
     if (!session) {
       router.push('/login');
