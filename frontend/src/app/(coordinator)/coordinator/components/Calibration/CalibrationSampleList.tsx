@@ -338,7 +338,6 @@ export default function CalibrationSampleList({
                         </DropdownMenuItem>
                         <DropdownMenuItem
                           onClick={() => handleAnalyze(submission)}
-                          disabled={submission.JudgeCount === 0}
                         >
                           <Target className="size-4" />
                           Phân tích
