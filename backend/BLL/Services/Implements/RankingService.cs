@@ -45,12 +45,13 @@ namespace BusinessLogicLayer.Services.Implements
             var submissions = await _submissionRepository.FindAsync(x =>
                 x.RoundId == roundId &&
                 !x.IsCalibrationSample &&
+                x.TeamId.HasValue &&
                 (x.Status == "Submitted" || x.Status == "Updated"));
             if (!submissions.Any())
                 return Enumerable.Empty<RankingDto>();
 
             var submissionIds = submissions.Select(x => x.SubmissionId).ToList();
-            var teamIds = submissions.Select(x => x.TeamId).Distinct().ToList();
+            var teamIds = submissions.Select(x => x.TeamId!.Value).Distinct().ToList();
             var teams = await _teamRepository.FindAsync(x => teamIds.Contains(x.TeamId));
             var teamsById = teams.ToDictionary(x => x.TeamId, x => x);
 
@@ -62,7 +63,7 @@ namespace BusinessLogicLayer.Services.Implements
             var calculatedRankings = submissions
                 .Select(submission =>
                 {
-                    if (!teamsById.TryGetValue(submission.TeamId, out var team) || team.CategoryId == null)
+                    if (!submission.TeamId.HasValue || !teamsById.TryGetValue(submission.TeamId.Value, out var team) || team.CategoryId == null)
                         return null;
 
                     var submissionScores = scores.Where(x => x.SubmissionId == submission.SubmissionId).ToList();

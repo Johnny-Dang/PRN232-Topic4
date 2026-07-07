@@ -25,15 +25,15 @@ namespace BusinessLogicLayer.DTOs.Responses
     public class MentorSubmissionDto
     {
         public Guid SubmissionId { get; set; }
-        public Guid TeamId { get; set; }
+        public Guid? TeamId { get; set; }
         public string TeamName { get; set; } = string.Empty;
         public Guid CategoryId { get; set; }
         public string CategoryName { get; set; } = string.Empty;
         public Guid RoundId { get; set; }
         public string RoundName { get; set; } = string.Empty;
-        public string RepositoryURL { get; set; } = string.Empty;
-        public string DemoURL { get; set; } = string.Empty;
-        public string SlideURL { get; set; } = string.Empty;
+        public string? RepositoryURL { get; set; }
+        public string? DemoURL { get; set; }
+        public string? SlideURL { get; set; }
         public DateTime SubmittedAt { get; set; }
         public string Status { get; set; } = string.Empty;
     }

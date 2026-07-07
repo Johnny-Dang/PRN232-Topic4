@@ -41,16 +41,16 @@ namespace BusinessLogicLayer.Services.Implements
 
         public async Task<CalibrationSubmissionDto> CreateSampleSubmissionAsync(CreateCalibrationSubmissionRequest request, Guid userId)
         {
-            var team = await _teamRepository.GetByIdAsync(request.TeamId);
-            if (team == null)
-                throw new Exception($"Team with id {request.TeamId} not found");
-
             var round = await _roundRepository.GetByIdAsync(request.RoundId);
             if (round == null)
                 throw new Exception($"Round with id {request.RoundId} not found");
 
-            if (team.CategoryId == null)
-                throw new Exception("Calibration sample team must have a category");
+            if (request.TeamId.HasValue && request.TeamId != Guid.Empty)
+            {
+                var team = await _teamRepository.GetByIdAsync(request.TeamId.Value);
+                if (team == null)
+                    throw new Exception($"Team with id {request.TeamId} not found");
+            }
 
             var eventCriteria = await _eventCriteriaRepository.FindAsync(x => x.EventId == round.EventId);
             if (!eventCriteria.Any())

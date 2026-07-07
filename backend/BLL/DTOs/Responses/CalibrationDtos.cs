@@ -6,15 +6,15 @@ namespace BusinessLogicLayer.DTOs.Responses
     public class CalibrationSubmissionDto
     {
         public Guid SubmissionId { get; set; }
-        public Guid TeamId { get; set; }
+        public Guid? TeamId { get; set; }
         public Guid RoundId { get; set; }
         public string? RoundName { get; set; }
         public Guid? EventId { get; set; }
         public string? EventName { get; set; }
         public string CalibrationTitle { get; set; } = string.Empty;
-        public string RepositoryURL { get; set; } = string.Empty;
-        public string DemoURL { get; set; } = string.Empty;
-        public string SlideURL { get; set; } = string.Empty;
+        public string? RepositoryURL { get; set; }
+        public string? DemoURL { get; set; }
+        public string? SlideURL { get; set; }
         public DateTime SubmittedAt { get; set; }
         public string Status { get; set; } = string.Empty;
         public int JudgeCount { get; set; }
