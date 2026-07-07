@@ -197,7 +197,7 @@ export interface JudgeSummary {
   JudgeCode: string;
   AverageScore: number;
   DeviationFromGroupMean: number;
-  ConsistencyLabel: "Harsher" | "Neutral" | "Lenient";
+  ConsistencyLabel: "Harsher" | "Neutral" | "Lenient" | "Consistent";
 }
 
 export interface CalibrationAnalysis {

@@ -9,7 +9,6 @@ import {
   TrendingUp,
   Users,
   BarChart3,
-  X,
 } from 'lucide-react';
 import { Loader2, RefreshCw } from 'lucide-react';
 
@@ -44,8 +43,11 @@ export default function CalibrationAnalysisPanel({
         return 'bg-red-100 text-red-700 border-red-300 dark:bg-red-900/40 dark:text-red-300 dark:border-red-700';
       case 'Lenient':
         return 'bg-blue-100 text-blue-700 border-blue-300 dark:bg-blue-900/40 dark:text-blue-300 dark:border-blue-700';
-      default:
+      case 'Neutral':
+      case 'Consistent':
         return 'bg-green-100 text-green-700 border-green-300 dark:bg-green-900/40 dark:text-green-300 dark:border-green-700';
+      default:
+        return 'bg-gray-100 text-gray-700 border-gray-300 dark:bg-gray-800 dark:text-gray-300 dark:border-gray-600';
     }
   };
 
@@ -89,14 +91,6 @@ export default function CalibrationAnalysisPanel({
                   Làm mới
                 </Button>
               )}
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={() => onOpenChange(false)}
-                className="size-8"
-              >
-                <X className="size-4" />
-              </Button>
             </div>
           </div>
         </div>
@@ -295,7 +289,7 @@ export default function CalibrationAnalysisPanel({
                           <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-md text-xs font-semibold border ${getConsistencyColor(js.ConsistencyLabel)}`}>
                             {js.ConsistencyLabel === 'Harsher' && <TrendingDown className="size-3.5" />}
                             {js.ConsistencyLabel === 'Lenient' && <TrendingUp className="size-3.5" />}
-                            {js.ConsistencyLabel === 'Consistent' && <CheckCircle2 className="size-3.5" />}
+                            {(js.ConsistencyLabel === 'Neutral' || js.ConsistencyLabel === 'Consistent') && <CheckCircle2 className="size-3.5" />}
                             {js.ConsistencyLabel}
                           </span>
                         </td>
