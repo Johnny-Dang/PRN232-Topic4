@@ -620,6 +620,8 @@ export interface BackendAdvancementRule {
 export interface JudgeAssignment {
   AssignmentId: string;
   UserId: string;
+  UserFullName: string;
+  UserEmail: string;
   RoundId: string;
   User?: User;
   Round?: Round;
@@ -875,6 +877,8 @@ const mapAdvancementRule = (rule: BackendAdvancementRule): AdvancementRule => ({
 const mapJudgeAssignment = (a: BackendJudgeAssignment): JudgeAssignment => ({
   AssignmentId: a.assignmentId || a.AssignmentId || "",
   UserId: a.userId || a.UserId || "",
+  UserFullName: a.userFullName || a.UserFullName || a.user?.fullName || a.user?.FullName || "",
+  UserEmail: a.userEmail || a.UserEmail || a.user?.email || a.user?.Email || "",
   RoundId: a.roundId || a.RoundId || "",
   User: a.user ? mapUser(a.user) : undefined,
   Round: a.round ? mapRound(a.round) : undefined,

@@ -45,10 +45,7 @@ export default function JudgeAssignmentPanel() {
     round,
     judges: assignments
       .filter((a) => a.RoundId === round.RoundID)
-      .map((a) => ({
-        ...a,
-        user: judges.find((j) => j.UserID === a.UserId),
-      })),
+      .map((a) => a),
   }));
 
   const availableJudgesForRound = (roundId: string) => {
@@ -171,14 +168,18 @@ export default function JudgeAssignmentPanel() {
       <div className="space-y-4">
         <h3 className="text-sm font-bold text-slate-800 dark:text-slate-200">Danh sách phân công hiện tại</h3>
         
-        {roundsWithJudges.length === 0 ? (
+        {roundsWithJudges
+          .filter(({ judges: roundJudges }) => roundJudges.length > 0)
+          .length === 0 ? (
           <Card className="border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900">
             <CardContent className="p-8 text-center text-xs text-slate-500">
-              Chưa có vòng thi nào.
+              Chưa có phân công judge nào.
             </CardContent>
           </Card>
         ) : (
-          roundsWithJudges.map(({ round, judges: roundJudges }) => (
+          roundsWithJudges
+            .filter(({ judges: roundJudges }) => roundJudges.length > 0)
+            .map(({ round, judges: roundJudges }) => (
             <Card key={round.RoundID} className="border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900">
               <CardHeader className="pb-3">
                 <div className="flex items-center justify-between">
@@ -205,7 +206,7 @@ export default function JudgeAssignmentPanel() {
                       >
                         <UserCheck className="h-3.5 w-3.5 text-emerald-500" />
                         <span className="text-xs font-medium text-slate-700 dark:text-slate-300">
-                          {assignment.user?.FullName || 'Unknown'}
+                          {assignment.UserFullName || 'Unknown'}
                         </span>
                         <button
                           onClick={() => handleRemoveAssignment(assignment.AssignmentId)}
