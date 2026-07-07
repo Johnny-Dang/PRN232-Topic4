@@ -118,9 +118,14 @@ Luồng này mô tả quy trình Điều phối viên (Coordinator) cấu hình 
   {
     "assignmentId": "6d347a1e-b768-4edb-8476-a69aa97d9d45",
     "userId": "00000000-0000-0000-0000-000000000011",
+    "userFullName": "Nguyễn Văn A",
+    "userEmail": "nguyenvana@example.com",
     "roundId": "A0000000-0000-0000-0000-000000000001"
   }
   ```
+
+> [!NOTE]
+> Endpoint `GET /api/JudgeAssignment` trả về danh sách tất cả phân công judge, kèm thông tin `userFullName` và `userEmail` của judge được phân công.
 
 ### Các điều kiện kiểm tra
 1. User được phân công phải tồn tại.
@@ -330,7 +335,9 @@ Judge hoặc Coordinator xem Ranking đã được hệ thống tính tự độ
 | Cấu hình Criteria cho Event | `POST` | `/api/events/{eventId}/criteria` | Coordinator |
 | Xem Criteria của Event | `GET` | `/api/events/{eventId}/criteria` | Đã đăng nhập |
 | Cấu hình rule đi tiếp | `POST` | `/api/AdvancementRule` | Coordinator |
+| Xem danh sách phân công Judge | `GET` | `/api/JudgeAssignment` | Coordinator |
 | Phân công Judge | `POST` | `/api/JudgeAssignment` | Coordinator |
+| Xóa phân công Judge | `DELETE` | `/api/JudgeAssignment/{assignmentId}` | Coordinator |
 | Judge xem bài được giao | `GET` | `/api/Scores/assigned-submissions` | Judge |
 | Judge chấm điểm | `POST` | `/api/Scores/submissions/{submissionId}` | Judge |
 | Judge cập nhật điểm | `PUT` | `/api/Scores/submissions/{submissionId}` | Judge |

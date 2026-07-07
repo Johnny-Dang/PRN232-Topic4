@@ -1112,7 +1112,7 @@ namespace DataAccessLayer.Migrations
                     b.HasOne("DataAccessLayer.Database.Entities.JudgeAssignments", "JudgeAssignment")
                         .WithMany()
                         .HasForeignKey("AssignmentId")
-                        .OnDelete(DeleteBehavior.Restrict)
+                        .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
                     b.HasOne("DataAccessLayer.Database.Entities.Criteria", "Criteria")
