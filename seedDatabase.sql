@@ -58,8 +58,8 @@ INSERT INTO Users (UserID, Email, Password, FullName, Phone, ShortId, Role, Acco
 ('00000000-0000-0000-0000-000000000010','mentor.web@fpt.edu.vn','$2a$12$AWgb9KdKy9sz7BM4KUxXxuH0tPdjFNp.ccFtpnmgB.Zfjv8zXaufm',N'Hannah Nguyen','0901000010','ME0002','Mentor','Approved',GETDATE()),
 
 -- Judges
-('00000000-0000-0000-0000-000000000011','judge.internal1@fpt.edu.vn','$2a$12$AWgb9KdKy9sz7BM4KUxXxuH0tPdjFNp.ccFtpnmgB.Zfjv8zXaufm',N'Harry Le','0901000011','JU0001','Judge','Approved',GETDATE()),
-('00000000-0000-0000-0000-000000000012','judge.internal2@fpt.edu.vn','$2a$12$AWgb9KdKy9sz7BM4KUxXxuH0tPdjFNp.ccFtpnmgB.Zfjv8zXaufm',N'Lam Tran','0901000012','JU0002','Judge','Approved',GETDATE()),
+('00000000-0000-0000-0000-000000000011','judge.internal1@fpt.edu.vn','$2a$12$AWgb9KdKy9sz7BM4KUxXxuH0tPdjFNp.ccFtpnmgB.Zfjv8zXaufm',N'Harry Le','0901000011','JU0001','Judge','Active',GETDATE()),
+('00000000-0000-0000-0000-000000000012','judge.internal2@fpt.edu.vn','$2a$12$AWgb9KdKy9sz7BM4KUxXxuH0tPdjFNp.ccFtpnmgB.Zfjv8zXaufm',N'Lam Tran','0901000012','JU0002','Judge','Active',GETDATE()),
 
 -- Event coordinators
 ('00000000-0000-0000-0000-000000000013','coordinator.se@fpt.edu.vn','$2a$12$AWgb9KdKy9sz7BM4KUxXxuH0tPdjFNp.ccFtpnmgB.Zfjv8zXaufm',N'Casey Tran','0901000013','CO0001','Coordinator','Approved',GETDATE()),
