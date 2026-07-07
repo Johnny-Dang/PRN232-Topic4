@@ -85,23 +85,25 @@ namespace BusinessLogicLayer.Services.Implements
             }));
 
             await _unitOfWork.SaveChangesAsync();
-            return MapSubmissionToDto(submission);
+            return await MapSubmissionToDtoAsync(submission);
         }
 
         public async Task<IEnumerable<CalibrationSubmissionDto>> GetSampleSubmissionsAsync()
         {
             var submissions = await _submissionRepository.FindAsync(x => x.IsCalibrationSample);
-            return submissions
-                .OrderByDescending(x => x.SubmittedAt)
-                .Select(MapSubmissionToDto)
-                .DistinctBy(x => x.CalibrationId);
+            var dtos = new List<CalibrationSubmissionDto>();
+            foreach (var submission in submissions.OrderByDescending(x => x.SubmittedAt))
+            {
+                dtos.Add(await MapSubmissionToDtoAsync(submission));
+            }
+            return dtos.DistinctBy(x => x.SubmissionId);
         }
 
         public async Task<CalibrationSubmissionDto?> GetSampleSubmissionByIdAsync(Guid submissionId)
         {
             var submission = await _submissionRepository.FirstOrDefaultAsync(x => 
                 x.SubmissionId == submissionId && x.IsCalibrationSample);
-            return submission == null ? null : MapSubmissionToDto(submission);
+            return submission == null ? null : await MapSubmissionToDtoAsync(submission);
         }
 
         public async Task<IEnumerable<CalibrationScoreDto>> GetScoresAsync(Guid submissionId)
@@ -415,13 +417,19 @@ namespace BusinessLogicLayer.Services.Implements
             });
         }
 
-        private static CalibrationSubmissionDto MapSubmissionToDto(Submissions submission)
+        private async Task<CalibrationSubmissionDto> MapSubmissionToDtoAsync(Submissions submission)
         {
+            var round = await _roundRepository.GetByIdAsync(submission.RoundId);
+            var eventName = round != null ? (await GetEventNameAsync(round.EventId)) : null;
+
             return new CalibrationSubmissionDto
             {
                 SubmissionId = submission.SubmissionId,
                 TeamId = submission.TeamId,
                 RoundId = submission.RoundId,
+                RoundName = round?.RoundName,
+                EventId = round?.EventId,
+                EventName = eventName,
                 CalibrationTitle = submission.CalibrationTitle,
                 RepositoryURL = submission.RepositoryURL,
                 DemoURL = submission.DemoURL,
@@ -430,6 +438,13 @@ namespace BusinessLogicLayer.Services.Implements
                 Status = submission.Status,
                 JudgeCount = 0
             };
+        }
+
+        private async Task<string?> GetEventNameAsync(Guid eventId)
+        {
+            // This would need Events repository - for now return null
+            // Can be extended to include Event name
+            return null;
         }
 
         private static CalibrationScoreDto MapScoreToDto(CalibrationScores score, string? judgeCode = null, string? criteriaName = null)
