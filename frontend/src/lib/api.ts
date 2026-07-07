@@ -357,15 +357,18 @@ export interface Ranking {
 }
 
 export interface JudgeAssignedSubmission {
-  SubmissionId: string;
-  TeamId: string;
-  TeamName: string;
-  RoundId: string;
-  AssignmentId: string;
-  CategoryId: string | null;
-  RepositoryURL: string;
-  DemoURL: string;
-  SlideURL: string;
+  submissionId: string;
+  teamId: string;
+  teamName: string;
+  roundId: string;
+  assignmentId: string;
+  categoryId: string | null;
+  repositoryURL: string;
+  demoURL: string;
+  slideURL: string;
+  status: string;
+  submittedAt: string;
+  scores: Score[];
 }
 
 export interface Announcement {
@@ -877,7 +880,12 @@ const mapAdvancementRule = (rule: BackendAdvancementRule): AdvancementRule => ({
 const mapJudgeAssignment = (a: BackendJudgeAssignment): JudgeAssignment => ({
   AssignmentId: a.assignmentId || a.AssignmentId || "",
   UserId: a.userId || a.UserId || "",
-  UserFullName: a.userFullName || a.UserFullName || a.user?.fullName || a.user?.FullName || "",
+  UserFullName:
+    a.userFullName ||
+    a.UserFullName ||
+    a.user?.fullName ||
+    a.user?.FullName ||
+    "",
   UserEmail: a.userEmail || a.UserEmail || a.user?.email || a.user?.Email || "",
   RoundId: a.roundId || a.RoundId || "",
   User: a.user ? mapUser(a.user) : undefined,
@@ -904,10 +912,9 @@ const mapEventCriteria = (criteria: BackendEventCriteria): Criteria => ({
 // ============================================================================
 
 const mapCalibrationSubmission = (
-  data: BackendCalibrationSubmission
+  data: BackendCalibrationSubmission,
 ): CalibrationSubmission => ({
-  CalibrationId:
-    data.calibrationId || data.CalibrationId || "",
+  CalibrationId: data.calibrationId || data.CalibrationId || "",
   EventId: data.eventId || data.EventId || "",
   EventName: data.eventName || data.EventName || "",
   RoundId: data.roundId || data.RoundId || "",
@@ -917,15 +924,18 @@ const mapCalibrationSubmission = (
   DemoURL: data.demoURL || data.DemoURL || "",
   SlideURL: data.slideURL || data.SlideURL || "",
   SubmittedAt: data.submittedAt || data.SubmittedAt || "",
-  Status: (data.status || data.Status || "Pending") as CalibrationSubmission["Status"],
+  Status: (data.status ||
+    data.Status ||
+    "Pending") as CalibrationSubmission["Status"],
   JudgeCount: data.judgeCount || data.JudgeCount || 0,
   TotalJudges: data.totalJudges || data.TotalJudges || 0,
 });
 
 const mapCalibrationScore = (
-  score: BackendCalibrationScore
+  score: BackendCalibrationScore,
 ): CalibrationScoreOutput => ({
-  CalibrationScoreId: score.calibrationScoreId || score.CalibrationScoreId || "",
+  CalibrationScoreId:
+    score.calibrationScoreId || score.CalibrationScoreId || "",
   CalibrationId: score.calibrationId || score.CalibrationId || "",
   JudgeId: score.judgeId || score.JudgeId || "",
   JudgeCode: score.judgeCode || score.JudgeCode || "",
@@ -937,7 +947,7 @@ const mapCalibrationScore = (
 });
 
 const mapCriteriaVariance = (
-  data: BackendCriteriaVariance
+  data: BackendCriteriaVariance,
 ): CriteriaVariance => ({
   CriteriaId: data.criteriaId || data.CriteriaId || "",
   CriteriaName: data.criteriaName || data.CriteriaName || "",
@@ -953,13 +963,15 @@ const mapJudgeSummary = (data: BackendJudgeSummary): JudgeSummary => ({
   JudgeId: data.judgeId || data.JudgeId || "",
   JudgeCode: data.judgeCode || data.JudgeCode || "",
   AverageScore: data.averageScore || data.AverageScore || 0,
-  DeviationFromGroupMean: data.deviationFromGroupMean || data.DeviationFromGroupMean || 0,
-  ConsistencyLabel:
-    (data.consistencyLabel || data.ConsistencyLabel || "Neutral") as JudgeSummary["ConsistencyLabel"],
+  DeviationFromGroupMean:
+    data.deviationFromGroupMean || data.DeviationFromGroupMean || 0,
+  ConsistencyLabel: (data.consistencyLabel ||
+    data.ConsistencyLabel ||
+    "Neutral") as JudgeSummary["ConsistencyLabel"],
 });
 
 const mapCalibrationAnalysis = (
-  data: BackendCalibrationAnalysis
+  data: BackendCalibrationAnalysis,
 ): CalibrationAnalysis => ({
   SubmissionId: data.submissionId || data.SubmissionId || "",
   CalibrationTitle: data.calibrationTitle || data.CalibrationTitle || "",
@@ -967,10 +979,10 @@ const mapCalibrationAnalysis = (
   CriteriaCount: data.criteriaCount || data.CriteriaCount || 0,
   OverallMean: data.overallMean || data.OverallMean || 0,
   CriteriaVariance: (data.criteriaVariance || data.CriteriaVariance || []).map(
-    mapCriteriaVariance
+    mapCriteriaVariance,
   ),
   JudgeSummaries: (data.judgeSummaries || data.JudgeSummaries || []).map(
-    mapJudgeSummary
+    mapJudgeSummary,
   ),
   InconsistencyFlags: data.inconsistencyFlags || data.InconsistencyFlags || [],
 });
@@ -1588,14 +1600,16 @@ export async function getAssignedSubmissions(): Promise<
 // CALIBRATION API FUNCTIONS
 // ============================================================================
 
-export async function getCalibrationSubmissions(
-  filters?: { roundId?: string; eventId?: string; status?: string }
-): Promise<CalibrationSubmission[]> {
+export async function getCalibrationSubmissions(filters?: {
+  roundId?: string;
+  eventId?: string;
+  status?: string;
+}): Promise<CalibrationSubmission[]> {
   if (!useLiveApi) return [];
   try {
     const response = await apiClient.get<BackendCalibrationSubmission[]>(
       "/Calibration/submissions",
-      { params: filters }
+      { params: filters },
     );
     return response.data.map(mapCalibrationSubmission);
   } catch (error: unknown) {
@@ -1605,12 +1619,12 @@ export async function getCalibrationSubmissions(
 }
 
 export async function getCalibrationSubmission(
-  id: string
+  id: string,
 ): Promise<CalibrationSubmission | null> {
   if (!useLiveApi || !id) return null;
   try {
     const response = await apiClient.get<BackendCalibrationSubmission>(
-      `/Calibration/submissions/${id}`
+      `/Calibration/submissions/${id}`,
     );
     return mapCalibrationSubmission(response.data);
   } catch (error: unknown) {
@@ -1636,7 +1650,7 @@ export async function createCalibrationSubmission(data: {
         repositoryURL: data.repositoryURL,
         demoURL: data.demoURL,
         slideURL: data.slideURL,
-      }
+      },
     );
     return mapCalibrationSubmission(response.data);
   } catch (error: unknown) {
@@ -1646,7 +1660,7 @@ export async function createCalibrationSubmission(data: {
 }
 
 export async function getCalibrationScores(
-  calibrationId: string
+  calibrationId: string,
 ): Promise<CalibrationScoreWithMyScore> {
   if (!useLiveApi || !calibrationId) {
     return { scores: [], myScore: [], hasScored: false };
@@ -1672,7 +1686,7 @@ export async function getCalibrationScores(
 }
 
 export async function getMyCalibrationScore(
-  calibrationId: string
+  calibrationId: string,
 ): Promise<{ hasScored: boolean; scores: CalibrationScoreOutput[] }> {
   if (!useLiveApi || !calibrationId) {
     return { hasScored: false, scores: [] };
@@ -1695,33 +1709,33 @@ export async function getMyCalibrationScore(
 
 export async function submitCalibrationScore(
   calibrationId: string,
-  scores: CalibrationScoreInput[]
+  scores: CalibrationScoreInput[],
 ): Promise<CalibrationScoreOutput[]> {
   const response = await apiClient.post<BackendCalibrationScore[]>(
     `/Calibration/submissions/${calibrationId}/scores`,
-    { scores }
+    { scores },
   );
   return response.data.map(mapCalibrationScore);
 }
 
 export async function updateCalibrationScore(
   calibrationId: string,
-  scores: CalibrationScoreInput[]
+  scores: CalibrationScoreInput[],
 ): Promise<CalibrationScoreOutput[]> {
   const response = await apiClient.put<BackendCalibrationScore[]>(
     `/Calibration/submissions/${calibrationId}/scores`,
-    { scores }
+    { scores },
   );
   return response.data.map(mapCalibrationScore);
 }
 
 export async function getCalibrationAnalysis(
-  calibrationId: string
+  calibrationId: string,
 ): Promise<CalibrationAnalysis | null> {
   if (!useLiveApi || !calibrationId) return null;
   try {
     const response = await apiClient.get<BackendCalibrationAnalysis>(
-      `/Calibration/submissions/${calibrationId}/analysis`
+      `/Calibration/submissions/${calibrationId}/analysis`,
     );
     return mapCalibrationAnalysis(response.data);
   } catch (error: unknown) {
@@ -1731,13 +1745,13 @@ export async function getCalibrationAnalysis(
 }
 
 export async function exportCalibrationCSV(
-  calibrationId: string
+  calibrationId: string,
 ): Promise<Blob | null> {
   if (!useLiveApi || !calibrationId) return null;
   try {
     const response = await apiClient.get(
       `/Calibration/submissions/${calibrationId}/export`,
-      { responseType: "blob" }
+      { responseType: "blob" },
     );
     return response.data as Blob;
   } catch (error: unknown) {
@@ -1746,9 +1760,7 @@ export async function exportCalibrationCSV(
   }
 }
 
-export async function deleteCalibrationSubmission(
-  id: string
-): Promise<void> {
+export async function deleteCalibrationSubmission(id: string): Promise<void> {
   await apiClient.delete(`/Calibration/submissions/${id}`);
 }
 

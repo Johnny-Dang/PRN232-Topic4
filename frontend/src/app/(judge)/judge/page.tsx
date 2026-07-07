@@ -1,12 +1,15 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { ClientOnly } from '@/components/ClientOnly';
 import { Award, BarChart3, ClipboardList, Edit2, FileCode2, FileText, RefreshCw, Save, Send, Target, Video } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Skeleton } from '@/components/ui/skeleton';
+import { useToast } from '@/components/Toast';
+import { parseApiError } from '@/lib/errorHandler';
 import {
   Category,
   Criteria,
@@ -29,6 +32,15 @@ import { JudgeCalibrationList } from './components';
 type TabType = 'scoring' | 'ranking' | 'calibration';
 
 export default function JudgePage() {
+  return (
+    <ClientOnly>
+      <JudgePageContent />
+    </ClientOnly>
+  );
+}
+
+function JudgePageContent() {
+  const { showToast } = useToast();
   const [activeTab, setActiveTab] = useState<TabType>('scoring');
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
@@ -46,10 +58,10 @@ export default function JudgePage() {
   const [loadingRankings, setLoadingRankings] = useState(false);
   const [selectedRoundId, setSelectedRoundId] = useState<string>('');
 
-  const activeSubmission = submissions.find((submission) => submission.SubmissionId === selectedSubId);
-  const activeRound = activeSubmission ? rounds.find((round) => round.RoundID === activeSubmission.RoundId) : null;
+  const activeSubmission = submissions.find((submission) => submission.submissionId === selectedSubId);
+  const activeRound = activeSubmission ? rounds.find((round) => round.RoundID === activeSubmission.roundId) : null;
   const activeCategory = activeSubmission?.CategoryId
-    ? categories.find((category) => category.CategoryID === activeSubmission.CategoryId)
+    ? categories.find((category) => category.CategoryID === activeSubmission.categoryId)
     : null;
 
   const hasExistingScores = existingScores.length > 0;
@@ -68,14 +80,15 @@ export default function JudgePage() {
       setRounds(fetchedRounds);
       setCategories(fetchedCategories);
       setSubmissions(fetchedSubmissions);
-      setSelectedSubId(fetchedSubmissions[0]?.SubmissionId || '');
+      setSelectedSubId(fetchedSubmissions[0]?.submissionId || '');
 
       if (fetchedRounds.length > 0 && !selectedRoundId) {
         setSelectedRoundId(fetchedRounds[0].RoundID);
       }
     } catch (error) {
       console.error(error);
-      setMessage('Không thể tải dữ liệu chấm điểm từ API.');
+      const { message, type } = parseApiError(error);
+      showToast(message, type);
     } finally {
       setLoading(false);
     }
@@ -94,7 +107,7 @@ export default function JudgePage() {
 
       setLoadingScores(true);
       try {
-        const existing = await getScores(activeSubmission.SubmissionId);
+        const existing = await getScores(activeSubmission.submissionId);
         setExistingScores(existing);
 
         if (existing.length > 0) {
@@ -107,6 +120,8 @@ export default function JudgePage() {
         }
       } catch (error) {
         console.error('Failed to load existing scores:', error);
+        const { message, type } = parseApiError(error);
+        showToast(message, type);
         setExistingScores([]);
       } finally {
         setLoadingScores(false);
@@ -148,6 +163,8 @@ export default function JudgePage() {
       setRankings(data);
     } catch (error) {
       console.error('Failed to load rankings:', error);
+      const { message, type } = parseApiError(error);
+      showToast(message, type);
       setRankings([]);
     } finally {
       setLoadingRankings(false);
@@ -179,16 +196,17 @@ export default function JudgePage() {
 
     try {
       if (hasExistingScores) {
-        await updateScores(activeSubmission.SubmissionId, scoreData);
-        setMessage(`Đã cập nhật điểm cho đội ${activeSubmission.TeamName}.`);
+        await updateScores(activeSubmission.submissionId, scoreData);
+        showToast(`Đã cập nhật điểm cho đội ${activeSubmission.teamName}.`, 'success');
       } else {
-        await submitScores(activeSubmission.SubmissionId, scoreData);
-        setMessage(`Đã lưu điểm cho đội ${activeSubmission.TeamName}.`);
+        await submitScores(activeSubmission.submissionId, scoreData);
+        showToast(`Đã lưu điểm cho đội ${activeSubmission.teamName}.`, 'success');
       }
       void loadData();
     } catch (error) {
       console.error(error);
-      setMessage('Không thể nộp điểm. Vui lòng kiểm tra API Scores.');
+      const { message, type } = parseApiError(error);
+      showToast(message, type);
     } finally {
       setSubmitting(false);
     }
@@ -273,24 +291,28 @@ export default function JudgePage() {
                 </Card>
               ) : (
                 submissions.map((submission) => {
-                  const isSelected = submission.SubmissionId === selectedSubId;
-                  const round = rounds.find((item) => item.RoundID === submission.RoundId);
+                  const isSelected = submission.submissionId === selectedSubId;
+                  const round = rounds.find((item) => item.RoundID === submission.roundId);
 
                   return (
                     <Card
-                      key={submission.SubmissionId}
+                      key={submission.submissionId}
                       className={`cursor-pointer border-slate-200 bg-white transition-all hover:-translate-y-0.5 hover:shadow-md dark:border-slate-800 dark:bg-slate-900 ${
                         isSelected ? 'ring-2 ring-emerald-600 dark:ring-emerald-400' : ''
                       }`}
-                      onClick={() => setSelectedSubId(submission.SubmissionId)}
+                      onClick={() => setSelectedSubId(submission.submissionId)}
                     >
                       <div className="flex flex-col gap-2 p-4">
                         <div className="flex items-center justify-between">
                           <h4 className="text-sm font-bold text-slate-800 dark:text-slate-100">
-                            {submission.TeamName || 'Chưa có thông tin đội'}
+                            {submission.teamName || 'Chưa có thông tin đội'}
                           </h4>
-                          <Badge className="border border-slate-200 bg-slate-50 text-[9px] text-slate-600">
-                            Assigned
+                          <Badge className={`border text-[9px] font-semibold ${
+                            submission.status === 'Submitted' 
+                              ? 'border-green-200 bg-green-50 text-green-700 dark:bg-green-950/30 dark:border-green-800 dark:text-green-400' 
+                              : 'border-slate-200 bg-slate-50 text-slate-600 dark:bg-slate-800 dark:text-slate-400'
+                          }`}>
+                            {submission.status === 'Submitted' ? 'Submitted' : 'Pending'}
                           </Badge>
                         </div>
                         <p className="text-[10px] font-semibold uppercase text-slate-400">{round?.RoundName}</p>
@@ -308,27 +330,27 @@ export default function JudgePage() {
                 <Card className="border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900">
                   <CardHeader>
                     <CardTitle className="text-base font-bold">
-                      Bài nộp: {activeSubmission.TeamName}
+                      Bài nộp: {activeSubmission.teamName}
                     </CardTitle>
                     <CardDescription className="text-xs font-medium text-slate-400">
                       Hạng mục: {activeCategory?.CategoryName || 'Chưa có category'} | Vòng thi: {activeRound?.RoundName || 'Chưa có round'}
                     </CardDescription>
                   </CardHeader>
                   <CardContent className="flex flex-wrap gap-4 border-b border-slate-100 p-6 pt-0 dark:border-slate-800">
-                    {activeSubmission.RepositoryURL && (
-                      <a href={activeSubmission.RepositoryURL} target="_blank" rel="noopener noreferrer" className="flex h-9 items-center gap-1.5 rounded-xl border border-slate-200 px-3 text-xs font-semibold hover:bg-slate-50 dark:border-slate-700">
+                    {activeSubmission.repositoryURL && (
+                      <a href={activeSubmission.repositoryURL} target="_blank" rel="noopener noreferrer" className="flex h-9 items-center gap-1.5 rounded-xl border border-slate-200 px-3 text-xs font-semibold hover:bg-slate-50 dark:border-slate-700">
                         <FileCode2 className="h-4 w-4 text-slate-500" />
                         Source
                       </a>
                     )}
-                    {activeSubmission.DemoURL && (
-                      <a href={activeSubmission.DemoURL} target="_blank" rel="noopener noreferrer" className="flex h-9 items-center gap-1.5 rounded-xl border border-slate-200 px-3 text-xs font-semibold text-rose-600 hover:bg-slate-50 dark:border-slate-700">
+                    {activeSubmission.demoURL && (
+                      <a href={activeSubmission.demoURL} target="_blank" rel="noopener noreferrer" className="flex h-9 items-center gap-1.5 rounded-xl border border-slate-200 px-3 text-xs font-semibold text-rose-600 hover:bg-slate-50 dark:border-slate-700">
                         <Video className="h-4 w-4" />
                         Demo
                       </a>
                     )}
-                    {activeSubmission.SlideURL && (
-                      <a href={activeSubmission.SlideURL} target="_blank" rel="noopener noreferrer" className="flex h-9 items-center gap-1.5 rounded-xl border border-slate-200 px-3 text-xs font-semibold hover:bg-slate-50 dark:border-slate-700">
+                    {activeSubmission.slideURL && (
+                      <a href={activeSubmission.slideURL} target="_blank" rel="noopener noreferrer" className="flex h-9 items-center gap-1.5 rounded-xl border border-slate-200 px-3 text-xs font-semibold hover:bg-slate-50 dark:border-slate-700">
                         <FileText className="h-4 w-4 text-indigo-500" />
                         Slides
                       </a>
@@ -409,16 +431,25 @@ export default function JudgePage() {
                       </div>
                       <div>
                         <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
-                          Weighted total
+                          Điểm của tôi
                         </span>
                         <p className="text-2xl font-black text-white">{calculateWeightedTotal().toFixed(2)}</p>
                       </div>
                     </div>
 
+                    {activeRound && rankings.find(r => r.Team?.TeamID === activeSubmission?.teamId)?.AverageScore && (
+                      <div className="flex items-center gap-2 rounded-lg bg-blue-500/20 px-3 py-1.5">
+                        <BarChart3 className="h-3.5 w-3.5 text-blue-400" />
+                        <span className="text-xs font-medium text-blue-400">
+                          TB tất cả: {rankings.find(r => r.Team?.TeamID === activeSubmission?.teamId)?.AverageScore?.toFixed(2)}
+                        </span>
+                      </div>
+                    )}
+
                     {hasExistingScores && (
                       <div className="flex items-center gap-2 rounded-lg bg-amber-500/20 px-3 py-1.5">
                         <Edit2 className="h-3.5 w-3.5 text-amber-400" />
-                        <span className="text-xs font-semibold text-amber-400">Đã có điểm - sẽ cập nhật</span>
+                        <span className="text-xs font-semibold text-amber-400">Sẽ cập nhật</span>
                       </div>
                     )}
 
