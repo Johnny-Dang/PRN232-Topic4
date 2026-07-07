@@ -110,7 +110,17 @@ namespace BusinessLogicLayer.Services.Implements
         {
             await GetCalibrationSubmissionAsync(submissionId);
             var scores = await _calibrationScoreRepository.FindAsync(x => x.SubmissionId == submissionId);
-            return scores.Select(s => MapScoreToDto(s)).ToList();
+            
+            // Get unique judge IDs and create code mapping
+            var judgeIds = scores.Select(x => x.JudgeId).Distinct().ToList();
+            var judgeCodeById = new Dictionary<Guid, string>();
+            for (int i = 0; i < judgeIds.Count; i++)
+            {
+                judgeCodeById[judgeIds[i]] = $"Judge {ToAlphabeticCode(i)}";
+            }
+            
+            return scores.Select(s => MapScoreToDto(s, 
+                judgeCodeById.TryGetValue(s.JudgeId, out var code) ? code : null)).ToList();
         }
 
         public async Task<(bool hasScored, IEnumerable<CalibrationScoreDto> scores)> GetMyScoresAsync(Guid submissionId, Guid judgeUserId)
@@ -119,7 +129,7 @@ namespace BusinessLogicLayer.Services.Implements
             var scores = await _calibrationScoreRepository.FindAsync(x =>
                 x.SubmissionId == submissionId && x.JudgeId == judgeUserId);
             var hasScored = scores.Any();
-            return (hasScored, scores.Select(s => MapScoreToDto(s)).ToList());
+            return (hasScored, scores.Select(s => MapScoreToDto(s, "Judge A")).ToList());
         }
 
         public async Task<IEnumerable<CalibrationScoreDto>> SubmitScoresAsync(Guid submissionId, Guid judgeUserId, SubmitScoresRequest request)
@@ -143,7 +153,7 @@ namespace BusinessLogicLayer.Services.Implements
 
                 var score = new CalibrationScores
                 {
-                    CalibrationId = Guid.NewGuid(),
+                    CalibrationId = submissionId,
                     SubmissionId = submissionId,
                     JudgeId = judgeUserId,
                     CriteriaId = item.CriteriaId,

@@ -1,4 +1,5 @@
 using BusinessLogicLayer.DTOs.Requests;
+using BusinessLogicLayer.DTOs.Responses;
 using BusinessLogicLayer.Services.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -6,6 +7,7 @@ using System;
 using System.Security.Claims;
 using System.Text;
 using System.Threading.Tasks;
+using System.Collections.Generic;
 
 namespace SEALHackathonSystem.Controllers
 {
@@ -75,8 +77,21 @@ namespace SEALHackathonSystem.Controllers
         {
             try
             {
-                var result = await _calibrationService.GetScoresAsync(submissionId);
-                return Ok(result);
+                var allScores = await _calibrationService.GetScoresAsync(submissionId);
+                
+                var myScore = new List<CalibrationScoreDto>();
+                try
+                {
+                    var judgeUserId = GetCurrentUserId();
+                    var (_, scores) = await _calibrationService.GetMyScoresAsync(submissionId, judgeUserId);
+                    myScore = scores.ToList();
+                }
+                catch
+                {
+                    // User is not a judge, skip myScore
+                }
+                
+                return Ok(new { scores = allScores, myScore = myScore });
             }
             catch (Exception ex)
             {
