@@ -30,7 +30,7 @@ export default function EventCriteriaConfig() {
         }
       } catch (error) {
         console.error('Failed to load events:', error);
-        setMessage('Khong the tai danh sach su kien.');
+        setMessage('Không thể tải danh sách sự kiện.');
       } finally {
         setLoading(false);
       }
@@ -53,7 +53,7 @@ export default function EventCriteriaConfig() {
         setEditingCriteria(fetchedCriteria.map((c) => ({ criteriaId: c.CriteriaID, weight: c.Weight })));
       } catch (error) {
         console.error('Failed to load criteria:', error);
-        setMessage('Khong the tai criteria cho su kien nay.');
+        setMessage('Không thể tải criteria cho sự kiện này.');
       } finally {
         setLoading(false);
       }
@@ -81,12 +81,12 @@ export default function EventCriteriaConfig() {
         selectedEventId,
         editingCriteria.map((c) => ({ criteriaId: c.criteriaId, weight: c.weight }))
       );
-      setMessage('Da luu cau hinh criteria thanh cong!');
+      setMessage('Đã lưu cấu hình criteria thành công!');
       const updatedCriteria = await getEventCriteria(selectedEventId);
       setCriteria(updatedCriteria);
     } catch (error) {
       console.error('Failed to save criteria:', error);
-      setMessage('Khong the luu cau hinh. Vui long thu lai.');
+      setMessage('Không thể lưu cấu hình. Vui lòng thử lại.');
     } finally {
       setSaving(false);
     }
@@ -105,7 +105,7 @@ export default function EventCriteriaConfig() {
     <div className="space-y-6">
       <div className="space-y-2">
         <Label htmlFor="event-select" className="text-sm font-semibold text-slate-700 dark:text-slate-300">
-          Chon su kien
+          Chọn sự kiện
         </Label>
         <select
           id="event-select"
@@ -113,7 +113,7 @@ export default function EventCriteriaConfig() {
           onChange={(e) => setSelectedEventId(e.target.value)}
           className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm font-medium dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200"
         >
-          <option value="">-- Chon su kien --</option>
+          <option value="">-- Chọn sự kiện --</option>
           {events.map((event) => (
             <option key={event.EventID} value={event.EventID}>
               {event.EventName}
@@ -126,14 +126,14 @@ export default function EventCriteriaConfig() {
         <>
           <Card className="border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900">
             <CardHeader>
-              <CardTitle className="text-base font-bold">Cau hinh Criteria cho su kien</CardTitle>
+              <CardTitle className="text-base font-bold">Cấu hình Criteria cho sự kiện</CardTitle>
               <CardDescription className="text-xs font-medium text-slate-400">
-                Tong trong so: {totalWeight}% (neu khac 100%, he thong se tu dong chuan hoa)
+Tổng trọng số: {totalWeight}% (nếu khác 100%, hệ thống sẽ tự động chuẩn hóa)
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               {criteria.length === 0 ? (
-                <p className="py-8 text-center text-xs text-slate-500">Su kien nay chua co criteria nao.</p>
+                <p className="py-8 text-center text-xs text-slate-500">Sự kiện này chưa có criteria nào.</p>
               ) : (
                 <div className="space-y-3">
                   {criteria.map((c) => {
@@ -174,7 +174,7 @@ export default function EventCriteriaConfig() {
                     </span>
                   )}
                   <span className="text-sm font-semibold text-slate-600 dark:text-slate-400">
-                    Tong trong so: <strong className={totalWeight === 100 ? 'text-emerald-600' : 'text-amber-600'}>{totalWeight}%</strong>
+                    Tổng trọng số: <strong className={totalWeight === 100 ? 'text-emerald-600' : 'text-amber-600'}>{totalWeight}%</strong>
                   </span>
                 </div>
                 <Button
@@ -182,7 +182,7 @@ export default function EventCriteriaConfig() {
                   disabled={saving || editingCriteria.length === 0}
                   className="h-9 rounded-xl bg-emerald-600 text-xs font-semibold hover:bg-emerald-700"
                 >
-                  {saving ? 'Dang luu...' : 'Luu cau hinh'}
+                  {saving ? 'Đang lưu...' : 'Lưu cấu hình'}
                 </Button>
               </div>
             </CardContent>

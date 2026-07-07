@@ -38,7 +38,7 @@ export default function RankingBoard() {
         }
       } catch (error) {
         console.error('Failed to load initial data:', error);
-        setMessage('Khong the tai du lieu.');
+        setMessage('Không thể tải dữ liệu.');
       } finally {
         setLoading(false);
       }
@@ -59,7 +59,7 @@ export default function RankingBoard() {
         setRankings(data);
       } catch (error) {
         console.error('Failed to load rankings:', error);
-        setMessage('Khong the tai bang xep hang.');
+        setMessage('Không thể tải bảng xếp hạng.');
       } finally {
         setLoading(false);
       }
@@ -90,10 +90,10 @@ export default function RankingBoard() {
             <div>
               <CardTitle className="flex items-center gap-2 text-base font-bold">
                 <BarChart3 className="h-5 w-5 text-indigo-500" />
-                Bang xep hang - {selectedRound?.RoundName || 'Chon vong thi'}
+                Bảng xếp hạng - {selectedRound?.RoundName || 'Chọn vòng thi'}
               </CardTitle>
               <CardDescription className="text-xs font-medium text-slate-400">
-                Xem ket qua cham diem va xep hang cac doi tuyen
+                Xem kết quả chấm điểm và xếp hạng các đội tuyển
               </CardDescription>
             </div>
             <Button
@@ -116,14 +116,14 @@ export default function RankingBoard() {
               className="h-9 w-fit rounded-xl border-slate-200 text-xs font-semibold"
             >
               <RefreshCw className={`mr-1.5 h-3.5 w-3.5 ${loading ? 'animate-spin' : ''}`} />
-              Tai lai
+              Tải lại
             </Button>
           </div>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="flex flex-col gap-4 sm:flex-row">
             <div className="flex-1 space-y-2">
-              <Label className="text-xs font-semibold text-slate-600 dark:text-slate-400">Vong thi</Label>
+              <Label className="text-xs font-semibold text-slate-600 dark:text-slate-400">Vòng thi</Label>
               <select
                 value={selectedRoundId}
                 onChange={(e) => {
@@ -132,7 +132,7 @@ export default function RankingBoard() {
                 }}
                 className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200"
               >
-                <option value="">-- Chon vong --</option>
+                <option value="">-- Chọn vòng --</option>
                 {rounds.map((round) => (
                   <option key={round.RoundID} value={round.RoundID}>
                     {round.RoundName}
@@ -144,12 +144,12 @@ export default function RankingBoard() {
             {categories.length > 0 && (
               <div className="flex-1 space-y-2">
                 <div className="flex items-center justify-between">
-                  <Label className="text-xs font-semibold text-slate-600 dark:text-slate-400">Hang muc</Label>
+                  <Label className="text-xs font-semibold text-slate-600 dark:text-slate-400">Hạng mục</Label>
                   <button
                     onClick={() => setShowCategoryFilter(!showCategoryFilter)}
                     className="text-[10px] font-medium text-indigo-500 hover:text-indigo-600"
                   >
-                    {showCategoryFilter ? 'An loc' : 'Hien loc'}
+                    {showCategoryFilter ? 'Ẩn lọc' : 'Hiện lọc'}
                   </button>
                 </div>
                 {showCategoryFilter ? (
@@ -158,7 +158,7 @@ export default function RankingBoard() {
                     onChange={(e) => setSelectedCategoryId(e.target.value)}
                     className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200"
                   >
-                    <option value="">Tat ca hang muc</option>
+                    <option value="">Tất cả hạng mục</option>
                     {categories.map((cat) => (
                       <option key={cat.CategoryID} value={cat.CategoryID}>
                         {cat.CategoryName}
@@ -167,7 +167,7 @@ export default function RankingBoard() {
                   </select>
                 ) : (
                   <div className="flex h-[42px] items-center rounded-xl border border-slate-200 bg-slate-50 px-3 text-sm text-slate-500 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-400">
-                    Tat ca hang muc
+                    Tất cả hạng mục
                   </div>
                 )}
               </div>
@@ -186,9 +186,9 @@ export default function RankingBoard() {
         <Card className="border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900">
           <CardContent className="flex flex-col items-center justify-center py-16">
             <Trophy className="mb-4 h-16 w-16 text-slate-300 dark:text-slate-600" />
-            <p className="text-sm font-semibold text-slate-500">Chua co du lieu xep hang</p>
+            <p className="text-sm font-semibold text-slate-500">Chưa có dữ liệu xếp hạng</p>
             <p className="mt-1 text-xs text-slate-400">
-              Vong thi nay chua co ket qua cham diem nao.
+              Vòng thi này chưa có kết quả chấm điểm nào.
             </p>
           </CardContent>
         </Card>
@@ -196,9 +196,9 @@ export default function RankingBoard() {
         <Card className="border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900">
           <CardHeader className="pb-2">
             <div className="flex items-center justify-between">
-              <CardTitle className="text-sm font-bold">Ket qua xep hang</CardTitle>
+              <CardTitle className="text-sm font-bold">Kết quả xếp hạng</CardTitle>
               <Badge className="bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400">
-                {rankings.length} doi tuyen
+                {rankings.length} đội tuyển
               </Badge>
             </div>
           </CardHeader>
@@ -207,10 +207,10 @@ export default function RankingBoard() {
               <table className="w-full">
                 <thead>
                   <tr className="border-b border-slate-100 dark:border-slate-800">
-                    <th className="px-4 py-3 text-left text-xs font-bold uppercase tracking-wider text-slate-500">Hang</th>
-                    <th className="px-4 py-3 text-left text-xs font-bold uppercase tracking-wider text-slate-500">Doi tuyen</th>
-                    <th className="px-4 py-3 text-left text-xs font-bold uppercase tracking-wider text-slate-500">Hang muc</th>
-                    <th className="px-4 py-3 text-right text-xs font-bold uppercase tracking-wider text-slate-500">Diem tong</th>
+                    <th className="px-4 py-3 text-left text-xs font-bold uppercase tracking-wider text-slate-500">Hạng</th>
+                    <th className="px-4 py-3 text-left text-xs font-bold uppercase tracking-wider text-slate-500">Đội tuyển</th>
+                    <th className="px-4 py-3 text-left text-xs font-bold uppercase tracking-wider text-slate-500">Hạng mục</th>
+                    <th className="px-4 py-3 text-right text-xs font-bold uppercase tracking-wider text-slate-500">Điểm tổng</th>
                   </tr>
                 </thead>
                 <tbody>

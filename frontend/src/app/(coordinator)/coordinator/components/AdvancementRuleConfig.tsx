@@ -33,7 +33,7 @@ export default function AdvancementRuleConfig() {
         setCategories(fetchedCategories);
       } catch (error) {
         console.error('Failed to load data:', error);
-        setMessage('Khong the tai du lieu.');
+        setMessage('Không thể tải dữ liệu.');
       } finally {
         setLoading(false);
       }
@@ -43,7 +43,7 @@ export default function AdvancementRuleConfig() {
 
   const handleCreateRule = async () => {
     if (!newRule.roundId || !newRule.categoryId || newRule.topN < 1) {
-      setMessage('Vui long dien day du thong tin.');
+      setMessage('Vui lòng điền đầy đủ thông tin.');
       return;
     }
 
@@ -52,31 +52,31 @@ export default function AdvancementRuleConfig() {
 
     try {
       await createAdvancementRule(newRule.roundId, newRule.categoryId, newRule.topN);
-      setMessage('Da tao quy tac thanh cong!');
+      setMessage('Đã tạo quy tắc thành công!');
       const updatedRules = await getAdvancementRules();
       setRules(updatedRules);
       setNewRule({ roundId: '', categoryId: '', topN: 2 });
     } catch (error) {
       console.error('Failed to create rule:', error);
-      setMessage('Khong the tao quy tac. Vui long thu lai.');
+      setMessage('Không thể tạo quy tắc. Vui lòng thử lại.');
     } finally {
       setSaving(false);
     }
   };
 
   const handleDeleteRule = async (ruleId: string) => {
-    if (!confirm('Ban co chac chan muon xoa quy tac nay?')) return;
+    if (!confirm('Bạn có chắc chắn muốn xóa quy tắc này?')) return;
 
     setSaving(true);
     setMessage('');
 
     try {
       await deleteAdvancementRule(ruleId);
-      setMessage('Da xoa quy tac thanh cong!');
+      setMessage('Đã xóa quy tắc thành công!');
       setRules((current) => current.filter((r) => r.RuleId !== ruleId));
     } catch (error) {
       console.error('Failed to delete rule:', error);
-      setMessage('Khong the xoa quy tac. Vui long thu lai.');
+      setMessage('Không thể xóa quy tắc. Vui lòng thử lại.');
     } finally {
       setSaving(false);
     }
@@ -95,9 +95,9 @@ export default function AdvancementRuleConfig() {
     <div className="space-y-6">
       <Card className="border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900">
         <CardHeader>
-          <CardTitle className="text-base font-bold">Tao quy tac loai vao vong tiep theo</CardTitle>
+          <CardTitle className="text-base font-bold">Tạo quy tắc loại vào vòng tiếp theo</CardTitle>
           <CardDescription className="text-xs font-medium text-slate-400">
-            Xac dinh so luong doi tuyen duoc vao vong tiep theo theo tung hang muc
+            Xác định số lượng đội tuyển được vào vòng tiếp theo theo từng hạng mục
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -109,7 +109,7 @@ export default function AdvancementRuleConfig() {
                 onChange={(e) => setNewRule((r) => ({ ...r, roundId: e.target.value }))}
                 className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200"
               >
-                <option value="">-- Chon vong --</option>
+                <option value="">-- Chọn vòng --</option>
                 {rounds.map((round) => (
                   <option key={round.RoundID} value={round.RoundID}>
                     {round.RoundName}
@@ -125,7 +125,7 @@ export default function AdvancementRuleConfig() {
                 onChange={(e) => setNewRule((r) => ({ ...r, categoryId: e.target.value }))}
                 className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200"
               >
-                <option value="">-- Chon hang muc --</option>
+                <option value="">-- Chọn hạng mục --</option>
                 {categories.map((cat) => (
                   <option key={cat.CategoryID} value={cat.CategoryID}>
                     {cat.CategoryName}
@@ -135,7 +135,7 @@ export default function AdvancementRuleConfig() {
             </div>
 
             <div className="space-y-2">
-              <Label className="text-xs font-semibold text-slate-600 dark:text-slate-400">So doi vao vong tiep (Top N)</Label>
+              <Label className="text-xs font-semibold text-slate-600 dark:text-slate-400">Số đội vào vòng tiếp (Top N)</Label>
               <Input
                 type="number"
                 min={1}
@@ -152,21 +152,21 @@ export default function AdvancementRuleConfig() {
             className="h-10 rounded-xl bg-emerald-600 text-xs font-semibold hover:bg-emerald-700"
           >
             <Plus className="mr-2 h-4 w-4" />
-            Tao quy tac
+            Tạo quy tắc
           </Button>
         </CardContent>
       </Card>
 
       <Card className="border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900">
         <CardHeader>
-          <CardTitle className="text-base font-bold">Danh sach quy tac hien tai</CardTitle>
+          <CardTitle className="text-base font-bold">Danh sách quy tắc hiện tại</CardTitle>
           <CardDescription className="text-xs font-medium text-slate-400">
-            {rules.length} quy tac da duoc cau hinh
+            {rules.length} quy tắc đã được cấu hình
           </CardDescription>
         </CardHeader>
         <CardContent>
           {rules.length === 0 ? (
-            <p className="py-8 text-center text-xs text-slate-500">Chua co quy tac nao duoc cau hinh.</p>
+            <p className="py-8 text-center text-xs text-slate-500">Chưa có quy tắc nào được cấu hình.</p>
           ) : (
             <div className="space-y-3">
               {rules.map((rule) => {
@@ -209,7 +209,7 @@ export default function AdvancementRuleConfig() {
 
       {message && (
         <div className={`rounded-xl border p-3 text-xs font-medium ${
-          message.includes('thanh cong')
+          message.includes('thành công')
             ? 'border-emerald-100 bg-emerald-50 text-emerald-700'
             : 'border-rose-100 bg-rose-50 text-rose-700'
         }`}>

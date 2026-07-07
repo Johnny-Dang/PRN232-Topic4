@@ -75,7 +75,7 @@ export default function JudgePage() {
       }
     } catch (error) {
       console.error(error);
-      setMessage('Khong the tai du lieu cham diem tu API.');
+      setMessage('Không thể tải dữ liệu chấm điểm từ API.');
     } finally {
       setLoading(false);
     }
@@ -180,15 +180,15 @@ export default function JudgePage() {
     try {
       if (hasExistingScores) {
         await updateScores(activeSubmission.SubmissionId, scoreData);
-        setMessage(`Da cap nhat diem cho doi ${activeSubmission.TeamName}.`);
+        setMessage(`Đã cập nhật điểm cho đội ${activeSubmission.TeamName}.`);
       } else {
         await submitScores(activeSubmission.SubmissionId, scoreData);
-        setMessage(`Da luu diem cho doi ${activeSubmission.TeamName}.`);
+        setMessage(`Đã lưu điểm cho đội ${activeSubmission.TeamName}.`);
       }
       void loadData();
     } catch (error) {
       console.error(error);
-      setMessage('Khong the nop diem. Vui long kiem tra API Scores.');
+      setMessage('Không thể nộp điểm. Vui lòng kiểm tra API Scores.');
     } finally {
       setSubmitting(false);
     }
@@ -200,7 +200,7 @@ export default function JudgePage() {
         <div>
           <h2 className="text-2xl font-black tracking-tight text-slate-900 dark:text-white">Judge Portal</h2>
           <p className="mt-1 text-xs font-medium leading-relaxed text-slate-500 dark:text-slate-400">
-            Cham diem truc tiep bang du lieu API backend.
+            Chấm điểm nhất quán bằng dữ liệu API backend.
           </p>
         </div>
 
@@ -215,7 +215,7 @@ export default function JudgePage() {
               }`}
             >
               <ClipboardList className="h-3.5 w-3.5" />
-              Cham diem
+              Chấm điểm
             </button>
             <button
               onClick={() => setActiveTab('ranking')}
@@ -226,7 +226,7 @@ export default function JudgePage() {
               }`}
             >
               <BarChart3 className="h-3.5 w-3.5" />
-              Bang xep hang
+              Bảng xếp hạng
             </button>
             <button
               onClick={() => setActiveTab('calibration')}
@@ -243,7 +243,7 @@ export default function JudgePage() {
 
           <Button variant="outline" size="sm" className="h-9 rounded-xl border-slate-200 text-xs font-semibold" onClick={loadData} disabled={loading}>
             <RefreshCw className={`mr-1.5 h-3.5 w-3.5 ${loading ? 'animate-spin' : ''}`} />
-            Tai lai
+            Tải lại
           </Button>
         </div>
       </div>
@@ -269,7 +269,7 @@ export default function JudgePage() {
             <div className="space-y-3">
               {submissions.length === 0 ? (
                 <Card className="border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900">
-                  <CardContent className="p-4 text-xs text-slate-500">Chua co bai nop tu API.</CardContent>
+                  <CardContent className="p-4 text-xs text-slate-500">Chưa có bài nộp từ API.</CardContent>
                 </Card>
               ) : (
                 submissions.map((submission) => {
@@ -287,7 +287,7 @@ export default function JudgePage() {
                       <div className="flex flex-col gap-2 p-4">
                         <div className="flex items-center justify-between">
                           <h4 className="text-sm font-bold text-slate-800 dark:text-slate-100">
-                            {submission.TeamName || 'Chua co thong tin doi'}
+                            {submission.TeamName || 'Chưa có thông tin đội'}
                           </h4>
                           <Badge className="border border-slate-200 bg-slate-50 text-[9px] text-slate-600">
                             Assigned
@@ -308,10 +308,10 @@ export default function JudgePage() {
                 <Card className="border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900">
                   <CardHeader>
                     <CardTitle className="text-base font-bold">
-                      Bai nop: {activeSubmission.TeamName}
+                      Bài nộp: {activeSubmission.TeamName}
                     </CardTitle>
                     <CardDescription className="text-xs font-medium text-slate-400">
-                      Hang muc: {activeCategory?.CategoryName || 'Chua co category'} | Vong thi: {activeRound?.RoundName || 'Chua co round'}
+                      Hạng mục: {activeCategory?.CategoryName || 'Chưa có category'} | Vòng thi: {activeRound?.RoundName || 'Chưa có round'}
                     </CardDescription>
                   </CardHeader>
                   <CardContent className="flex flex-wrap gap-4 border-b border-slate-100 p-6 pt-0 dark:border-slate-800">
@@ -342,7 +342,7 @@ export default function JudgePage() {
                   {criteria.length === 0 ? (
                     <Card className="border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900">
                       <CardContent className="p-6 text-xs text-slate-500">
-                        Chua co criteria duoc cau hinh cho Event cua bai nop nay.
+                        Chưa có criteria được cấu hình cho Event của bài nộp này.
                       </CardContent>
                     </Card>
                   ) : (
@@ -418,7 +418,7 @@ export default function JudgePage() {
                     {hasExistingScores && (
                       <div className="flex items-center gap-2 rounded-lg bg-amber-500/20 px-3 py-1.5">
                         <Edit2 className="h-3.5 w-3.5 text-amber-400" />
-                        <span className="text-xs font-semibold text-amber-400">Da co diem - se cap nhat</span>
+                        <span className="text-xs font-semibold text-amber-400">Đã có điểm - sẽ cập nhật</span>
                       </div>
                     )}
 
@@ -432,16 +432,16 @@ export default function JudgePage() {
                       disabled={submitting || criteria.length === 0 || loadingScores}
                     >
                       {loadingScores ? (
-                        'Dang tai...'
+                        'Đang tải...'
                       ) : hasExistingScores ? (
                         <>
                           <Save className="mr-2 h-3.5 w-3.5" />
-                          Cap nhat diem
+                          Cập nhật điểm
                         </>
                       ) : (
                         <>
                           <Send className="mr-2 h-3.5 w-3.5" />
-                          Nop diem
+                          Nộp điểm
                         </>
                       )}
                     </Button>
@@ -450,7 +450,7 @@ export default function JudgePage() {
               </form>
             ) : (
               <Card className="border-slate-200 bg-white p-8 text-center text-slate-400 dark:border-slate-800 dark:bg-slate-900">
-                Vui long chon bai nop de hien thi phieu cham diem.
+                Vui lòng chọn bài nộp để hiển thị phiếu chấm điểm.
               </Card>
             )}
           </div>
@@ -458,13 +458,13 @@ export default function JudgePage() {
       ) : activeTab === 'ranking' ? (
         <div className="space-y-6">
           <div className="flex items-center gap-4">
-            <label className="text-sm font-semibold text-slate-700 dark:text-slate-300">Chon vong thi:</label>
+            <label className="text-sm font-semibold text-slate-700 dark:text-slate-300">Chọn vòng thi:</label>
             <select
               value={selectedRoundId}
               onChange={(e) => setSelectedRoundId(e.target.value)}
               className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-medium dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200"
             >
-              <option value="">-- Chon vong --</option>
+              <option value="">-- Chọn vòng --</option>
               {rounds.map((round) => (
                 <option key={round.RoundID} value={round.RoundID}>
                   {round.RoundName}
@@ -478,15 +478,15 @@ export default function JudgePage() {
           ) : rankings.length === 0 ? (
             <Card className="border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900">
               <CardContent className="p-8 text-center text-xs text-slate-500">
-                {selectedRoundId ? 'Chua co du lieu xep hang cho vong nay.' : 'Vui long chon vong thi de xem bang xep hang.'}
+                {selectedRoundId ? 'Chưa có dữ liệu xếp hạng cho vòng này.' : 'Vui lòng chọn vòng thi để xem bảng xếp hạng.'}
               </CardContent>
             </Card>
           ) : (
             <Card className="border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900">
               <CardHeader>
-                <CardTitle className="text-base font-bold">Bang xep hang - {rounds.find((r) => r.RoundID === selectedRoundId)?.RoundName}</CardTitle>
+                <CardTitle className="text-base font-bold">Bảng xếp hạng - {rounds.find((r) => r.RoundID === selectedRoundId)?.RoundName}</CardTitle>
                 <CardDescription className="text-xs font-medium text-slate-400">
-                  Cap nhat theo thoi gian thuc khi co diem moi
+                  Cập nhật theo thời gian thực khi có điểm mới
                 </CardDescription>
               </CardHeader>
               <CardContent>
@@ -494,9 +494,9 @@ export default function JudgePage() {
                   <table className="w-full">
                     <thead>
                       <tr className="border-b border-slate-100 dark:border-slate-800">
-                        <th className="px-4 py-3 text-left text-xs font-bold uppercase tracking-wider text-slate-500">Hang</th>
-                        <th className="px-4 py-3 text-left text-xs font-bold uppercase tracking-wider text-slate-500">Doi</th>
-                        <th className="px-4 py-3 text-right text-xs font-bold uppercase tracking-wider text-slate-500">Diem tong</th>
+                        <th className="px-4 py-3 text-left text-xs font-bold uppercase tracking-wider text-slate-500">Hạng</th>
+                        <th className="px-4 py-3 text-left text-xs font-bold uppercase tracking-wider text-slate-500">Đội</th>
+                        <th className="px-4 py-3 text-right text-xs font-bold uppercase tracking-wider text-slate-500">Điểm tổng</th>
                       </tr>
                     </thead>
                     <tbody>

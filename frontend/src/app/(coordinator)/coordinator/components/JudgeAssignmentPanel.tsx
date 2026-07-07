@@ -33,7 +33,7 @@ export default function JudgeAssignmentPanel() {
         setJudges(fetchedJudges);
       } catch (error) {
         console.error('Failed to load data:', error);
-        setMessage('Khong the tai du lieu.');
+        setMessage('Không thể tải dữ liệu.');
       } finally {
         setLoading(false);
       }
@@ -60,7 +60,7 @@ export default function JudgeAssignmentPanel() {
 
   const handleAssignJudge = async () => {
     if (!selectedRoundId || !selectedJudgeId) {
-      setMessage('Vui long chon du thong tin.');
+      setMessage('Vui lòng chọn đủ thông tin.');
       return;
     }
 
@@ -69,31 +69,31 @@ export default function JudgeAssignmentPanel() {
 
     try {
       await assignJudge(selectedJudgeId, selectedRoundId);
-      setMessage('Da phan cong judge thanh cong!');
+      setMessage('Đã phân công judge thành công!');
       const updatedAssignments = await getJudgeAssignments();
       setAssignments(updatedAssignments);
       setSelectedJudgeId('');
     } catch (error) {
       console.error('Failed to assign judge:', error);
-      setMessage('Khong the phan cong judge. Vui long thu lai.');
+      setMessage('Không thể phân công judge. Vui lòng thử lại.');
     } finally {
       setSaving(false);
     }
   };
 
   const handleRemoveAssignment = async (assignmentId: string) => {
-    if (!confirm('Ban co chac chan muon xoa phan cong nay?')) return;
+    if (!confirm('Bạn có chắc chắn muốn xóa phân công này?')) return;
 
     setSaving(true);
     setMessage('');
 
     try {
       await removeJudgeAssignment(assignmentId);
-      setMessage('Da xoa phan cong thanh cong!');
+      setMessage('Đã xóa phân công thành công!');
       setAssignments((current) => current.filter((a) => a.AssignmentId !== assignmentId));
     } catch (error) {
       console.error('Failed to remove assignment:', error);
-      setMessage('Khong the xoa phan cong. Vui long thu lai.');
+      setMessage('Không thể xóa phân công. Vui lòng thử lại.');
     } finally {
       setSaving(false);
     }
@@ -112,21 +112,21 @@ export default function JudgeAssignmentPanel() {
     <div className="space-y-6">
       <Card className="border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900">
         <CardHeader>
-          <CardTitle className="text-base font-bold">Phan cong Judge cho vong thi</CardTitle>
+          <CardTitle className="text-base font-bold">Phân công Judge cho vòng thi</CardTitle>
           <CardDescription className="text-xs font-medium text-slate-400">
-            Gan judge cho cac vong thi de cham diem
+            Gán judge cho các vòng thi để chấm điểm
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
             <div className="space-y-2">
-              <Label className="text-xs font-semibold text-slate-600 dark:text-slate-400">Vong thi</Label>
+              <Label className="text-xs font-semibold text-slate-600 dark:text-slate-400">Vòng thi</Label>
               <select
                 value={selectedRoundId}
                 onChange={(e) => setSelectedRoundId(e.target.value)}
                 className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200"
               >
-                <option value="">-- Chon vong --</option>
+                <option value="">-- Chọn vòng --</option>
                 {rounds.map((round) => (
                   <option key={round.RoundID} value={round.RoundID}>
                     {round.RoundName}
@@ -143,7 +143,7 @@ export default function JudgeAssignmentPanel() {
                 disabled={!selectedRoundId}
                 className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 disabled:opacity-50"
               >
-                <option value="">-- Chon judge --</option>
+                <option value="">-- Chọn judge --</option>
                 {selectedRoundId &&
                   availableJudgesForRound(selectedRoundId).map((judge) => (
                     <option key={judge.UserID} value={judge.UserID}>
@@ -151,7 +151,7 @@ export default function JudgeAssignmentPanel() {
                     </option>
                   ))}
                 {selectedRoundId && availableJudgesForRound(selectedRoundId).length === 0 && (
-                  <option disabled>Tat ca judges da duoc phan cong</option>
+                  <option disabled>Tất cả judges đã được phân công</option>
                 )}
               </select>
             </div>
@@ -163,18 +163,18 @@ export default function JudgeAssignmentPanel() {
             className="h-10 rounded-xl bg-emerald-600 text-xs font-semibold hover:bg-emerald-700"
           >
             <Plus className="mr-2 h-4 w-4" />
-            Phan cong Judge
+            Phân công Judge
           </Button>
         </CardContent>
       </Card>
 
       <div className="space-y-4">
-        <h3 className="text-sm font-bold text-slate-800 dark:text-slate-200">Danh sach phan cong hien tai</h3>
+        <h3 className="text-sm font-bold text-slate-800 dark:text-slate-200">Danh sách phân công hiện tại</h3>
         
         {roundsWithJudges.length === 0 ? (
           <Card className="border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900">
             <CardContent className="p-8 text-center text-xs text-slate-500">
-              Chua co vong thi nao.
+              Chưa có vòng thi nào.
             </CardContent>
           </Card>
         ) : (
@@ -185,7 +185,7 @@ export default function JudgeAssignmentPanel() {
                   <div>
                     <CardTitle className="text-sm font-bold">{round.RoundName}</CardTitle>
                     <CardDescription className="text-xs">
-                      {roundJudges.length} judge{roundJudges.length !== 1 ? '' : ''} duoc phan cong
+                      {roundJudges.length} judge được phân công
                     </CardDescription>
                   </div>
                   <Badge className="bg-indigo-100 text-indigo-600 dark:bg-indigo-950/30 dark:text-indigo-400">
@@ -195,7 +195,7 @@ export default function JudgeAssignmentPanel() {
               </CardHeader>
               <CardContent>
                 {roundJudges.length === 0 ? (
-                  <p className="text-xs text-slate-400">Chua co judge nao duoc phan cong cho vong nay.</p>
+                  <p className="text-xs text-slate-400">Chưa có judge nào được phân công cho vòng này.</p>
                 ) : (
                   <div className="flex flex-wrap gap-2">
                     {roundJudges.map((assignment) => (
@@ -225,7 +225,7 @@ export default function JudgeAssignmentPanel() {
 
       {message && (
         <div className={`rounded-xl border p-3 text-xs font-medium ${
-          message.includes('thanh cong')
+          message.includes('thành công')
             ? 'border-emerald-100 bg-emerald-50 text-emerald-700'
             : 'border-rose-100 bg-rose-50 text-rose-700'
         }`}>
