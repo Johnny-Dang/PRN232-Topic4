@@ -93,7 +93,8 @@ namespace BusinessLogicLayer.Services.Implements
             var submissions = await _submissionRepository.FindAsync(x => x.IsCalibrationSample);
             return submissions
                 .OrderByDescending(x => x.SubmittedAt)
-                .Select(MapSubmissionToDto);
+                .Select(MapSubmissionToDto)
+                .DistinctBy(x => x.CalibrationId);
         }
 
         public async Task<CalibrationSubmissionDto?> GetSampleSubmissionByIdAsync(Guid submissionId)
