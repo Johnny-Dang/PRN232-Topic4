@@ -3,7 +3,7 @@
 import React, { useEffect, useState, Suspense } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
-import { ShieldCheck, HelpCircle, ChevronRight, LogOut, Menu, ChevronLeft, Home, Calendar, Users, Ban, Percent, ListChecks, Trophy, UserCog, SlidersHorizontal } from 'lucide-react';
+import { ShieldCheck, HelpCircle, ChevronRight, LogOut, Menu, ChevronLeft, Home, Calendar, Users, Ban, Percent, ListChecks, Trophy, UserCog, SlidersHorizontal, Target } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -150,6 +150,13 @@ function CoordinatorLayoutContent({
       icon: Trophy,
       description: 'Xem & quản lý xếp hạng',
       tabValue: 'ranking-board'
+    },
+    {
+      label: 'Calibration Samples',
+      href: '/coordinator?tab=calibration-samples',
+      icon: Target,
+      description: 'Tạo & quản lý bài mẫu calibration',
+      tabValue: 'calibration-samples'
     }
   ];
 

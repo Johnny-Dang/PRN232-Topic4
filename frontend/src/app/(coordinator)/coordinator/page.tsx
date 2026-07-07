@@ -26,6 +26,7 @@ import JudgeAssignmentPanel from './components/JudgeAssignmentPanel';
 import MentorAssignmentPanel from './components/MentorAssignmentPanel';
 import RankingBoard from './components/RankingBoard';
 import AdvancementRuleConfig from './components/AdvancementRuleConfig';
+import CalibrationSampleList from './components/Calibration/CalibrationSampleList';
 import type {
   AuditLogList,
   CoordinatorCategory,
@@ -253,6 +254,10 @@ function CoordinatorDashboardContent() {
 
           {activeTab === 'ranking-board' && (
             <RankingBoard />
+          )}
+
+          {activeTab === 'calibration-samples' && (
+            <CalibrationSampleList />
           )}
         </div>
       )}

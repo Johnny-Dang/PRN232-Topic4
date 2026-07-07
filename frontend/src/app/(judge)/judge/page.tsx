@@ -60,7 +60,7 @@ function JudgePageContent() {
 
   const activeSubmission = submissions.find((submission) => submission.submissionId === selectedSubId);
   const activeRound = activeSubmission ? rounds.find((round) => round.RoundID === activeSubmission.roundId) : null;
-  const activeCategory = activeSubmission?.CategoryId
+  const activeCategory = activeSubmission?.categoryId
     ? categories.find((category) => category.CategoryID === activeSubmission.categoryId)
     : null;
 
@@ -129,7 +129,7 @@ function JudgePageContent() {
     };
 
     void loadExistingScores();
-  }, [selectedSubId, activeSubmission?.SubmissionId]);
+  }, [selectedSubId, activeSubmission?.submissionId]);
 
   useEffect(() => {
     const loadCriteria = async () => {
@@ -437,11 +437,11 @@ function JudgePageContent() {
                       </div>
                     </div>
 
-                    {activeRound && rankings.find(r => r.Team?.TeamID === activeSubmission?.teamId)?.AverageScore && (
+                    {activeRound && rankings.find(r => r.Team?.TeamID === activeSubmission?.teamId) && (
                       <div className="flex items-center gap-2 rounded-lg bg-blue-500/20 px-3 py-1.5">
                         <BarChart3 className="h-3.5 w-3.5 text-blue-400" />
                         <span className="text-xs font-medium text-blue-400">
-                          TB tất cả: {rankings.find(r => r.Team?.TeamID === activeSubmission?.teamId)?.AverageScore?.toFixed(2)}
+                          TB tất cả: {rankings.find(r => r.Team?.TeamID === activeSubmission?.teamId)?.TotalScore?.toFixed(2)}
                         </span>
                       </div>
                     )}

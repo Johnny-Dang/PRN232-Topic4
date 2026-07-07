@@ -182,12 +182,10 @@ export default function CreateCalibrationDialog({
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger>
-        <Button size="sm">
-          <Plus className="size-4" />
-          Tạo bài mẫu mới
-        </Button>
-      </DialogTrigger>
+      <DialogTrigger render={<Button size="sm">
+        <Plus className="size-4" />
+        Tạo bài mẫu mới
+      </Button>} />
 
       <DialogContent className="sm:max-w-md">
         <form onSubmit={handleSubmit}>

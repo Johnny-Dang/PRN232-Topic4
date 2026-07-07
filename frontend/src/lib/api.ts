@@ -635,6 +635,10 @@ export interface BackendJudgeAssignment {
   AssignmentId?: string;
   userId?: string;
   UserId?: string;
+  userFullName?: string;
+  UserFullName?: string;
+  userEmail?: string;
+  UserEmail?: string;
   roundId?: string;
   RoundId?: string;
   user?: BackendUser;

@@ -38,6 +38,15 @@ export const apiClient = axios.create({
 // Request interceptor to attach Bearer token automatically
 apiClient.interceptors.request.use(
   (config) => {
+    // Skip adding token for auth endpoints that don't require authentication
+    if (config.url) {
+      const authPublicEndpoints = ['/Auth/login', '/Auth/register', '/Auth/refresh'];
+      const isPublicAuthEndpoint = authPublicEndpoints.some(ep => config.url?.endsWith(ep));
+      if (isPublicAuthEndpoint) {
+        return config;
+      }
+    }
+
     if (typeof window !== 'undefined') {
       const storedUser = localStorage.getItem('seal_user');
       if (storedUser) {
