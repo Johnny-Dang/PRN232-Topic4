@@ -41,7 +41,7 @@ namespace DataAccessLayer.Database.Configurations
             builder.HasOne(x => x.Team)
                 .WithMany(t => t.Submissions)
                 .HasForeignKey(x => x.TeamId)
-                .OnDelete(DeleteBehavior.Cascade);
+                .OnDelete(DeleteBehavior.SetNull);
 
             builder.HasOne(x => x.Round)
                 .WithMany(r => r.Submissions)

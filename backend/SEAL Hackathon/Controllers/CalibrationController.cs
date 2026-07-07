@@ -1,4 +1,5 @@
 using BusinessLogicLayer.DTOs.Requests;
+using BusinessLogicLayer.DTOs.Responses;
 using BusinessLogicLayer.Services.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -6,6 +7,7 @@ using System;
 using System.Security.Claims;
 using System.Text;
 using System.Threading.Tasks;
+using System.Collections.Generic;
 
 namespace SEALHackathonSystem.Controllers
 {
@@ -45,6 +47,67 @@ namespace SEALHackathonSystem.Controllers
             {
                 var result = await _calibrationService.GetSampleSubmissionsAsync();
                 return Ok(result);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+        }
+
+        [Authorize(Policy = "CalibrationViewer")]
+        [HttpGet("submissions/{submissionId}")]
+        public async Task<IActionResult> GetSampleSubmission(Guid submissionId)
+        {
+            try
+            {
+                var result = await _calibrationService.GetSampleSubmissionByIdAsync(submissionId);
+                if (result == null)
+                    return NotFound(new { message = "Calibration submission not found" });
+                return Ok(result);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+        }
+
+        [Authorize(Policy = "CalibrationViewer")]
+        [HttpGet("submissions/{submissionId}/scores")]
+        public async Task<IActionResult> GetScores(Guid submissionId)
+        {
+            try
+            {
+                var allScores = await _calibrationService.GetScoresAsync(submissionId);
+                
+                var myScore = new List<CalibrationScoreDto>();
+                try
+                {
+                    var judgeUserId = GetCurrentUserId();
+                    var (_, scores) = await _calibrationService.GetMyScoresAsync(submissionId, judgeUserId);
+                    myScore = scores.ToList();
+                }
+                catch
+                {
+                    // User is not a judge, skip myScore
+                }
+                
+                return Ok(new { scores = allScores, myScore = myScore });
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+        }
+
+        [Authorize(Policy = "JudgeOnly")]
+        [HttpGet("submissions/{submissionId}/my-score")]
+        public async Task<IActionResult> GetMyScore(Guid submissionId)
+        {
+            try
+            {
+                var judgeUserId = GetCurrentUserId();
+                var (hasScored, scores) = await _calibrationService.GetMyScoresAsync(submissionId, judgeUserId);
+                return Ok(new { hasScored, scores });
             }
             catch (Exception ex)
             {
@@ -109,6 +172,22 @@ namespace SEALHackathonSystem.Controllers
                 var csv = await _calibrationService.ExportDatasetCsvAsync(submissionId, userId);
                 var fileName = $"calibration-{submissionId}.csv";
                 return File(Encoding.UTF8.GetBytes(csv), "text/csv", fileName);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+        }
+
+        [Authorize(Policy = "CoordinatorOnly")]
+        [HttpDelete("submissions/{submissionId}")]
+        public async Task<IActionResult> DeleteSampleSubmission(Guid submissionId)
+        {
+            try
+            {
+                var userId = GetCurrentUserId();
+                await _calibrationService.DeleteSampleSubmissionAsync(submissionId, userId);
+                return NoContent();
             }
             catch (Exception ex)
             {

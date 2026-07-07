@@ -38,7 +38,7 @@ namespace DataAccessLayer.Database.Configurations
             builder.HasOne(x => x.JudgeAssignment)
                 .WithMany() // Assuming JudgeAssignments doesn't have Scores collection based on file view
                 .HasForeignKey(x => x.AssignmentId) // Assuming JudgeId maps to AssignmentId or UserId depending on model, Wait JudgeId maps to JudgeAssignments? Let's check Scores.cs: public virtual JudgeAssignments JudgeAssignment { get; set; } and public Guid JudgeId { get; set; }. So JudgeId maps to JudgeAssignment.
-                .OnDelete(DeleteBehavior.Restrict);
+                .OnDelete(DeleteBehavior.Cascade);
 
             builder.HasOne(x => x.Criteria)
                 .WithMany(c => c.Scores)

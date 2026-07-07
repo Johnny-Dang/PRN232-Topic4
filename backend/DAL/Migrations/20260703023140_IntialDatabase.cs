@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using Microsoft.EntityFrameworkCore.Migrations;
 
 #nullable disable
@@ -21,7 +21,18 @@ namespace DataAccessLayer.Migrations
                     Year = table.Column<int>(type: "int", nullable: false),
                     Description = table.Column<string>(type: "nvarchar(max)", nullable: false),
                     StartDate = table.Column<DateTime>(type: "datetime", nullable: false),
-                    EndDate = table.Column<DateTime>(type: "datetime", nullable: false)
+                    EndDate = table.Column<DateTime>(type: "datetime", nullable: false),
+                    Status = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: false, defaultValue: "Draft"),
+                    IsPublished = table.Column<bool>(type: "bit", nullable: false, defaultValue: false),
+                    PublishedAt = table.Column<DateTime>(type: "datetime", nullable: true),
+                    PublishedBy = table.Column<Guid>(type: "uniqueidentifier", nullable: true),
+                    IsFeatured = table.Column<bool>(type: "bit", nullable: false, defaultValue: false),
+                    BannerUrl = table.Column<string>(type: "nvarchar(2000)", maxLength: 2000, nullable: false, defaultValue: ""),
+                    Organizer = table.Column<string>(type: "nvarchar(255)", maxLength: 255, nullable: false, defaultValue: ""),
+                    Format = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: false, defaultValue: "Online"),
+                    Audience = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: false, defaultValue: "Students"),
+                    Prize = table.Column<string>(type: "nvarchar(255)", maxLength: 255, nullable: false, defaultValue: ""),
+                    IsDeleted = table.Column<bool>(type: "bit", nullable: false, defaultValue: false)
                 },
                 constraints: table =>
                 {
@@ -50,6 +61,7 @@ namespace DataAccessLayer.Migrations
                     Password = table.Column<string>(type: "nvarchar(255)", maxLength: 255, nullable: false),
                     FullName = table.Column<string>(type: "nvarchar(255)", maxLength: 255, nullable: false),
                     Phone = table.Column<string>(type: "nvarchar(30)", maxLength: 30, nullable: false),
+                    ShortId = table.Column<string>(type: "nvarchar(6)", maxLength: 6, nullable: false),
                     Role = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: false),
                     AccountStatus = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: false),
                     CreatedAt = table.Column<DateTime>(type: "datetime", nullable: false)
@@ -58,6 +70,12 @@ namespace DataAccessLayer.Migrations
                 {
                     table.PrimaryKey("PK_Users", x => x.UserId);
                 });
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Users_ShortId",
+                table: "Users",
+                column: "ShortId",
+                unique: true);
 
             migrationBuilder.CreateTable(
                 name: "Categories",
@@ -242,6 +260,7 @@ namespace DataAccessLayer.Migrations
                     TeamName = table.Column<string>(type: "nvarchar(255)", maxLength: 255, nullable: false),
                     TeamLeaderId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
                     CategoryId = table.Column<Guid>(type: "uniqueidentifier", nullable: true),
+                    EventId = table.Column<Guid>(type: "uniqueidentifier", nullable: true),
                     TeamStatus = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: false)
                 },
                 constraints: table =>
@@ -258,6 +277,12 @@ namespace DataAccessLayer.Migrations
                         column: x => x.TeamLeaderId,
                         principalTable: "Users",
                         principalColumn: "UserId",
+                        onDelete: ReferentialAction.Restrict);
+                    table.ForeignKey(
+                        name: "FK_Teams_Events_EventId",
+                        column: x => x.EventId,
+                        principalTable: "Events",
+                        principalColumn: "EventId",
                         onDelete: ReferentialAction.Restrict);
                 });
 
@@ -704,6 +729,11 @@ namespace DataAccessLayer.Migrations
                 name: "IX_Teams_TeamLeaderId",
                 table: "Teams",
                 column: "TeamLeaderId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Teams_EventId",
+                table: "Teams",
+                column: "EventId");
 
             migrationBuilder.CreateIndex(
                 name: "IX_Users_Email",

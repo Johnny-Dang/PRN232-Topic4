@@ -176,13 +176,14 @@ namespace BusinessLogicLayer.Services.Implements
             var result = new List<JudgeSubmissionDto>();
             foreach (var submission in submissions)
             {
-                var team = await _teamRepository.GetByIdAsync(submission.TeamId);
+                if (!submission.TeamId.HasValue) continue;
+                var team = await _teamRepository.GetByIdAsync(submission.TeamId.Value);
                 var assignment = assignmentByRoundId[submission.RoundId];
 
                 result.Add(new JudgeSubmissionDto
                 {
                     SubmissionId = submission.SubmissionId,
-                    TeamId = submission.TeamId,
+                    TeamId = submission.TeamId.Value,
                     TeamName = team?.TeamName ?? string.Empty,
                     RoundId = submission.RoundId,
                     AssignmentId = assignment.AssignmentId,
@@ -215,11 +216,14 @@ namespace BusinessLogicLayer.Services.Implements
             if (submission.IsCalibrationSample)
                 throw new Exception("Calibration sample submissions must be scored through the calibration workflow");
 
+            if (!submission.TeamId.HasValue)
+                throw new Exception("Submission must have a team to be scored");
+
             var round = await _roundRepository.GetByIdAsync(submission.RoundId);
             if (round == null)
                 throw new Exception($"Round with id {submission.RoundId} not found");
 
-            var team = await _teamRepository.GetByIdAsync(submission.TeamId);
+            var team = await _teamRepository.GetByIdAsync(submission.TeamId.Value);
             if (team == null)
                 throw new Exception($"Team with id {submission.TeamId} not found");
 

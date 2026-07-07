@@ -140,12 +140,12 @@ namespace SEALHackathonSystem.Controllers
                 );
                 var teamLookup = teams.ToDictionary(team => team.TeamId, team => team);
                 var teamIds = teamLookup.Keys.ToHashSet();
-                var submissions = await _submissionRepository.FindAsync(submission => teamIds.Contains(submission.TeamId));
+                var submissions = await _submissionRepository.FindAsync(submission => submission.TeamId.HasValue && teamIds.Contains(submission.TeamId.Value));
                 var result = new List<MentorSubmissionDto>();
 
                 foreach (var submission in submissions)
                 {
-                    var team = teamLookup[submission.TeamId];
+                    var team = teamLookup[submission.TeamId!.Value];
                     if (!team.CategoryId.HasValue) continue;
 
                     var category = categories[team.CategoryId.Value];
