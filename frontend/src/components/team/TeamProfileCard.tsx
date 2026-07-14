@@ -17,6 +17,8 @@ interface TeamProfileCardProps {
   members: TeamMemberWithProfile[];
   allCategories: ApiCategory[];
   allEvents: ApiEvent[];
+  preferredEventId?: string;
+  allowEventRegistration?: boolean;
   isLeader: boolean;
   tempCategoryName: string;
   setTempCategoryName: (val: string) => void;
@@ -45,6 +47,8 @@ export const TeamProfileCard: React.FC<TeamProfileCardProps> = ({
   members,
   allCategories,
   allEvents,
+  preferredEventId,
+  allowEventRegistration = true,
   isLeader,
   tempCategoryName,
   setTempCategoryName,
@@ -110,7 +114,7 @@ export const TeamProfileCard: React.FC<TeamProfileCardProps> = ({
           </div>
         </div>
 
-        {!team.CategoryID && (
+        {!team.CategoryID && allowEventRegistration && (
           <div className="mt-4 border-t border-slate-100 pt-4 dark:border-slate-800 space-y-4">
             <h4 className="text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
               Đăng ký Hạng mục & Sự kiện Thi đấu
@@ -137,7 +141,9 @@ export const TeamProfileCard: React.FC<TeamProfileCardProps> = ({
                           defaultValue=""
                         >
                           <option value="" disabled>-- Chọn hạng mục thi đấu --</option>
-                          {Array.from(new Set(allCategories.map((c) => c.CategoryName))).map((name) => (
+                          {Array.from(new Set(allCategories
+                            .filter((category) => !preferredEventId || category.EventID === preferredEventId)
+                            .map((category) => category.CategoryName))).map((name) => (
                             <option key={name} value={name}>
                               {name}
                             </option>
@@ -166,7 +172,9 @@ export const TeamProfileCard: React.FC<TeamProfileCardProps> = ({
 
                           {allCategories.filter((c) => {
                             const ev = allEvents.find((e) => e.EventID === c.EventID);
-                            return c.CategoryName === tempCategoryName && Boolean(ev && isEventOpenForRegistration(ev));
+                            return c.CategoryName === tempCategoryName
+                              && (!preferredEventId || c.EventID === preferredEventId)
+                              && Boolean(ev && isEventOpenForRegistration(ev));
                           }).length === 0 && (
                             <div className="rounded-lg border border-amber-100 bg-amber-50 p-3 text-[11px] font-medium text-amber-700">
                               Chưa có sự kiện nào đang mở đăng ký cho hạng mục này.
@@ -176,7 +184,9 @@ export const TeamProfileCard: React.FC<TeamProfileCardProps> = ({
                           {allCategories
                             .filter((c) => {
                               const ev = allEvents.find((e) => e.EventID === c.EventID);
-                              return c.CategoryName === tempCategoryName && Boolean(ev && isEventOpenForRegistration(ev));
+                              return c.CategoryName === tempCategoryName
+                                && (!preferredEventId || c.EventID === preferredEventId)
+                                && Boolean(ev && isEventOpenForRegistration(ev));
                             })
                             .map((c) => {
                               const ev = allEvents.find((e) => e.EventID === c.EventID);

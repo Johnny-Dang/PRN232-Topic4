@@ -18,7 +18,6 @@ interface FeaturedCompetitionsProps {
   filteredCompetitions: DetailedCompetition[];
   setSelectedFilter: (filter: string) => void;
   setSearchQuery: (query: string) => void;
-  handleAction: (title: string, message: string, isRedirect?: boolean) => void;
   onViewDetails: (comp: DetailedCompetition) => void;
 }
 
@@ -31,7 +30,6 @@ export default function FeaturedCompetitions({
   filteredCompetitions,
   setSelectedFilter,
   setSearchQuery,
-  handleAction,
   onViewDetails,
 }: FeaturedCompetitionsProps) {
   const getStatusBadge = (status: string) => {
@@ -221,29 +219,13 @@ export default function FeaturedCompetitions({
                     </div>
                   </div>
 
-                  <div className="pt-2 flex gap-2">
+                  <div className="pt-2">
                     <Button
                       variant="outline"
                       onClick={() => onViewDetails(comp)}
-                      className="flex-1 rounded-xl text-xs font-semibold h-9 border-slate-200 hover:bg-slate-100 dark:border-slate-800 dark:hover:bg-slate-800 cursor-pointer"
+                      className="w-full rounded-xl text-xs font-semibold h-9 border-slate-200 hover:bg-slate-100 dark:border-slate-800 dark:hover:bg-slate-800 cursor-pointer"
                     >
                       Xem chi tiết
-                    </Button>
-                    <Button
-                      onClick={() =>
-                        handleAction(
-                          `Đăng ký ${comp.Name}`,
-                          `Xác nhận ghi danh đội của bạn vào cuộc thi ${comp.Name}.`,
-                        )
-                      }
-                      disabled={comp.Status === "closed"}
-                      className={`flex-1 rounded-xl text-xs font-bold h-9 cursor-pointer transition-all ${
-                        comp.Status === "closed"
-                          ? "bg-slate-100 text-slate-400 dark:bg-slate-800 dark:text-slate-600 cursor-not-allowed"
-                          : "bg-indigo-600 hover:bg-indigo-700 text-white dark:bg-indigo-500 dark:hover:bg-indigo-600"
-                      }`}
-                    >
-                      Đăng ký ngay
                     </Button>
                   </div>
                 </CardContent>

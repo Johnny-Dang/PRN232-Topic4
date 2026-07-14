@@ -12,7 +12,7 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace DataAccessLayer.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    [Migration("20260703023140_IntialDatabase")]
+    [Migration("20260714083724_IntialDatabase")]
     partial class IntialDatabase
     {
         /// <inheritdoc />
@@ -251,11 +251,53 @@ namespace DataAccessLayer.Migrations
                     b.ToTable("EventCriteria", (string)null);
                 });
 
+            modelBuilder.Entity("DataAccessLayer.Database.Entities.EventParticipants", b =>
+                {
+                    b.Property<Guid>("EventParticipantId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("EventId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("RegisteredAt")
+                        .HasColumnType("datetime");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("EventParticipantId");
+
+                    b.HasIndex("EventId");
+
+                    b.HasIndex("UserId", "EventId")
+                        .IsUnique();
+
+                    b.ToTable("EventParticipants", (string)null);
+                });
+
             modelBuilder.Entity("DataAccessLayer.Database.Entities.Events", b =>
                 {
                     b.Property<Guid>("EventId")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Audience")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)")
+                        .HasDefaultValue("Students");
+
+                    b.Property<string>("BannerUrl")
+                        .IsRequired()
+                        .HasMaxLength(2000)
+                        .HasColumnType("nvarchar(2000)");
 
                     b.Property<string>("Description")
                         .IsRequired()
@@ -269,6 +311,44 @@ namespace DataAccessLayer.Migrations
                         .HasMaxLength(255)
                         .HasColumnType("nvarchar(255)");
 
+                    b.Property<string>("Format")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)")
+                        .HasDefaultValue("Online");
+
+                    b.Property<bool>("IsDeleted")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bit")
+                        .HasDefaultValue(false);
+
+                    b.Property<bool>("IsFeatured")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bit")
+                        .HasDefaultValue(false);
+
+                    b.Property<bool>("IsPublished")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bit")
+                        .HasDefaultValue(false);
+
+                    b.Property<string>("Organizer")
+                        .IsRequired()
+                        .HasMaxLength(255)
+                        .HasColumnType("nvarchar(255)");
+
+                    b.Property<string>("Prize")
+                        .IsRequired()
+                        .HasMaxLength(255)
+                        .HasColumnType("nvarchar(255)");
+
+                    b.Property<DateTime?>("PublishedAt")
+                        .HasColumnType("datetime");
+
+                    b.Property<Guid?>("PublishedBy")
+                        .HasColumnType("uniqueidentifier");
+
                     b.Property<string>("Season")
                         .IsRequired()
                         .HasMaxLength(50)
@@ -277,10 +357,19 @@ namespace DataAccessLayer.Migrations
                     b.Property<DateTime>("StartDate")
                         .HasColumnType("datetime");
 
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)")
+                        .HasDefaultValue("Draft");
+
                     b.Property<int>("Year")
                         .HasColumnType("int");
 
                     b.HasKey("EventId");
+
+                    b.HasIndex("IsPublished", "IsFeatured", "StartDate");
 
                     b.ToTable("Events", (string)null);
                 });
@@ -507,6 +596,96 @@ namespace DataAccessLayer.Migrations
                     b.ToTable("StudentProfiles", (string)null);
                 });
 
+            modelBuilder.Entity("DataAccessLayer.Database.Entities.SubmissionAssets", b =>
+                {
+                    b.Property<Guid>("SubmissionAssetId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("AssetType")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<string>("CloudinaryAssetId")
+                        .IsRequired()
+                        .HasMaxLength(255)
+                        .HasColumnType("nvarchar(255)");
+
+                    b.Property<string>("ContentType")
+                        .IsRequired()
+                        .HasMaxLength(150)
+                        .HasColumnType("nvarchar(150)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime");
+
+                    b.Property<double?>("DurationSeconds")
+                        .HasColumnType("float");
+
+                    b.Property<long>("FileSize")
+                        .HasColumnType("bigint");
+
+                    b.Property<string>("Format")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<string>("OriginalFileName")
+                        .IsRequired()
+                        .HasMaxLength(255)
+                        .HasColumnType("nvarchar(255)");
+
+                    b.Property<string>("Provider")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<string>("PublicId")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<string>("ResourceType")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<Guid>("RoundId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("SecureUrl")
+                        .IsRequired()
+                        .HasMaxLength(2000)
+                        .HasColumnType("nvarchar(2000)");
+
+                    b.Property<Guid?>("SubmissionId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("TeamId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("UploadStatus")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<DateTime?>("UploadedAt")
+                        .HasColumnType("datetime");
+
+                    b.HasKey("SubmissionAssetId");
+
+                    b.HasIndex("PublicId");
+
+                    b.HasIndex("RoundId");
+
+                    b.HasIndex("SubmissionId");
+
+                    b.HasIndex("TeamId", "RoundId", "AssetType", "UploadStatus");
+
+                    b.ToTable("SubmissionAssets", (string)null);
+                });
+
             modelBuilder.Entity("DataAccessLayer.Database.Entities.SubmissionTemplates", b =>
                 {
                     b.Property<Guid>("TemplateId")
@@ -615,6 +794,9 @@ namespace DataAccessLayer.Migrations
                     b.Property<Guid?>("CategoryId")
                         .HasColumnType("uniqueidentifier");
 
+                    b.Property<Guid?>("EventId")
+                        .HasColumnType("uniqueidentifier");
+
                     b.Property<Guid>("TeamLeaderId")
                         .HasColumnType("uniqueidentifier");
 
@@ -631,6 +813,8 @@ namespace DataAccessLayer.Migrations
                     b.HasKey("TeamId");
 
                     b.HasIndex("CategoryId");
+
+                    b.HasIndex("EventId");
 
                     b.HasIndex("TeamLeaderId");
 
@@ -676,9 +860,17 @@ namespace DataAccessLayer.Migrations
                         .HasMaxLength(50)
                         .HasColumnType("nvarchar(50)");
 
+                    b.Property<string>("ShortId")
+                        .IsRequired()
+                        .HasMaxLength(6)
+                        .HasColumnType("nvarchar(6)");
+
                     b.HasKey("UserId");
 
                     b.HasIndex("Email")
+                        .IsUnique();
+
+                    b.HasIndex("ShortId")
                         .IsUnique();
 
                     b.ToTable("Users", (string)null);
@@ -820,6 +1012,25 @@ namespace DataAccessLayer.Migrations
                     b.Navigation("Event");
                 });
 
+            modelBuilder.Entity("DataAccessLayer.Database.Entities.EventParticipants", b =>
+                {
+                    b.HasOne("DataAccessLayer.Database.Entities.Events", "Event")
+                        .WithMany("EventParticipants")
+                        .HasForeignKey("EventId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("DataAccessLayer.Database.Entities.Users", "User")
+                        .WithMany("EventParticipants")
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Event");
+
+                    b.Navigation("User");
+                });
+
             modelBuilder.Entity("DataAccessLayer.Database.Entities.JudgeAssignments", b =>
                 {
                     b.HasOne("DataAccessLayer.Database.Entities.Rounds", "Round")
@@ -937,6 +1148,32 @@ namespace DataAccessLayer.Migrations
                     b.Navigation("User");
                 });
 
+            modelBuilder.Entity("DataAccessLayer.Database.Entities.SubmissionAssets", b =>
+                {
+                    b.HasOne("DataAccessLayer.Database.Entities.Rounds", "Round")
+                        .WithMany("SubmissionAssets")
+                        .HasForeignKey("RoundId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("DataAccessLayer.Database.Entities.Submissions", "Submission")
+                        .WithMany("SubmissionAssets")
+                        .HasForeignKey("SubmissionId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.HasOne("DataAccessLayer.Database.Entities.Teams", "Team")
+                        .WithMany("SubmissionAssets")
+                        .HasForeignKey("TeamId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Round");
+
+                    b.Navigation("Submission");
+
+                    b.Navigation("Team");
+                });
+
             modelBuilder.Entity("DataAccessLayer.Database.Entities.Submissions", b =>
                 {
                     b.HasOne("DataAccessLayer.Database.Entities.Rounds", "Round")
@@ -982,6 +1219,11 @@ namespace DataAccessLayer.Migrations
                         .HasForeignKey("CategoryId")
                         .OnDelete(DeleteBehavior.Cascade);
 
+                    b.HasOne("DataAccessLayer.Database.Entities.Events", "Event")
+                        .WithMany("Teams")
+                        .HasForeignKey("EventId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
                     b.HasOne("DataAccessLayer.Database.Entities.Users", "TeamLeader")
                         .WithMany()
                         .HasForeignKey("TeamLeaderId")
@@ -989,6 +1231,8 @@ namespace DataAccessLayer.Migrations
                         .IsRequired();
 
                     b.Navigation("Category");
+
+                    b.Navigation("Event");
 
                     b.Navigation("TeamLeader");
                 });
@@ -1017,7 +1261,11 @@ namespace DataAccessLayer.Migrations
 
                     b.Navigation("EventCriteria");
 
+                    b.Navigation("EventParticipants");
+
                     b.Navigation("Rounds");
+
+                    b.Navigation("Teams");
                 });
 
             modelBuilder.Entity("DataAccessLayer.Database.Entities.Rounds", b =>
@@ -1027,6 +1275,8 @@ namespace DataAccessLayer.Migrations
                     b.Navigation("JudgeAssignments");
 
                     b.Navigation("Rankings");
+
+                    b.Navigation("SubmissionAssets");
 
                     b.Navigation("Submissions");
                 });
@@ -1043,11 +1293,15 @@ namespace DataAccessLayer.Migrations
                     b.Navigation("Eliminations");
 
                     b.Navigation("Scores");
+
+                    b.Navigation("SubmissionAssets");
                 });
 
             modelBuilder.Entity("DataAccessLayer.Database.Entities.Teams", b =>
                 {
                     b.Navigation("Rankings");
+
+                    b.Navigation("SubmissionAssets");
 
                     b.Navigation("Submissions");
 
@@ -1056,6 +1310,8 @@ namespace DataAccessLayer.Migrations
 
             modelBuilder.Entity("DataAccessLayer.Database.Entities.Users", b =>
                 {
+                    b.Navigation("EventParticipants");
+
                     b.Navigation("RefreshTokens");
 
                     b.Navigation("TeamMembers");

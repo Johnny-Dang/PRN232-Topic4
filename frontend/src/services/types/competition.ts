@@ -163,7 +163,38 @@ export const createEventRequestSchema = z.object({
   Prize: z.string().default(''),
 });
 
+export const categoryRequestSchema = z.object({
+  EventId: idSchema,
+  CategoryName: z.string().trim().min(2).max(150),
+  Description: z.string().max(2000).default(''),
+});
+
+export const addRoundRequestSchema = z
+  .object({
+    RoundName: z.string().trim().min(2).max(150),
+    RoundOrder: z.number().int().min(1).max(100),
+    SubmissionDeadline: z.string().datetime(),
+    StartDate: z.string().datetime(),
+    EndDate: z.string().datetime(),
+  })
+  .refine((round) => new Date(round.StartDate) < new Date(round.EndDate), {
+    message: 'Thời gian bắt đầu vòng thi phải sớm hơn thời gian kết thúc.',
+    path: ['EndDate'],
+  })
+  .refine(
+    (round) => {
+      const deadline = new Date(round.SubmissionDeadline);
+      return deadline >= new Date(round.StartDate) && deadline <= new Date(round.EndDate);
+    },
+    {
+      message: 'Hạn nộp bài phải nằm trong thời gian diễn ra vòng thi.',
+      path: ['SubmissionDeadline'],
+    }
+  );
+
 export type Round = z.infer<typeof roundSchema>;
 export type Event = z.infer<typeof eventSchema>;
 export type Category = z.infer<typeof categorySchema>;
 export type CreateEventRequest = z.infer<typeof createEventRequestSchema>;
+export type CategoryRequest = z.infer<typeof categoryRequestSchema>;
+export type AddRoundRequest = z.infer<typeof addRoundRequestSchema>;

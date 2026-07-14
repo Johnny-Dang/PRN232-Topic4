@@ -2,6 +2,7 @@ using DataAccessLayer.Database;
 using DataAccessLayer.Database.Entities;
 using DataAccessLayer.Repositories.Interfaces;
 using Microsoft.EntityFrameworkCore;
+using System.Linq.Expressions;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -27,6 +28,17 @@ namespace DataAccessLayer.Repositories.Implementations
         {
             return await _dbSet
                 .Include(e => e.Rounds)
+                .ToListAsync(cancellationToken);
+        }
+
+        public override async Task<IReadOnlyList<Events>> FindAsync(
+            Expression<Func<Events, bool>> predicate,
+            CancellationToken cancellationToken = default
+        )
+        {
+            return await _dbSet
+                .Include(e => e.Rounds)
+                .Where(predicate)
                 .ToListAsync(cancellationToken);
         }
     }

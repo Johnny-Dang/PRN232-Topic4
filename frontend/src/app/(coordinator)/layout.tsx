@@ -3,7 +3,7 @@
 import React, { useEffect, useState, Suspense } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
-import { ShieldCheck, HelpCircle, ChevronRight, LogOut, Menu, ChevronLeft, Home, Calendar, Users, Ban, Percent, ListChecks, Trophy, UserCog, SlidersHorizontal, Target } from 'lucide-react';
+import { ShieldCheck, HelpCircle, ChevronRight, LogOut, Menu, ChevronLeft, Home, Calendar, Users, Ban, Percent, Tags, UserRound, ListChecks, Trophy, UserCog, SlidersHorizontal, Target } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -95,11 +95,18 @@ function CoordinatorLayoutContent({
       tabValue: 'events'
     },
     {
-      label: 'Phân công Mentor',
-      href: '/coordinator?tab=mentor-assignment',
-      icon: Users,
-      description: 'Phân công Mentor vào Category',
-      tabValue: 'mentor-assignment'
+      label: 'Category & Mentor',
+      href: '/coordinator?tab=categories',
+      icon: Tags,
+      description: 'Quản lý hạng mục và phân công Mentor',
+      tabValue: 'categories'
+    },
+    {
+      label: 'Quản lý Mentor',
+      href: '/coordinator?tab=mentors',
+      icon: UserRound,
+      description: 'Thông tin Mentor và Category phụ trách',
+      tabValue: 'mentors'
     },
     {
       label: 'Xử lý vi phạm',

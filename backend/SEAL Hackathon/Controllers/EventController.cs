@@ -12,10 +12,29 @@ namespace SEALHackathonSystem.Controllers
     public class EventController : ControllerBase
     {
         private readonly IEventService _eventService;
+        private readonly IEventBannerUploadService _eventBannerUploadService;
 
-        public EventController(IEventService eventService)
+        public EventController(
+            IEventService eventService,
+            IEventBannerUploadService eventBannerUploadService
+        )
         {
             _eventService = eventService;
+            _eventBannerUploadService = eventBannerUploadService;
+        }
+
+        [Authorize(Policy = "CoordinatorOnly")]
+        [HttpPost("banner/sign-upload")]
+        public IActionResult SignBannerUpload([FromBody] SignEventBannerUploadRequest request)
+        {
+            try
+            {
+                return Ok(_eventBannerUploadService.SignUpload(request));
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
         }
 
         [AllowAnonymous]

@@ -17,6 +17,7 @@ namespace BusinessLogicLayer.Services.Implements
         private readonly IGenericRepository<TeamMembers> _teamMemberRepository;
         private readonly IGenericRepository<EventParticipants> _eventParticipantRepository;
         private readonly IGenericRepository<Users> _userRepository;
+        private readonly IGenericRepository<StudentProfiles> _studentProfileRepository;
         private readonly IGenericRepository<Categories> _categoryRepository;
         private readonly IGenericRepository<Events> _eventRepository;
         private readonly IGenericRepository<AuditLogs> _auditLogRepository;
@@ -31,6 +32,7 @@ namespace BusinessLogicLayer.Services.Implements
             _teamMemberRepository = _unitOfWork.GetRepository<TeamMembers>();
             _eventParticipantRepository = _unitOfWork.GetRepository<EventParticipants>();
             _userRepository = _unitOfWork.GetRepository<Users>();
+            _studentProfileRepository = _unitOfWork.GetRepository<StudentProfiles>();
             _categoryRepository = _unitOfWork.GetRepository<Categories>();
             _eventRepository = _unitOfWork.GetRepository<Events>();
             _auditLogRepository = _unitOfWork.GetRepository<AuditLogs>();
@@ -150,6 +152,7 @@ namespace BusinessLogicLayer.Services.Implements
             await ValidateTeamReadyForCategoryAsync(team, request.CategoryId, request.EventId);
 
             team.CategoryId = request.CategoryId;
+            team.EventId = request.EventId;
 
             _teamRepository.Update(team);
             await WriteAuditLogAsync(
@@ -205,7 +208,7 @@ namespace BusinessLogicLayer.Services.Implements
 
             var memberUser = await ResolveMemberUserAsync(request);
             if (memberUser == null)
-                throw new Exception("User not found by the provided id, short id, or email.");
+                throw new Exception("User not found by the provided id, email, short id, or student code.");
 
             await ValidateMemberEligibilityAsync(memberUser, team);
 
@@ -232,6 +235,7 @@ namespace BusinessLogicLayer.Services.Implements
                         memberUser.UserId,
                         request.Email,
                         request.ShortId,
+                        request.StudentCode,
                     }
                 )
             );
@@ -262,15 +266,36 @@ namespace BusinessLogicLayer.Services.Implements
             var shortId = request.ShortId?.Trim();
             if (!string.IsNullOrWhiteSpace(shortId))
             {
-                if (shortId.Length != 6)
-                    throw new Exception("Short user id must contain exactly 6 characters.");
-
-                return await _userRepository.FirstOrDefaultAsync(user =>
+                var userByShortId = await _userRepository.FirstOrDefaultAsync(user =>
                     user.ShortId.ToLower() == shortId.ToLower()
                 );
+
+                if (userByShortId != null)
+                    return userByShortId;
+
+                var userByStudentCode = await ResolveMemberUserByStudentCodeAsync(shortId);
+                if (userByStudentCode != null)
+                    return userByStudentCode;
             }
 
-            throw new Exception("Please provide UserId, Email, or ShortId to add a team member.");
+            var studentCode = request.StudentCode?.Trim();
+            if (!string.IsNullOrWhiteSpace(studentCode))
+            {
+                var userByStudentCode = await ResolveMemberUserByStudentCodeAsync(studentCode);
+                if (userByStudentCode != null)
+                    return userByStudentCode;
+            }
+
+            throw new Exception("Please provide UserId, Email, ShortId, or StudentCode to add a team member.");
+        }
+
+        private async Task<Users?> ResolveMemberUserByStudentCodeAsync(string studentCode)
+        {
+            var studentProfile = await _studentProfileRepository.FirstOrDefaultAsync(profile =>
+                profile.StudentCode.ToLower() == studentCode.ToLower()
+            );
+
+            return studentProfile == null ? null : await _userRepository.GetByIdAsync(studentProfile.UserId);
         }
 
         private async Task ValidateTeamReadyForCategoryAsync(Teams team, Guid categoryId, Guid eventId)

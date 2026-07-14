@@ -2,6 +2,8 @@
 
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
+import { useSearchParams } from 'next/navigation';
+import { useRouter } from 'next/navigation';
 import { Bookmark, CalendarDays, CheckCircle2, RefreshCw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -58,7 +60,15 @@ const getStoredUserId = (): string | null => {
   }
 };
 
+const memberLookupRegex =
+  /^(?:[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}|[^\s@]+@[^\s@]+\.[^\s@]+|[a-z0-9_-]{4,20})$/i;
+
+const validateMemberLookup = (value: string) => memberLookupRegex.test(value.trim());
+
 export default function MemberPage() {
+  const searchParams = useSearchParams();
+  const router = useRouter();
+  const requestedEventId = searchParams.get('eventId') ?? '';
   const [loading, setLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState('');
   const [team, setTeam] = useState<Team | null>(null);
@@ -176,9 +186,8 @@ export default function MemberPage() {
         throw new Error('Tên nhóm phải chứa từ 2 đến 120 ký tự.');
       }
 
-      const memberLookupRegex = /^(?:[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}|[^\s@]+@[^\s@]+\.[^\s@]+|[0-9a-f]{6})$/i;
-      if (!memberLookupRegex.test(firstMemberId.trim())) {
-        throw new Error('Vui lòng nhập GUID, email hoặc mã thành viên 6 ký tự hợp lệ.');
+      if (!validateMemberLookup(firstMemberId)) {
+        throw new Error('Vui lòng nhập GUID, email, mã thành viên hoặc mã sinh viên hợp lệ.');
       }
 
       const newTeam = await createTeam(newTeamName.trim());
@@ -198,6 +207,7 @@ export default function MemberPage() {
       }
 
       await loadData();
+      router.push(requestedEventId ? `/my-events?eventId=${encodeURIComponent(requestedEventId)}` : '/my-events');
     } catch (err: unknown) {
       console.error(err);
       const axiosError = err as { response?: { data?: { message?: string } } };
@@ -240,9 +250,8 @@ export default function MemberPage() {
     setAddSuccessMessage('');
 
     try {
-      const memberLookupRegex = /^(?:[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}|[^\s@]+@[^\s@]+\.[^\s@]+|[0-9a-f]{6})$/i;
-      if (!memberLookupRegex.test(newMemberId.trim())) {
-        throw new Error('Vui lòng nhập GUID, email hoặc mã thành viên 6 ký tự hợp lệ.');
+      if (!validateMemberLookup(newMemberId)) {
+        throw new Error('Vui lòng nhập GUID, email, mã thành viên hoặc mã sinh viên hợp lệ.');
       }
 
       await addTeamMember(team.TeamID, newMemberId.trim());
@@ -336,6 +345,21 @@ export default function MemberPage() {
               </Card>
             ) : (
               <>
+                {requestedEventId && !team.CategoryID && (
+                  <Card className="border-indigo-100 bg-indigo-50/40 shadow-sm dark:border-indigo-900/50 dark:bg-indigo-950/10">
+                    <CardContent className="flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:justify-between">
+                      <p className="text-xs font-medium text-slate-600 dark:text-slate-300">
+                        Hoàn tất danh sách thành viên của đội, sau đó đăng ký sự kiện tại trang Sự kiện của tôi.
+                      </p>
+                      <Link
+                        href={`/my-events?eventId=${encodeURIComponent(requestedEventId)}`}
+                        className="inline-flex h-9 shrink-0 items-center justify-center rounded-xl bg-indigo-600 px-3 text-xs font-bold text-white hover:bg-indigo-700"
+                      >
+                        Tiếp tục đăng ký
+                      </Link>
+                    </CardContent>
+                  </Card>
+                )}
                 <TeamProfileCard
                   team={team}
                   category={category}
@@ -343,6 +367,8 @@ export default function MemberPage() {
                   members={members}
                   allCategories={allCategories}
                   allEvents={allEvents}
+                  preferredEventId={requestedEventId}
+                  allowEventRegistration={false}
                   isLeader={isLeader || false}
                   tempCategoryName={tempCategoryName}
                   setTempCategoryName={setTempCategoryName}

@@ -1,10 +1,10 @@
+using System;
+using System.Security.Claims;
+using System.Threading.Tasks;
 using BusinessLogicLayer.DTOs.Requests;
 using BusinessLogicLayer.Services.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using System;
-using System.Security.Claims;
-using System.Threading.Tasks;
 
 namespace SEALHackathonSystem.Controllers
 {
@@ -36,7 +36,10 @@ namespace SEALHackathonSystem.Controllers
 
         [Authorize(Policy = "CoordinatorOnly")]
         [HttpPost]
-        public async Task<IActionResult> SetForEvent(Guid eventId, [FromBody] SetEventCriteriaRequest request)
+        public async Task<IActionResult> SetForEvent(
+            Guid eventId,
+            [FromBody] SetEventCriteriaRequest request
+        )
         {
             try
             {
@@ -53,7 +56,10 @@ namespace SEALHackathonSystem.Controllers
         private Guid GetCurrentUserId()
         {
             var userIdClaim = User.FindFirstValue(ClaimTypes.NameIdentifier);
-            if (string.IsNullOrWhiteSpace(userIdClaim) || !Guid.TryParse(userIdClaim, out var userId))
+            if (
+                string.IsNullOrWhiteSpace(userIdClaim)
+                || !Guid.TryParse(userIdClaim, out var userId)
+            )
                 throw new Exception("Invalid user token");
 
             return userId;

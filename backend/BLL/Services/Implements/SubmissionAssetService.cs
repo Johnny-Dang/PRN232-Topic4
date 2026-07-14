@@ -71,7 +71,7 @@ namespace BusinessLogicLayer.Services.Implements
 
             ValidateUploadFile(request, maxFileSize);
 
-            var cloudName = GetRequiredCloudinarySetting("CloudName");
+            var cloudName = GetCloudinaryCloudName();
             var apiKey = GetRequiredCloudinarySetting("ApiKey");
             var apiSecret = GetRequiredCloudinarySetting("ApiSecret");
             var timestamp = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
@@ -270,7 +270,16 @@ namespace BusinessLogicLayer.Services.Implements
             var value = _configuration[$"Cloudinary:{key}"];
             if (string.IsNullOrWhiteSpace(value))
                 throw new Exception($"Cloudinary:{key} is not configured.");
-            return value;
+            return value.Trim();
+        }
+
+        private string GetCloudinaryCloudName()
+        {
+            var cloudName = GetRequiredCloudinarySetting("CloudName").ToLowerInvariant();
+            if (!cloudName.All(c => char.IsLetterOrDigit(c) || c == '-' || c == '_'))
+                throw new Exception("Cloudinary:CloudName must contain only letters, numbers, hyphen, or underscore.");
+
+            return cloudName;
         }
 
         private long GetMaxFileSize(string assetType)
