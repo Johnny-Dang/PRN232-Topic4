@@ -43,12 +43,12 @@ export const CreateTeamCard: React.FC<CreateTeamCardProps> = ({
         </div>
         <div className="space-y-1">
           <label className="text-[10px] font-semibold text-slate-455 uppercase">
-            Email hoặc mã thành viên
+            Email, mã thành viên hoặc mã sinh viên
           </label>
           <input
             type="text"
             required
-            placeholder="Nhập email hoặc mã 6 ký tự (VD: an@example.com, fcea02)"
+            placeholder="Nhập email, mã hệ thống hoặc mã sinh viên (VD: an@example.com, TM0001, SE170002)"
             className="h-9 w-full rounded-lg border border-slate-200 bg-slate-50 px-3 text-xs font-medium focus:outline-none dark:border-slate-700 dark:bg-slate-800"
             value={firstMemberId}
             onChange={(e) => setFirstMemberId(e.target.value)}

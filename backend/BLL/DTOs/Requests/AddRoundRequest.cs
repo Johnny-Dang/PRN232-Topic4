@@ -25,12 +25,18 @@ namespace BusinessLogicLayer.DTOs.Requests
         {
             if (StartDate >= EndDate)
             {
-                yield return new ValidationResult("StartDate must be earlier than EndDate.", new[] { nameof(StartDate), nameof(EndDate) });
+                yield return new ValidationResult(
+                    "StartDate must be earlier than EndDate.",
+                    new[] { nameof(StartDate), nameof(EndDate) }
+                );
             }
 
             if (SubmissionDeadline < StartDate || SubmissionDeadline > EndDate)
             {
-                yield return new ValidationResult("SubmissionDeadline must be within the round period.", new[] { nameof(SubmissionDeadline), nameof(StartDate), nameof(EndDate) });
+                yield return new ValidationResult(
+                    "SubmissionDeadline must be within the round period.",
+                    new[] { nameof(SubmissionDeadline), nameof(StartDate), nameof(EndDate) }
+                );
             }
         }
     }

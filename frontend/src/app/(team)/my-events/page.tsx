@@ -1,7 +1,8 @@
 "use client";
 
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import {
   CalendarDays,
   CheckCircle2,
@@ -29,6 +30,7 @@ import {
   getEvents,
   getTeamMembers,
   getTeams,
+  setTeamCategory,
 } from "@/lib/api";
 
 type TeamMemberWithProfile = Awaited<ReturnType<typeof getTeamMembers>>[number];
@@ -37,6 +39,12 @@ type MyEventRow = {
   event: Event;
   team: Team;
   category?: Category;
+  members: TeamMemberWithProfile[];
+  isLeader: boolean;
+};
+
+type PendingRegistrationTeam = {
+  team: Team;
   members: TeamMemberWithProfile[];
   isLeader: boolean;
 };
@@ -115,12 +123,20 @@ const formatDate = (value: string): string => {
 };
 
 export default function MyEventsPage() {
+  const searchParams = useSearchParams();
+  const requestedEventId = searchParams.get("eventId") ?? "";
   const [loading, setLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState("");
   const [rows, setRows] = useState<MyEventRow[]>([]);
   const [loadedAt, setLoadedAt] = useState(0);
+  const [pendingRegistrationTeam, setPendingRegistrationTeam] = useState<PendingRegistrationTeam | null>(null);
+  const [availableCategories, setAvailableCategories] = useState<Category[]>([]);
+  const [availableEvents, setAvailableEvents] = useState<Event[]>([]);
+  const [selectedCategoryId, setSelectedCategoryId] = useState("");
+  const [registering, setRegistering] = useState(false);
+  const [registrationMessage, setRegistrationMessage] = useState("");
 
-  const loadData = async () => {
+  const loadData = useCallback(async () => {
     setLoading(true);
     setErrorMessage("");
 
@@ -139,6 +155,7 @@ export default function MyEventsPage() {
       ]);
 
       const myRows: MyEventRow[] = [];
+      let unregisteredTeam: PendingRegistrationTeam | null = null;
 
       for (const team of teams) {
         const members = await getTeamMembers(team.TeamID);
@@ -149,6 +166,11 @@ export default function MyEventsPage() {
         );
 
         if (!isLeader && !isMember) continue;
+
+        if (!team.CategoryID && !unregisteredTeam) {
+          unregisteredTeam = { team, members, isLeader };
+          continue;
+        }
 
         const category = categories.find(
           (item) => item.CategoryID === team.CategoryID,
@@ -161,7 +183,17 @@ export default function MyEventsPage() {
         myRows.push({ event, team, category, members, isLeader });
       }
 
-      setRows(myRows);
+      const rowsByEvent = new Map<string, MyEventRow>();
+      myRows.forEach((row) => {
+        if (!rowsByEvent.has(row.event.EventID)) {
+          rowsByEvent.set(row.event.EventID, row);
+        }
+      });
+
+      setRows([...rowsByEvent.values()]);
+      setPendingRegistrationTeam(unregisteredTeam);
+      setAvailableCategories(categories);
+      setAvailableEvents(events);
       setLoadedAt(Date.now());
     } catch (error) {
       console.error(error);
@@ -169,11 +201,37 @@ export default function MyEventsPage() {
     } finally {
       setLoading(false);
     }
+  }, []);
+
+  const handleRegisterEvent = async () => {
+    if (!pendingRegistrationTeam || !selectedCategoryId) return;
+
+    const selectedCategory = availableCategories.find((category) => category.CategoryID === selectedCategoryId);
+    if (!selectedCategory) return;
+
+    setRegistering(true);
+    setRegistrationMessage("");
+    try {
+      await setTeamCategory(pendingRegistrationTeam.team.TeamID, selectedCategory.CategoryID, selectedCategory.EventID);
+      setRegistrationMessage("Đăng ký sự kiện thành công.");
+      await loadData();
+    } catch (registrationError) {
+      const message = registrationError instanceof Error ? registrationError.message : "Không thể đăng ký sự kiện.";
+      setRegistrationMessage(message);
+    } finally {
+      setRegistering(false);
+    }
   };
 
   useEffect(() => {
     void Promise.resolve().then(loadData);
-  }, []);
+
+    const handleRealtimeNotification = () => {
+      void loadData();
+    };
+    window.addEventListener("seal:notification", handleRealtimeNotification);
+    return () => window.removeEventListener("seal:notification", handleRealtimeNotification);
+  }, [loadData]);
 
   const activeRows = useMemo(() => {
     return rows.filter((row) => {
@@ -243,6 +301,46 @@ export default function MyEventsPage() {
               </Link>
             </CardContent>
           </Card>
+
+          {pendingRegistrationTeam && (
+            <Card className="border-indigo-100 bg-indigo-50/30 shadow-sm dark:border-indigo-900/50 dark:bg-indigo-950/10">
+              <CardHeader>
+                <CardTitle className="text-base font-black text-slate-900 dark:text-white">Đăng ký sự kiện cho đội</CardTitle>
+                <CardDescription className="text-xs font-medium">
+                  Đội {pendingRegistrationTeam.team.TeamName} chưa đăng ký sự kiện. Chỉ trưởng nhóm có thể thực hiện thao tác này.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                {pendingRegistrationTeam.members.length < 3 ? (
+                  <p className="rounded-xl border border-amber-100 bg-amber-50 p-3 text-xs font-medium text-amber-700">
+                    Đội cần tối thiểu 3 thành viên trước khi đăng ký sự kiện. Hiện có {pendingRegistrationTeam.members.length} thành viên.
+                  </p>
+                ) : !pendingRegistrationTeam.isLeader ? (
+                  <p className="rounded-xl border border-slate-200 bg-white p-3 text-xs font-medium text-slate-600 dark:border-slate-800 dark:bg-slate-900">
+                    Chỉ trưởng nhóm mới có quyền đăng ký sự kiện cho đội.
+                  </p>
+                ) : (
+                  <>
+                    <select value={selectedCategoryId} onChange={(event) => setSelectedCategoryId(event.target.value)} className="h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-xs font-semibold dark:border-slate-700 dark:bg-slate-900">
+                      <option value="">Chọn hạng mục và sự kiện</option>
+                      {availableCategories.filter((category) => {
+                        const event = availableEvents.find((item) => item.EventID === category.EventID);
+                        return (!requestedEventId || category.EventID === requestedEventId)
+                          && Boolean(event?.IsPublished && event.Status === "Published" && new Date(event.StartDate) > new Date());
+                      }).map((category) => {
+                        const event = availableEvents.find((item) => item.EventID === category.EventID);
+                        return <option key={category.CategoryID} value={category.CategoryID}>{event?.EventName} — {category.CategoryName}</option>;
+                      })}
+                    </select>
+                    <Button type="button" disabled={!selectedCategoryId || registering} onClick={() => void handleRegisterEvent()} className="h-9 rounded-xl bg-indigo-600 text-xs font-bold hover:bg-indigo-700">
+                      {registering ? "Đang đăng ký..." : "Đăng ký sự kiện"}
+                    </Button>
+                  </>
+                )}
+                {registrationMessage && <p className="text-xs font-medium text-slate-600 dark:text-slate-300">{registrationMessage}</p>}
+              </CardContent>
+            </Card>
+          )}
 
           <div className="grid gap-4 md:grid-cols-3">
             <Card className="border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900">

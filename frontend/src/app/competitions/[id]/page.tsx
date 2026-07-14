@@ -11,14 +11,15 @@ import {
   Users, 
   Trophy, 
   Building,
+  CalendarDays,
   CheckCircle2,
   ChevronRight,
   Share2
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { getDetailedCompetitions } from '@/lib/api';
-import type { DetailedCompetition, User } from '@/lib/api';
+import { getDetailedCompetitions, getRounds, getTeamMembers, getTeams } from '@/lib/api';
+import type { DetailedCompetition, Round, User } from '@/lib/api';
 
 // Shared public components
 import Header from '@/components/landing/Header';
@@ -37,6 +38,7 @@ export default function CompetitionDetailPage({ params }: PageProps) {
 
   // States
   const [competition, setCompetition] = useState<DetailedCompetition | null>(null);
+  const [rounds, setRounds] = useState<Round[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [activeTab, setActiveTab] = useState<TabType>('overview');
   
@@ -56,6 +58,8 @@ export default function CompetitionDetailPage({ params }: PageProps) {
   const [actionTitle, setActionTitle] = useState<string>('');
   const [actionDesc, setActionDesc] = useState<string>('');
   const [copiedLink, setCopiedLink] = useState<boolean>(false);
+  const [isCheckingTeam, setIsCheckingTeam] = useState<boolean>(false);
+  const [registrationNotice, setRegistrationNotice] = useState<string>('');
 
   // Fetch Session User & Scroll listener
   useEffect(() => {
@@ -83,10 +87,11 @@ export default function CompetitionDetailPage({ params }: PageProps) {
   useEffect(() => {
     void Promise.resolve().then(() => {
       setLoading(true);
-      getDetailedCompetitions()
-        .then((comps) => {
+      Promise.all([getDetailedCompetitions(), getRounds(id)])
+        .then(([comps, eventRounds]) => {
           const found = comps.find((c) => c.ID === id);
           setCompetition(found ?? null);
+          setRounds(eventRounds.sort((first, second) => first.RoundOrder - second.RoundOrder));
           setLoading(false);
         })
         .catch((err) => {
@@ -94,6 +99,17 @@ export default function CompetitionDetailPage({ params }: PageProps) {
           setLoading(false);
         });
     });
+  }, [id]);
+
+  useEffect(() => {
+    const refreshRounds = () => {
+      void getRounds(id).then((eventRounds) => {
+        setRounds(eventRounds.sort((first, second) => first.RoundOrder - second.RoundOrder));
+      });
+    };
+
+    window.addEventListener('seal:notification', refreshRounds);
+    return () => window.removeEventListener('seal:notification', refreshRounds);
   }, [id]);
 
   // Determine active dashboard route based on user role
@@ -194,6 +210,59 @@ export default function CompetitionDetailPage({ params }: PageProps) {
 
   const statusMeta = getStatusBadge(competition.Status);
 
+  const formatRoundDate = (value: string): string => {
+    const date = new Date(value);
+    return Number.isNaN(date.getTime()) ? 'Chưa cập nhật' : date.toLocaleDateString('vi-VN');
+  };
+
+  const handleRegisterForCompetition = async (): Promise<void> => {
+    if (!currentUser) {
+      router.push('/login');
+      return;
+    }
+
+    setIsCheckingTeam(true);
+    setRegistrationNotice('');
+    try {
+      const teams = await getTeams();
+      const leadsATeam = teams.some((team) => team.TeamLeaderId === currentUser.UserID);
+      let belongsToTeam = leadsATeam;
+
+      if (!belongsToTeam) {
+        for (const team of teams) {
+          const members = await getTeamMembers(team.TeamID);
+          if (members.some((member) => member.UserId === currentUser.UserID)) {
+            belongsToTeam = true;
+            break;
+          }
+        }
+      }
+
+      if (!belongsToTeam) {
+        setRegistrationNotice('Bạn cần đăng ký hoặc tham gia một nhóm trước khi đăng ký sự kiện.');
+        return;
+      }
+
+      router.push(`/my-events?eventId=${encodeURIComponent(id)}`);
+    } catch (error) {
+      console.error('Không thể kiểm tra nhóm dự thi:', error);
+      setRegistrationNotice('Không thể kiểm tra thông tin nhóm. Vui lòng thử lại sau.');
+    } finally {
+      setIsCheckingTeam(false);
+    }
+  };
+
+  const getRoundStatus = (round: Round) => {
+    const now = new Date();
+    if (now < new Date(round.StartDate)) {
+      return { label: 'Sắp diễn ra', badgeClass: 'bg-blue-50 text-blue-600 border-blue-100 dark:bg-blue-950/30 dark:border-blue-900/30 dark:text-blue-400' };
+    }
+    if (now > new Date(round.EndDate)) {
+      return { label: 'Đã kết thúc', badgeClass: 'bg-slate-100 text-slate-500 border-slate-200 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-400' };
+    }
+    return { label: 'Đang diễn ra', badgeClass: 'bg-emerald-50 text-emerald-600 border-emerald-100 dark:bg-emerald-950/30 dark:border-emerald-900/30 dark:text-emerald-400' };
+  };
+
   const tabs: { id: TabType; label: string }[] = [
     { id: 'overview', label: 'Tổng quan' },
     { id: 'schedule', label: 'Lịch trình vòng thi' },
@@ -203,6 +272,11 @@ export default function CompetitionDetailPage({ params }: PageProps) {
 
   return (
     <div className="min-h-screen flex flex-col bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 font-sans antialiased selection:bg-indigo-600 selection:text-white transition-colors duration-200 pb-20 md:pb-0">
+      {registrationNotice && (
+        <div role="alert" className="fixed left-1/2 top-5 z-50 w-[calc(100%-2rem)] max-w-md -translate-x-1/2 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-center text-xs font-semibold text-amber-800 shadow-lg dark:border-amber-900/60 dark:bg-amber-950 dark:text-amber-200">
+          {registrationNotice}
+        </div>
+      )}
       
       {/* 1. HEADER */}
       <Header
@@ -331,7 +405,7 @@ export default function CompetitionDetailPage({ params }: PageProps) {
                 </div>
               )}
 
-              {activeTab === 'schedule' && (
+              {activeTab === 'schedule' && false && (
                 <div className="space-y-6 animate-in fade-in duration-200">
                   <h3 className="text-base font-black text-slate-800 dark:text-white">Tiến trình vòng thi</h3>
                   <div className="relative border-l-2 border-indigo-150 dark:border-indigo-900/60 pl-6 ml-3 space-y-8">
@@ -344,7 +418,7 @@ export default function CompetitionDetailPage({ params }: PageProps) {
                           <span className="font-bold text-slate-800 dark:text-white text-sm">Vòng Sơ Loại (Preliminary Round)</span>
                           <Badge className="bg-emerald-50 text-emerald-600 border border-emerald-100 text-[8.5px] px-2 py-0 dark:bg-emerald-950/30 dark:border-emerald-900/30 dark:text-emerald-450">Đăng ký & nộp hồ sơ</Badge>
                         </div>
-                        <p className="text-slate-500 text-xs">Các đội thi đăng ký thông tin đội hình (3 - 5 người) và nộp đề xuất giải pháp trực tuyến. Hạn chót đăng ký là ngày <strong>{competition.Deadline}</strong>.</p>
+                        <p className="text-slate-500 text-xs">Các đội thi đăng ký thông tin đội hình (3 - 5 người) và nộp đề xuất giải pháp trực tuyến. Hạn chót đăng ký là ngày <strong>{competition?.Deadline}</strong>.</p>
                       </div>
                     </div>
 
@@ -367,6 +441,38 @@ export default function CompetitionDetailPage({ params }: PageProps) {
                     </div>
 
                   </div>
+                </div>
+              )}
+
+              {activeTab === 'schedule' && (
+                <div className="space-y-6 animate-in fade-in duration-200">
+                  <h3 className="text-base font-black text-slate-800 dark:text-white">Tiến trình vòng thi</h3>
+                  {rounds.length === 0 ? (
+                    <div className="rounded-2xl border border-dashed border-slate-200 bg-white p-5 text-xs text-slate-500 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-400">
+                      Event này chưa có lịch vòng thi. Ban tổ chức sẽ cập nhật sớm.
+                    </div>
+                  ) : (
+                    <div className="relative ml-3 space-y-8 border-l-2 border-indigo-150 pl-6 dark:border-indigo-900/60">
+                      {rounds.map((round, index) => {
+                        const roundStatus = getRoundStatus(round);
+                        return (
+                          <div key={round.RoundID} className="relative">
+                            <div className={`absolute -left-[31px] top-0 h-3.5 w-3.5 rounded-full border-4 border-white dark:border-slate-950 ${index === 0 ? 'bg-indigo-600' : 'bg-slate-300 dark:bg-slate-700'}`} />
+                            <div className="space-y-2">
+                              <div className="flex flex-wrap items-center gap-2">
+                                <span className="text-sm font-bold text-slate-800 dark:text-white">Vòng {round.RoundOrder}: {round.RoundName}</span>
+                                <Badge className={`border px-2 py-0 text-[8.5px] ${roundStatus.badgeClass}`}>{roundStatus.label}</Badge>
+                              </div>
+                              <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-slate-500 dark:text-slate-400">
+                                <span className="inline-flex items-center gap-1"><CalendarDays className="h-3.5 w-3.5" /> Diễn ra: {formatRoundDate(round.StartDate)} – {formatRoundDate(round.EndDate)}</span>
+                                <span>Hạn nộp bài: <strong className="text-slate-700 dark:text-slate-200">{formatRoundDate(round.SubmissionDeadline)}</strong></span>
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
                 </div>
               )}
 
@@ -499,8 +605,8 @@ export default function CompetitionDetailPage({ params }: PageProps) {
 
             <div className="border-t border-slate-100 dark:border-slate-800/80 pt-4 space-y-3">
               <Button
-                onClick={() => handleAction(`Đăng ký ${competition.Name}`, `Xác nhận ghi danh đội của bạn vào cuộc thi ${competition.Name}.`)}
-                disabled={isClosed}
+                onClick={() => void handleRegisterForCompetition()}
+                disabled={isClosed || isCheckingTeam}
                 className={`w-full rounded-xl text-xs font-bold h-10 cursor-pointer transition-all ${
                   isClosed
                     ? 'bg-slate-100 text-slate-450 dark:bg-slate-800 dark:text-slate-600 cursor-not-allowed border-none'
@@ -537,8 +643,8 @@ export default function CompetitionDetailPage({ params }: PageProps) {
           <span className="block text-xs font-bold text-amber-600 dark:text-amber-400 truncate">{competition.Prize}</span>
         </div>
         <Button
-          onClick={() => handleAction(`Đăng ký ${competition.Name}`, `Xác nhận ghi danh đội của bạn vào cuộc thi ${competition.Name}.`)}
-          disabled={isClosed}
+          onClick={() => void handleRegisterForCompetition()}
+          disabled={isClosed || isCheckingTeam}
           className={`rounded-xl text-xs font-bold h-9 px-6 cursor-pointer ${
             isClosed
               ? 'bg-slate-100 text-slate-450 dark:bg-slate-800 dark:text-slate-600 cursor-not-allowed border-none'

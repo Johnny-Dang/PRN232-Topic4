@@ -50,6 +50,7 @@ namespace SEALHackathonSystem.Controllers
             }
         }
 
+        [AllowAnonymous]
         [HttpGet("events/{eventId}")]
         public async Task<IActionResult> GetAllByEvent(Guid eventId)
         {

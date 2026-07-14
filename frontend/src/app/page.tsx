@@ -265,7 +265,6 @@ export default function HomeLandingPage() {
           filteredCompetitions={filteredCompetitions}
           setSelectedFilter={setSelectedFilter}
           setSearchQuery={setSearchQuery}
-          handleAction={handleAction}
           onViewDetails={handleViewDetails}
         />
 

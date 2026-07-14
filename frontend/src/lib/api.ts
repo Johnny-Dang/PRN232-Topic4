@@ -661,7 +661,7 @@ const mapPublishedEventToDetailedCompetition = (event: BackendEvent): DetailedCo
     Audience: 'Sinh vien',
     Organizer: event.organizer || event.Organizer || '',
     Prize: event.prize || event.Prize || '',
-    BannerUrl: event.bannerUrl || event.BannerUrl || '',
+    BannerUrl: event.bannerUrl || event.BannerUrl || '/images/hackathon_banner.png',
     DaysLeft: calculateDaysLeft(event.startDate || event.StartDate || ''),
     IsFeatured: event.isFeatured ?? event.IsFeatured ?? false,
   };
@@ -784,7 +784,7 @@ function buildAddTeamMemberPayload(userLookup: string) {
     return { Email: value };
   }
 
-  return { ShortId: value };
+  return { ShortId: value, StudentCode: value };
 }
 
 export async function addTeamMember(teamId: string, userLookup: string): Promise<Team | null> {
