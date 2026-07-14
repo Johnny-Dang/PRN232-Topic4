@@ -22,22 +22,8 @@ import { cn } from '@/lib/utils';
 export default function TeamLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
-  const [authorized] = useState<boolean>(() => {
-    if (typeof window === 'undefined') return false;
-    const session = localStorage.getItem('seal_user');
-    if (!session) return false;
-
-    try {
-      const user = JSON.parse(session) as { Role?: string };
-      return user.Role === 'Leader' || user.Role === 'Member';
-    } catch {
-      return false;
-    }
-  });
-  const [isCollapsed, setIsCollapsed] = useState(() => {
-    if (typeof window === 'undefined') return false;
-    return localStorage.getItem('sidebar_collapsed') === 'true';
-  });
+  const [authorized, setAuthorized] = useState(false);
+  const [isCollapsed, setIsCollapsed] = useState(false);
 
   const toggleSidebar = () => {
     const nextValue = !isCollapsed;
@@ -46,6 +32,8 @@ export default function TeamLayout({ children }: { children: React.ReactNode }) 
   };
 
   useEffect(() => {
+    setIsCollapsed(localStorage.getItem('sidebar_collapsed') === 'true');
+
     const session = localStorage.getItem('seal_user');
     if (!session) {
       router.push('/login');
@@ -54,9 +42,11 @@ export default function TeamLayout({ children }: { children: React.ReactNode }) 
 
     try {
       const user = JSON.parse(session) as { Role?: string };
-      if (user.Role !== 'Leader' && user.Role !== 'Member') {
+      const isAuthorized = user.Role === 'Leader' || user.Role === 'Member';
+      if (!isAuthorized) {
         router.push('/');
       }
+      setAuthorized(isAuthorized);
     } catch {
       localStorage.removeItem('seal_user');
       router.push('/login');

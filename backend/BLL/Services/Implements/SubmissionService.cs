@@ -127,7 +127,10 @@ namespace BusinessLogicLayer.Services.Implements
             if (submission == null)
                 throw new Exception($"Submission with id {request.SubmissionId} not found");
 
-            var updatedTeam = await _teamRepository.GetByIdAsync(submission.TeamId);
+            if (!submission.TeamId.HasValue)
+                throw new Exception("Calibration samples cannot be updated through this endpoint");
+
+            var updatedTeam = await _teamRepository.GetByIdAsync(submission.TeamId.Value);
             if (updatedTeam == null)
                 throw new Exception($"Team with id {submission.TeamId} not found");
 
@@ -179,7 +182,7 @@ namespace BusinessLogicLayer.Services.Implements
             await _auditLogRepository.AddAsync(auditLog);
 
             await _unitOfWork.SaveChangesAsync();
-            await _submissionAssetService.AttachAssetsToSubmissionAsync(submission.SubmissionId, submission.TeamId, submission.RoundId, request.VideoAssetId, request.SlideAssetId, userId);
+            await _submissionAssetService.AttachAssetsToSubmissionAsync(submission.SubmissionId, submission.TeamId.Value, submission.RoundId, request.VideoAssetId, request.SlideAssetId, userId);
             await NotifyAssignedJudgesAsync(submission.RoundId, $"[NOTIFICATION] Đội thi {updatedTeam.TeamName} đã cập nhật bài dự thi cho vòng {round.RoundName}. Vui lòng kiểm tra lại.");
 
             return MapToDto(submission);
@@ -191,7 +194,10 @@ namespace BusinessLogicLayer.Services.Implements
             if (submission == null)
                 throw new Exception($"Submission with id {submissionId} not found");
 
-            var team = await _teamRepository.GetByIdAsync(submission.TeamId);
+            if (!submission.TeamId.HasValue)
+                throw new Exception("Calibration samples cannot be deleted through this endpoint");
+
+            var team = await _teamRepository.GetByIdAsync(submission.TeamId.Value);
             if (team == null)
                 throw new Exception($"Team with id {submission.TeamId} not found");
 

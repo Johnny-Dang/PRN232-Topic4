@@ -5,8 +5,7 @@ namespace BusinessLogicLayer.DTOs.Requests
 {
     public class CreateCalibrationSubmissionRequest
     {
-        [Required]
-        public Guid TeamId { get; set; }
+        public Guid? TeamId { get; set; }
 
         [Required]
         public Guid RoundId { get; set; }
@@ -17,14 +16,14 @@ namespace BusinessLogicLayer.DTOs.Requests
 
         [Url]
         [StringLength(500)]
-        public string RepositoryURL { get; set; } = string.Empty;
+        public string? RepositoryURL { get; set; }
 
         [Url]
         [StringLength(500)]
-        public string DemoURL { get; set; } = string.Empty;
+        public string? DemoURL { get; set; }
 
         [Url]
         [StringLength(500)]
-        public string SlideURL { get; set; } = string.Empty;
+        public string? SlideURL { get; set; }
     }
 }

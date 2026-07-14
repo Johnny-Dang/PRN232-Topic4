@@ -20,10 +20,15 @@ import AuditLogMonitor from './components/AuditLogMonitor';
 import CategoryManager from './components/CategoryManager';
 import CoordinatorPageHeader from './components/CoordinatorPageHeader';
 import DisqualifyPanel from './components/DisqualifyPanel';
+import EventCriteriaConfig from './components/EventCriteriaConfig';
 import EventHomeManager from './components/EventHomeManager';
 import IrrMonitor from './components/IrrMonitor';
+import JudgeAssignmentPanel from './components/JudgeAssignmentPanel';
 import MentorAssignmentPanel from './components/MentorAssignmentPanel';
 import MentorManager from './components/MentorManager';
+import RankingBoard from './components/RankingBoard';
+import AdvancementRuleConfig from './components/AdvancementRuleConfig';
+import CalibrationSampleList from './components/Calibration/CalibrationSampleList';
 import type {
   AuditLogList,
   CoordinatorCategory,
@@ -292,6 +297,26 @@ function CoordinatorDashboardContent() {
 
           {activeTab === 'audit-logs' && (
             <AuditLogMonitor logs={auditLogs} />
+          )}
+
+          {activeTab === 'event-criteria' && (
+            <EventCriteriaConfig />
+          )}
+
+          {activeTab === 'advancement-rules' && (
+            <AdvancementRuleConfig />
+          )}
+
+          {activeTab === 'judge-assignment' && (
+            <JudgeAssignmentPanel />
+          )}
+
+          {activeTab === 'ranking-board' && (
+            <RankingBoard />
+          )}
+
+          {activeTab === 'calibration-samples' && (
+            <CalibrationSampleList />
           )}
         </div>
       )}
