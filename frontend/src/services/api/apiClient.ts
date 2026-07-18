@@ -9,7 +9,10 @@ declare const process: {
   };
 };
 
-const BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5279/api';
+const BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://localhost:7086/api';
+
+console.log("API URL =", process.env.NEXT_PUBLIC_API_URL);
+console.log("BASE_URL =", BASE_URL);
 
 const readAccessToken = (session: unknown): string => {
   if (typeof session !== 'object' || session === null) return '';
@@ -30,9 +33,6 @@ const readAccessToken = (session: unknown): string => {
 
 export const apiClient = axios.create({
   baseURL: BASE_URL,
-  headers: {
-    'Content-Type': 'application/json',
-  },
 });
 
 // Request interceptor to attach Bearer token automatically

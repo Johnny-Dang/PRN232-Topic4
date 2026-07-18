@@ -1,5 +1,6 @@
 ﻿using System;
 using System.ComponentModel.DataAnnotations;
+using Microsoft.AspNetCore.Http;
 
 namespace BusinessLogicLayer.DTOs.Requests
 {
@@ -25,8 +26,7 @@ namespace BusinessLogicLayer.DTOs.Requests
         [Required]
         public DateTime EndDate { get; set; }
 
-        [StringLength(2000)]
-        public string BannerUrl { get; set; } = string.Empty;
+        public IFormFile? BannerImage { get; set; }
 
         [StringLength(255)]
         public string Organizer { get; set; } = string.Empty;

@@ -88,8 +88,9 @@ namespace SEALHackathonSystem.Controllers
         /// Create a new event
         /// </summary>
         [Authorize(Policy = "CoordinatorOnly")]
+        [Consumes("multipart/form-data")]
         [HttpPost]
-        public async Task<IActionResult> CreateEvent([FromBody] CreateEventRequest request)
+        public async Task<IActionResult> CreateEvent([FromForm] CreateEventRequest request)
         {
             try
             {

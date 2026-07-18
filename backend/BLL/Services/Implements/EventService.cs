@@ -17,20 +17,37 @@ namespace BusinessLogicLayer.Services.Implements
         private readonly IEventRepository _eventRepository;
         private readonly IRoundRepository _roundRepository;
         private readonly IUnitOfWork _unitOfWork;
+        private readonly ICloudinaryService _cloudinaryService;
 
         public EventService(
             IEventRepository eventRepository,
             IRoundRepository roundRepository,
-            IUnitOfWork unitOfWork
+            IUnitOfWork unitOfWork,
+            ICloudinaryService cloudinaryService
         )
         {
             _eventRepository = eventRepository;
             _roundRepository = roundRepository;
             _unitOfWork = unitOfWork;
+            _cloudinaryService = cloudinaryService;
         }
 
         public async Task<EventDto> CreateAsync(CreateEventRequest request, Guid userId)
         {
+
+            var uploadedUrl = string.Empty;
+            if (request.BannerImage is not null)
+            {
+                try
+                {
+                    uploadedUrl = await _cloudinaryService.UploadImageAsync(request.BannerImage,"temp fix");
+                }
+                catch (Exception ex) 
+                {
+                    throw new ArgumentException("fail upload image");
+                }
+            }
+
             var eventEntity = new Events
             {
                 EventId = Guid.NewGuid(),
@@ -43,7 +60,7 @@ namespace BusinessLogicLayer.Services.Implements
                 Status = "Draft",
                 IsPublished = false,
                 IsFeatured = false,
-                BannerUrl = request.BannerUrl,
+                BannerUrl = uploadedUrl,
                 Organizer = request.Organizer,
                 Format = request.Format,
                 Audience = request.Audience,

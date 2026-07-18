@@ -2,14 +2,12 @@ import { z } from 'zod';
 import { apiClient } from './apiClient';
 import {
   addRoundRequestSchema,
-  createEventRequestSchema,
   eventSchema,
   roundSchema,
   categorySchema,
   categoryRequestSchema,
   type AddRoundRequest,
   type CategoryRequest,
-  type CreateEventRequest,
 } from '../types/competition';
 
 export async function getEventsApi() {
@@ -23,9 +21,8 @@ export async function getEventByIdApi(eventId: string) {
   return eventSchema.parse(response.data);
 }
 
-export async function createEventApi(data: CreateEventRequest) {
-  const validated = createEventRequestSchema.parse(data);
-  const response = await apiClient.post('/Event', validated);
+export async function createEventApi(formData: FormData) {
+  const response = await apiClient.post('/Event', formData);
   return eventSchema.parse(response.data);
 }
 

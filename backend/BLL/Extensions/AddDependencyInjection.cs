@@ -1,3 +1,4 @@
+using BusinessLogicLayer.DTOs.Requests;
 using BusinessLogicLayer.Services.Implements;
 using BusinessLogicLayer.Services.Interfaces;
 using DataAccessLayer.Database;
@@ -7,12 +8,6 @@ using DataAccessLayer.Repositories.Interfaces;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Runtime.CompilerServices;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace BusinessLogicLayer.Extensions
 {
@@ -25,6 +20,9 @@ namespace BusinessLogicLayer.Extensions
                     configuration.GetConnectionString("DefaultConnection"),
                     b => b.MigrationsAssembly("DataAccessLayer"))
             );
+
+            serviceCollection.Configure<CloudinaryOptions>(
+                configuration.GetSection(CloudinaryOptions.SectionName));
 
             serviceCollection.AddScoped<IApplicationDbContext>(sp =>
                 sp.GetRequiredService<ApplicationDbContext>()
@@ -53,6 +51,7 @@ namespace BusinessLogicLayer.Extensions
             serviceCollection.AddScoped<IEventCriteriaService, EventCriteriaService>();
             serviceCollection.AddScoped<ICalibrationService, CalibrationService>();
             serviceCollection.AddScoped<IEventBannerUploadService, EventBannerUploadService>();
+            serviceCollection.AddScoped<ICloudinaryService, CloudinaryService>();
         }
     }
 }

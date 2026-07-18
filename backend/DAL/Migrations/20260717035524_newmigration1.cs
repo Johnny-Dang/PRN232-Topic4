@@ -6,7 +6,7 @@ using Microsoft.EntityFrameworkCore.Migrations;
 namespace DataAccessLayer.Migrations
 {
     /// <inheritdoc />
-    public partial class IntialDatabase : Migration
+    public partial class newmigration1 : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
@@ -424,7 +424,7 @@ namespace DataAccessLayer.Migrations
                 columns: table => new
                 {
                     SubmissionId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
-                    TeamId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    TeamId = table.Column<Guid>(type: "uniqueidentifier", nullable: true),
                     RoundId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
                     RepositoryURL = table.Column<string>(type: "nvarchar(2000)", maxLength: 2000, nullable: false),
                     DemoURL = table.Column<string>(type: "nvarchar(2000)", maxLength: 2000, nullable: false),
@@ -448,7 +448,7 @@ namespace DataAccessLayer.Migrations
                         column: x => x.TeamId,
                         principalTable: "Teams",
                         principalColumn: "TeamId",
-                        onDelete: ReferentialAction.Cascade);
+                        onDelete: ReferentialAction.SetNull);
                 });
 
             migrationBuilder.CreateTable(
@@ -565,7 +565,7 @@ namespace DataAccessLayer.Migrations
                         column: x => x.AssignmentId,
                         principalTable: "JudgeAssignments",
                         principalColumn: "AssignmentId",
-                        onDelete: ReferentialAction.Restrict);
+                        onDelete: ReferentialAction.Cascade);
                     table.ForeignKey(
                         name: "FK_Scores_Submissions_SubmissionId",
                         column: x => x.SubmissionId,

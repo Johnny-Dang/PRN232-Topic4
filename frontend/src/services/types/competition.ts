@@ -156,12 +156,15 @@ export const createEventRequestSchema = z.object({
   Description: z.string().default(''),
   StartDate: z.string(),
   EndDate: z.string(),
-  BannerUrl: z.string().default(''),
   Organizer: z.string().default(''),
   Format: z.enum(['Online', 'Offline', 'Hybrid']).default('Online'),
   Audience: z.string().default('Sinh viên'),
   Prize: z.string().default(''),
-});
+}).passthrough();
+
+export type CreateEventRequest = z.infer<typeof createEventRequestSchema> & {
+  BannerImage?: File | null;
+};
 
 export const categoryRequestSchema = z.object({
   EventId: idSchema,

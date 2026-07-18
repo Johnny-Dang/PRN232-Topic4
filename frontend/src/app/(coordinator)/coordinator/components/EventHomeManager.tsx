@@ -16,7 +16,6 @@ import {
   addRoundForEventApi,
   deleteRoundApi,
   updateRoundApi,
-  uploadEventBannerApi,
   createCategoryApi,
   deleteCategoryApi,
   getCategoriesApi,
@@ -48,7 +47,7 @@ const createInitialForm = () => {
     Description: '',
     StartDate: toDateInputValue(start),
     EndDate: toDateInputValue(end),
-    BannerUrl: '',
+    BannerImage: null as File | null,
     Organizer: 'SEAL Hackathon',
     Format: 'Online' as const,
     Audience: 'Sinh viên',
@@ -88,7 +87,6 @@ export default function EventHomeManager({
 }: EventHomeManagerProps) {
   const [form, setForm] = useState(createInitialForm);
   const [creating, setCreating] = useState(false);
-  const [uploadingBanner, setUploadingBanner] = useState(false);
   const [eventActionId, setEventActionId] = useState<string>('');
   const [roundEventId, setRoundEventId] = useState<string>('');
   const [expandedEventId, setExpandedEventId] = useState<string>('');
@@ -131,31 +129,20 @@ export default function EventHomeManager({
   const safeEventPage = Math.min(eventPage, eventTotalPages);
   const pagedEvents = filteredEvents.slice((safeEventPage - 1) * EVENTS_PER_PAGE, safeEventPage * EVENTS_PER_PAGE);
 
-  const updateForm = (field: keyof typeof form, value: string | number) => {
+  const updateForm = (field: keyof typeof form, value: string | number | File | null) => {
     setForm((current) => ({
       ...current,
       [field]: value,
     }));
   };
 
-  const handleBannerUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    event.target.value = '';
-    if (!file) return;
-
-    setUploadingBanner(true);
-    setError('');
-    setMessage('');
-    try {
-      const bannerUrl = await uploadEventBannerApi(file);
-      updateForm('BannerUrl', bannerUrl);
-      setMessage('Đã upload ảnh banner lên Cloudinary.');
-    } catch (uploadError: unknown) {
-      console.error(uploadError);
-      setError(getApiErrorMessage(uploadError, 'Không thể upload ảnh banner.'));
-    } finally {
-      setUploadingBanner(false);
-    }
+  const handleStartDateChange = (value: string) => {
+    const year = value ? new Date(value).getFullYear() : form.Year;
+    setForm((current) => ({
+      ...current,
+      StartDate: value,
+      Year: year,
+    }));
   };
 
   const handleCreateEvent = async (event: React.FormEvent) => {
@@ -164,13 +151,36 @@ export default function EventHomeManager({
     setMessage('');
     setError('');
 
+    if (!form.BannerImage) {
+      setError('Vui lòng chọn ảnh banner cho Event.');
+      setCreating(false);
+      return;
+    }
+
+    const requestData = {
+      ...form,
+      Year: Number(form.Year),
+      StartDate: new Date(form.StartDate).toISOString(),
+      EndDate: new Date(form.EndDate).toISOString(),
+    };
+
+    const formData = new FormData();
+    formData.append('EventName', requestData.EventName);
+    formData.append('Season', requestData.Season);
+    formData.append('Year', String(requestData.Year));
+    formData.append('Description', requestData.Description);
+    formData.append('StartDate', requestData.StartDate);
+    formData.append('EndDate', requestData.EndDate);
+    formData.append('Organizer', requestData.Organizer);
+    formData.append('Format', requestData.Format);
+    formData.append('Audience', requestData.Audience);
+    formData.append('Prize', requestData.Prize);
+    if (requestData.BannerImage) {
+      formData.append('BannerImage', requestData.BannerImage);
+    }
+
     try {
-      const createdEvent = await createEventApi({
-        ...form,
-        Year: Number(form.Year),
-        StartDate: new Date(form.StartDate).toISOString(),
-        EndDate: new Date(form.EndDate).toISOString(),
-      });
+      const createdEvent = await createEventApi(formData);
       onEventCreated(createdEvent);
       setForm(createInitialForm());
       setMessage('Đã tạo Event mới ở trạng thái Draft. Bạn có thể Publish để đưa lên Home page.');
@@ -509,7 +519,7 @@ export default function EventHomeManager({
                 id="event-start"
                 type="date"
                 value={form.StartDate}
-                onChange={(event) => updateForm('StartDate', event.target.value)}
+                onChange={(event) => handleStartDateChange(event.target.value)}
                 className="rounded-xl h-10 bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-xs font-semibold"
                 required
               />
@@ -585,24 +595,29 @@ export default function EventHomeManager({
             </div>
 
             <div className="space-y-1.5 md:col-span-2">
-              <label htmlFor="event-banner" className="text-xs font-semibold text-slate-500 uppercase tracking-wider block">
-                Banner URL
+              <label htmlFor="event-banner-image" className="text-xs font-semibold text-slate-500 uppercase tracking-wider block">
+                Banner ảnh
               </label>
-              <div className="flex flex-col gap-2 sm:flex-row">
-                <Input
-                  id="event-banner"
-                  value={form.BannerUrl}
-                  onChange={(event) => updateForm('BannerUrl', event.target.value)}
-                  placeholder="https://..."
-                  className="rounded-xl h-10 bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-xs font-semibold"
-                />
-                <label htmlFor="event-banner-file" className={`inline-flex h-10 shrink-0 cursor-pointer items-center justify-center gap-2 rounded-xl px-4 text-xs font-bold text-white ${uploadingBanner ? 'cursor-wait bg-slate-400' : 'bg-indigo-600 hover:bg-indigo-700'}`}>
+              <div className="flex flex-col gap-2 sm:flex-row items-center">
+                <label htmlFor="event-banner-image" className="inline-flex h-10 shrink-0 cursor-pointer items-center justify-center gap-2 rounded-xl px-4 text-xs font-bold text-white bg-indigo-600 hover:bg-indigo-700">
                   <ImageUp className="h-4 w-4" />
-                  {uploadingBanner ? 'Đang upload...' : 'Chọn ảnh'}
+                  Chọn ảnh
                 </label>
-                <input id="event-banner-file" type="file" accept="image/jpeg,image/png,image/webp" className="sr-only" disabled={uploadingBanner} onChange={(event) => void handleBannerUpload(event)} />
+                <span className="text-xs text-slate-500">
+                  {form.BannerImage ? form.BannerImage.name : 'Chưa chọn file'}
+                </span>
               </div>
-              <p className="text-[10px] text-slate-400">Chọn ảnh JPG, PNG hoặc WebP (tối đa 5 MB); ảnh sẽ được upload lên Cloudinary và URL được điền tự động.</p>
+              <input
+                id="event-banner-image"
+                type="file"
+                accept="image/jpeg,image/png,image/webp"
+                className="sr-only"
+                onChange={(event) => {
+                  const file = event.target.files?.[0] ?? null;
+                  updateForm('BannerImage', file);
+                }}
+              />
+              <p className="text-[10px] text-slate-400">Chọn ảnh JPG, PNG hoặc WebP (tối đa 5 MB); ảnh sẽ được gửi lên backend trong multipart/form-data.</p>
             </div>
 
             <div className="space-y-1.5 md:col-span-2">

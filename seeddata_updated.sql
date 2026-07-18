@@ -6,10 +6,6 @@
 USE SEAL_Hackathon;
 GO
 
-SET XACT_ABORT ON;
-
-BEGIN TRY
-    BEGIN TRANSACTION;
 
 -- =========================================================
 -- 1. USERS AND STUDENT PROFILES
@@ -336,14 +332,6 @@ INSERT INTO Eliminations (EliminationId, SubmissionId, UserId, Reason, Eliminate
 ('E0000000-0000-0000-0000-000000000001', 'D0000000-0000-0000-0000-000000000006', '00000000-0000-0000-0000-000000000013', N'Lower total score in final round comparison', '2026-04-22 11:00:00'),
 ('E0000000-0000-0000-0000-000000000002', 'D0000000-0000-0000-0000-000000000012', '00000000-0000-0000-0000-000000000014', N'Plagiarism detected in repository source code', '2026-09-22 14:30:00');
 
-    COMMIT TRANSACTION;
-END TRY
-BEGIN CATCH
-    IF @@TRANCOUNT > 0
-        ROLLBACK TRANSACTION;
-
-    THROW;
-END CATCH;
 
 SELECT * FROM Users;
 SELECT * FROM Categories;
