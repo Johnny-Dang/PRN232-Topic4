@@ -4,8 +4,6 @@ import { Button } from '@/components/ui/button';
 interface CreateTeamCardProps {
   newTeamName: string;
   setNewTeamName: (val: string) => void;
-  firstMemberId: string;
-  setFirstMemberId: (val: string) => void;
   creatingTeam: boolean;
   createTeamError: string;
   createTeamSuccess: string;
@@ -15,8 +13,6 @@ interface CreateTeamCardProps {
 export const CreateTeamCard: React.FC<CreateTeamCardProps> = ({
   newTeamName,
   setNewTeamName,
-  firstMemberId,
-  setFirstMemberId,
   creatingTeam,
   createTeamError,
   createTeamSuccess,
@@ -41,19 +37,6 @@ export const CreateTeamCard: React.FC<CreateTeamCardProps> = ({
             onChange={(e) => setNewTeamName(e.target.value)}
           />
         </div>
-        <div className="space-y-1">
-          <label className="text-[10px] font-semibold text-slate-455 uppercase">
-            Email, mã thành viên hoặc mã sinh viên
-          </label>
-          <input
-            type="text"
-            required
-            placeholder="Nhập email, mã hệ thống hoặc mã sinh viên (VD: an@example.com, TM0001, SE170002)"
-            className="h-9 w-full rounded-lg border border-slate-200 bg-slate-50 px-3 text-xs font-medium focus:outline-none dark:border-slate-700 dark:bg-slate-800"
-            value={firstMemberId}
-            onChange={(e) => setFirstMemberId(e.target.value)}
-          />
-        </div>
         {createTeamSuccess && (
           <div className="rounded-lg border border-emerald-100 bg-emerald-50 p-2 text-[11px] font-medium text-emerald-700">
             {createTeamSuccess}
@@ -66,10 +49,10 @@ export const CreateTeamCard: React.FC<CreateTeamCardProps> = ({
         )}
         <Button
           type="submit"
-          disabled={creatingTeam || !newTeamName.trim() || !firstMemberId.trim()}
+          disabled={creatingTeam || !newTeamName.trim()}
           className="h-9 px-4 rounded-lg bg-indigo-600 text-xs font-bold text-white hover:bg-indigo-700"
         >
-          {creatingTeam ? 'Đang tạo nhóm...' : 'Tạo nhóm và thêm thành viên'}
+          {creatingTeam ? 'Đang tạo nhóm...' : 'Tạo nhóm mới'}
         </Button>
       </form>
     </div>

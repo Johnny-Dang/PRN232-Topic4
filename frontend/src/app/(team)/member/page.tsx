@@ -86,7 +86,6 @@ export default function MemberPage() {
   const [addSuccessMessage, setAddSuccessMessage] = useState('');
 
   const [newTeamName, setNewTeamName] = useState('');
-  const [firstMemberId, setFirstMemberId] = useState('');
   const [creatingTeam, setCreatingTeam] = useState(false);
   const [createTeamError, setCreateTeamError] = useState('');
   const [createTeamSuccess, setCreateTeamSuccess] = useState('');
@@ -175,7 +174,7 @@ export default function MemberPage() {
 
   const handleCreateTeamSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newTeamName.trim() || !firstMemberId.trim()) return;
+    if (!newTeamName.trim()) return;
 
     setCreatingTeam(true);
     setCreateTeamError('');
@@ -186,25 +185,13 @@ export default function MemberPage() {
         throw new Error('Tên nhóm phải chứa từ 2 đến 120 ký tự.');
       }
 
-      if (!validateMemberLookup(firstMemberId)) {
-        throw new Error('Vui lòng nhập GUID, email, mã thành viên hoặc mã sinh viên hợp lệ.');
-      }
-
       const newTeam = await createTeam(newTeamName.trim());
       if (!newTeam) {
         throw new Error('Không thể tạo nhóm mới.');
       }
 
-      try {
-        await addTeamMember(newTeam.TeamID, firstMemberId.trim());
-        setCreateTeamSuccess('Đã thành lập đội và thêm thành viên thành công!');
-        setNewTeamName('');
-        setFirstMemberId('');
-      } catch (memberErr: unknown) {
-        const axiosError = memberErr as { response?: { data?: { message?: string } } };
-        const msg = axiosError.response?.data?.message || (memberErr instanceof Error ? memberErr.message : '');
-        throw new Error(`Đội đã được tạo nhưng không thể thêm thành viên: ${msg}`);
-      }
+      setCreateTeamSuccess('Đã thành lập đội thành công!');
+      setNewTeamName('');
 
       await loadData();
       router.push(requestedEventId ? `/my-events?eventId=${encodeURIComponent(requestedEventId)}` : '/my-events');
@@ -329,13 +316,11 @@ export default function MemberPage() {
                 </CardHeader>
                 <CardContent className="space-y-4 p-6 pt-0">
                   <div className="rounded-xl bg-slate-50/50 border border-slate-100 p-4 text-xs font-semibold text-slate-500 dark:border-slate-800 dark:bg-slate-900/50">
-                    Bạn chưa thuộc về đội nào. Nhập tên nhóm và mã User ID thành viên muốn thêm bên dưới để tạo nhóm.
+                    Bạn chưa thuộc về đội nào. Nhập tên nhóm bên dưới để thành lập nhóm mới.
                   </div>
                   <CreateTeamCard
                     newTeamName={newTeamName}
                     setNewTeamName={setNewTeamName}
-                    firstMemberId={firstMemberId}
-                    setFirstMemberId={setFirstMemberId}
                     creatingTeam={creatingTeam}
                     createTeamError={createTeamError}
                     createTeamSuccess={createTeamSuccess}
