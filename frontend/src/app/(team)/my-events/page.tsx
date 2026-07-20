@@ -127,13 +127,18 @@ export default function MyEventsPage() {
   const [errorMessage, setErrorMessage] = useState("");
   const [rows, setRows] = useState<MyEventRow[]>([]);
   const [loadedAt, setLoadedAt] = useState(0);
-  const [pendingRegistrationTeam, setPendingRegistrationTeam] = useState<PendingRegistrationTeam | null>(null);
-  const [availableCategories, setAvailableCategories] = useState<Category[]>([]);
+  const [pendingRegistrationTeam, setPendingRegistrationTeam] =
+    useState<PendingRegistrationTeam | null>(null);
+  const [availableCategories, setAvailableCategories] = useState<Category[]>(
+    [],
+  );
   const [availableEvents, setAvailableEvents] = useState<Event[]>([]);
   const [selectedCategoryId, setSelectedCategoryId] = useState("");
   const [registering, setRegistering] = useState(false);
   const [registrationMessage, setRegistrationMessage] = useState("");
-  const [showTeamChoice, setShowTeamChoice] = useState(() => Boolean(requestedEventId));
+  const [showTeamChoice, setShowTeamChoice] = useState(() =>
+    Boolean(requestedEventId),
+  );
 
   const loadData = useCallback(async () => {
     setLoading(true);
@@ -205,17 +210,26 @@ export default function MyEventsPage() {
   const handleRegisterEvent = async () => {
     if (!pendingRegistrationTeam || !selectedCategoryId) return;
 
-    const selectedCategory = availableCategories.find((category) => category.CategoryID === selectedCategoryId);
+    const selectedCategory = availableCategories.find(
+      (category) => category.CategoryID === selectedCategoryId,
+    );
     if (!selectedCategory) return;
 
     setRegistering(true);
     setRegistrationMessage("");
     try {
-      await setTeamCategory(pendingRegistrationTeam.team.TeamID, selectedCategory.CategoryID, selectedCategory.EventID);
+      await setTeamCategory(
+        pendingRegistrationTeam.team.TeamID,
+        selectedCategory.CategoryID,
+        selectedCategory.EventID,
+      );
       setRegistrationMessage("Đăng ký sự kiện thành công.");
       await loadData();
     } catch (registrationError) {
-      const message = registrationError instanceof Error ? registrationError.message : "Không thể đăng ký sự kiện.";
+      const message =
+        registrationError instanceof Error
+          ? registrationError.message
+          : "Không thể đăng ký sự kiện.";
       setRegistrationMessage(message);
     } finally {
       setRegistering(false);
@@ -229,7 +243,11 @@ export default function MyEventsPage() {
       void loadData();
     };
     window.addEventListener("seal:notification", handleRealtimeNotification);
-    return () => window.removeEventListener("seal:notification", handleRealtimeNotification);
+    return () =>
+      window.removeEventListener(
+        "seal:notification",
+        handleRealtimeNotification,
+      );
   }, [loadData]);
 
   const activeRows = useMemo(() => {
@@ -277,14 +295,17 @@ export default function MyEventsPage() {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/45 p-4">
           <Card className="w-full max-w-md border-0 bg-white shadow-2xl dark:bg-slate-900">
             <CardHeader>
-              <CardTitle className="text-lg font-black text-slate-900 dark:text-white">Chọn team để tham gia Event</CardTitle>
+              <CardTitle className="text-lg font-black text-slate-900 dark:text-white">
+                Chọn team để tham gia Event
+              </CardTitle>
               <CardDescription className="text-xs font-medium">
-                Bạn muốn tạo team mới cho Event này hay tiếp tục đăng ký bằng team cũ?
+                Bạn muốn tạo team mới cho Event này hay tiếp tục đăng ký bằng
+                team cũ?
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-3">
               <Link
-                href={`/member?newTeam=1${requestedEventId ? `&eventId=${encodeURIComponent(requestedEventId)}` : ''}`}
+                href={`/member?newTeam=1${requestedEventId ? `&eventId=${encodeURIComponent(requestedEventId)}` : ""}`}
                 className="flex rounded-xl bg-indigo-600 px-4 py-3 text-sm font-bold text-white hover:bg-indigo-700"
               >
                 Tạo team mới
@@ -298,12 +319,20 @@ export default function MyEventsPage() {
                 >
                   Tiếp tục với team cũ
                 </Button>
-              ) : !loading && (
-                <p className="rounded-xl bg-amber-50 px-3 py-2 text-xs font-medium text-amber-700 dark:bg-amber-950/30 dark:text-amber-300">
-                  Bạn chưa có team cũ nào đang chờ đăng ký Event. Hãy tạo team mới để tiếp tục.
-                </p>
+              ) : (
+                !loading && (
+                  <p className="rounded-xl bg-amber-50 px-3 py-2 text-xs font-medium text-amber-700 dark:bg-amber-950/30 dark:text-amber-300">
+                    Bạn chưa có team cũ nào đang chờ đăng ký Event. Hãy tạo team
+                    mới để tiếp tục.
+                  </p>
+                )
               )}
-              <Button type="button" variant="ghost" onClick={() => setShowTeamChoice(false)} className="h-8 w-full text-xs font-semibold text-slate-500">
+              <Button
+                type="button"
+                variant="ghost"
+                onClick={() => setShowTeamChoice(false)}
+                className="h-8 w-full text-xs font-semibold text-slate-500"
+              >
                 Hủy
               </Button>
             </CardContent>
@@ -321,15 +350,19 @@ export default function MyEventsPage() {
           {pendingRegistrationTeam && (
             <Card className="border-indigo-100 bg-indigo-50/30 shadow-sm dark:border-indigo-900/50 dark:bg-indigo-950/10">
               <CardHeader>
-                <CardTitle className="text-base font-black text-slate-900 dark:text-white">Đăng ký sự kiện cho đội</CardTitle>
+                <CardTitle className="text-base font-black text-slate-900 dark:text-white">
+                  Đăng ký sự kiện cho đội
+                </CardTitle>
                 <CardDescription className="text-xs font-medium">
-                  Đội {pendingRegistrationTeam.team.TeamName} chưa đăng ký sự kiện. Chỉ trưởng nhóm có thể thực hiện thao tác này.
+                  Đội {pendingRegistrationTeam.team.TeamName} chưa đăng ký sự
+                  kiện. Chỉ trưởng nhóm có thể thực hiện thao tác này.
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-3">
                 {pendingRegistrationTeam.members.length < 3 ? (
                   <p className="rounded-xl border border-amber-100 bg-amber-50 p-3 text-xs font-medium text-amber-700">
-                    Đội cần tối thiểu 3 thành viên trước khi đăng ký sự kiện. Hiện có {pendingRegistrationTeam.members.length} thành viên.
+                    Đội cần tối thiểu 3 thành viên trước khi đăng ký sự kiện.
+                    Hiện có {pendingRegistrationTeam.members.length} thành viên.
                   </p>
                 ) : !pendingRegistrationTeam.isLeader ? (
                   <p className="rounded-xl border border-slate-200 bg-white p-3 text-xs font-medium text-slate-600 dark:border-slate-800 dark:bg-slate-900">
@@ -337,23 +370,58 @@ export default function MyEventsPage() {
                   </p>
                 ) : (
                   <>
-                    <select value={selectedCategoryId} onChange={(event) => setSelectedCategoryId(event.target.value)} className="h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-xs font-semibold dark:border-slate-700 dark:bg-slate-900">
+                    <select
+                      value={selectedCategoryId}
+                      onChange={(event) =>
+                        setSelectedCategoryId(event.target.value)
+                      }
+                      className="h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-xs font-semibold dark:border-slate-700 dark:bg-slate-900"
+                    >
                       <option value="">Chọn hạng mục và sự kiện</option>
-                      {availableCategories.filter((category) => {
-                        const event = availableEvents.find((item) => item.EventID === category.EventID);
-                        return (!requestedEventId || category.EventID === requestedEventId)
-                          && Boolean(event?.IsPublished && event.Status === "Published" && new Date(event.StartDate) > new Date());
-                      }).map((category) => {
-                        const event = availableEvents.find((item) => item.EventID === category.EventID);
-                        return <option key={category.CategoryID} value={category.CategoryID}>{event?.EventName} — {category.CategoryName}</option>;
-                      })}
+                      {availableCategories
+                        .filter((category) => {
+                          const event = availableEvents.find(
+                            (item) => item.EventID === category.EventID,
+                          );
+                          return (
+                            (!requestedEventId ||
+                              category.EventID === requestedEventId) &&
+                            Boolean(
+                              event?.IsPublished &&
+                              event.Status === "Published" &&
+                              new Date(event.StartDate) > new Date(),
+                            )
+                          );
+                        })
+                        .map((category) => {
+                          const event = availableEvents.find(
+                            (item) => item.EventID === category.EventID,
+                          );
+                          return (
+                            <option
+                              key={category.CategoryID}
+                              value={category.CategoryID}
+                            >
+                              {event?.EventName} — {category.CategoryName}
+                            </option>
+                          );
+                        })}
                     </select>
-                    <Button type="button" disabled={!selectedCategoryId || registering} onClick={() => void handleRegisterEvent()} className="h-9 rounded-xl bg-indigo-600 text-xs font-bold hover:bg-indigo-700">
+                    <Button
+                      type="button"
+                      disabled={!selectedCategoryId || registering}
+                      onClick={() => void handleRegisterEvent()}
+                      className="h-9 rounded-xl bg-indigo-600 text-xs font-bold hover:bg-indigo-700"
+                    >
                       {registering ? "Đang đăng ký..." : "Đăng ký sự kiện"}
                     </Button>
                   </>
                 )}
-                {registrationMessage && <p className="text-xs font-medium text-slate-600 dark:text-slate-300">{registrationMessage}</p>}
+                {registrationMessage && (
+                  <p className="text-xs font-medium text-slate-600 dark:text-slate-300">
+                    {registrationMessage}
+                  </p>
+                )}
               </CardContent>
             </Card>
           )}

@@ -3,6 +3,7 @@ import { Inter, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import QueryProvider from "@/components/providers/QueryProvider";
 import { ToastProvider } from "@/components/Toast";
+import RealtimeProvider from "@/components/providers/RealtimeProvider";
 
 const inter = Inter({
   variable: "--font-inter",
@@ -31,6 +32,7 @@ export default function RootLayout({
     >
       <body className="min-h-full flex flex-col" suppressHydrationWarning>
         <QueryProvider>
+          <RealtimeProvider />
           <ToastProvider>
             {children}
           </ToastProvider>
