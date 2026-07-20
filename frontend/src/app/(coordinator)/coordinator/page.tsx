@@ -29,6 +29,7 @@ import MentorManager from './components/MentorManager';
 import RankingBoard from './components/RankingBoard';
 import AdvancementRuleConfig from './components/AdvancementRuleConfig';
 import CalibrationSampleList from './components/Calibration/CalibrationSampleList';
+import TeamHealthDashboard from './components/TeamHealthDashboard';
 import type {
   AuditLogList,
   CoordinatorCategory,
@@ -317,6 +318,10 @@ function CoordinatorDashboardContent() {
 
           {activeTab === 'calibration-samples' && (
             <CalibrationSampleList />
+          )}
+
+          {activeTab === 'health-overview' && (
+            <TeamHealthDashboard />
           )}
         </div>
       )}

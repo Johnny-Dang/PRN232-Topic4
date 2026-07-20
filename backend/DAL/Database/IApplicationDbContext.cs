@@ -34,6 +34,9 @@ namespace DataAccessLayer.Database
         public DbSet<UserSkills> UserSkills { get; set; }
         public DbSet<TeamRecruitments> TeamRecruitments { get; set; }
         public DbSet<TeamApplications> TeamApplications { get; set; }
+        public DbSet<MentorSchedules> MentorSchedules { get; set; }
+        public DbSet<MentorBookings> MentorBookings { get; set; }
+        public DbSet<MentoringFeedbacks> MentoringFeedbacks { get; set; }
 
         DbSet<T> Set<T>()
             where T : class;

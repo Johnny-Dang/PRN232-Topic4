@@ -39,6 +39,9 @@ namespace DataAccessLayer.Database
         public DbSet<UserSkills> UserSkills { get; set; }
         public DbSet<TeamRecruitments> TeamRecruitments { get; set; }
         public DbSet<TeamApplications> TeamApplications { get; set; }
+        public DbSet<MentorSchedules> MentorSchedules { get; set; }
+        public DbSet<MentorBookings> MentorBookings { get; set; }
+        public DbSet<MentoringFeedbacks> MentoringFeedbacks { get; set; }
 
         public new DbSet<T> Set<T>()
             where T : class => base.Set<T>();
@@ -79,6 +82,9 @@ namespace DataAccessLayer.Database
             modelBuilder.ApplyConfiguration<UserSkills>(new UserSkillsConfiguration());
             modelBuilder.ApplyConfiguration<TeamRecruitments>(new TeamRecruitmentsConfiguration());
             modelBuilder.ApplyConfiguration<TeamApplications>(new TeamApplicationsConfiguration());
+            modelBuilder.ApplyConfiguration<MentorSchedules>(new MentorSchedulesConfiguration());
+            modelBuilder.ApplyConfiguration<MentorBookings>(new MentorBookingsConfiguration());
+            modelBuilder.ApplyConfiguration<MentoringFeedbacks>(new MentoringFeedbacksConfiguration());
         }
 
         public override Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)

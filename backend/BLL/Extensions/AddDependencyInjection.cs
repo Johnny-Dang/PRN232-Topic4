@@ -55,6 +55,7 @@ namespace BusinessLogicLayer.Extensions
             serviceCollection.AddScoped<IUserSkillService, UserSkillService>();
             serviceCollection.AddScoped<ITeamRecruitmentService, TeamRecruitmentService>();
             serviceCollection.AddScoped<ITeamApplicationService, TeamApplicationService>();
+            serviceCollection.AddScoped<IMentorshipService, MentorshipService>();
         }
     }
 }

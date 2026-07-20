@@ -1,17 +1,18 @@
 import { z } from 'zod';
 
 export const teamSchema = z.object({
-  TeamId: z.string().uuid(),
+  TeamId: z.string(),
   TeamName: z.string(),
-  TeamLeaderId: z.string().uuid(),
-  CategoryId: z.string().uuid(),
+  TeamLeaderId: z.string(),
+  EventId: z.string().nullable().optional(),
+  CategoryId: z.string().nullable().optional(),
   TeamStatus: z.string(),
 });
 
 export const submissionSchema = z.object({
-  SubmissionId: z.string().uuid(),
-  TeamId: z.string().uuid(),
-  RoundId: z.string().uuid(),
+  SubmissionId: z.string(),
+  TeamId: z.string(),
+  RoundId: z.string(),
   RepositoryUrl: z.string().url().or(z.string().nullable().or(z.string().optional())),
   DemoUrl: z.string().url().or(z.string().nullable().or(z.string().optional())),
   SlideUrl: z.string().url().or(z.string().nullable().or(z.string().optional())),

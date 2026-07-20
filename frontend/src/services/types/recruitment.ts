@@ -4,11 +4,11 @@ import { normalizeKeys } from './skill';
 export const teamRecruitmentSchema = z.preprocess(
   normalizeKeys,
   z.object({
-    RecruitmentId: z.string().uuid(),
-    TeamId: z.string().uuid(),
+    RecruitmentId: z.string(),
+    TeamId: z.string(),
     TeamName: z.string(),
-    EventId: z.string().uuid().nullable().optional(),
-    CategoryId: z.string().uuid().nullable().optional(),
+    EventId: z.string().nullable().optional(),
+    CategoryId: z.string().nullable().optional(),
     RoleNeeded: z.string(),
     Description: z.string(),
     Quantity: z.number(),

@@ -18,8 +18,8 @@ export const normalizeKeys = (val: unknown): unknown => {
 export const userSkillSchema = z.preprocess(
   normalizeKeys,
   z.object({
-    UserSkillId: z.string().uuid(),
-    UserId: z.string().uuid(),
+    UserSkillId: z.string(),
+    UserId: z.string(),
     Role: z.string(),
     SkillName: z.string(),
     ExperienceLevel: z.string().nullable().optional(),

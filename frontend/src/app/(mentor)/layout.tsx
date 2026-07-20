@@ -11,7 +11,6 @@ import {
   FileCode2,
   HelpCircle,
   Home,
-  Info,
   LogOut,
   Menu,
   MessageSquare,
@@ -73,6 +72,20 @@ function MentorLayoutContent({ children }: { children: React.ReactNode }) {
       tabValue: 'assignments',
     },
     {
+      label: 'Lịch rảnh của tôi',
+      href: '/mentor?tab=schedules',
+      icon: Clock,
+      description: 'Thiết lập slot thời gian hỗ trợ',
+      tabValue: 'schedules',
+    },
+    {
+      label: 'Lịch hẹn Mentoring',
+      href: '/mentor?tab=bookings',
+      icon: MessageSquare,
+      description: 'Duyệt lịch hẹn & gửi Feedback',
+      tabValue: 'bookings',
+    },
+    {
       label: 'Hạng mục phụ trách',
       href: '/mentor?tab=categories',
       icon: CheckCircle2,
@@ -94,18 +107,11 @@ function MentorLayoutContent({ children }: { children: React.ReactNode }) {
       tabValue: 'submissions',
     },
     {
-      label: 'Gửi phản hồi / Góp ý',
+      label: 'Gửi Phản hồi Checkpoint',
       href: '/mentor?tab=feedback-form',
       icon: MessageSquare,
-      description: 'Nhận xét và góp ý dự án',
+      description: 'Đánh giá Health Status & Góp ý',
       tabValue: 'feedback-form',
-    },
-    {
-      label: 'Nhật ký góp ý',
-      href: '/mentor?tab=feedback-logs',
-      icon: Info,
-      description: 'Xem lại các góp ý',
-      tabValue: 'feedback-logs',
     },
   ];
 

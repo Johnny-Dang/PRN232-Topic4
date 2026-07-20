@@ -46,6 +46,7 @@ import {
 } from '@/lib/api';
 import CreateRecruitmentModal from '@/components/recruitment/CreateRecruitmentModal';
 import ApplicantListModal from '@/components/application/ApplicantListModal';
+import MentoringBookingPanel from './components/MentoringBookingPanel';
 
 type TeamMemberWithProfile = Awaited<ReturnType<typeof getTeamMembers>>[number];
 type ScoreWithDetails = Awaited<ReturnType<typeof getScores>>[number];
@@ -898,6 +899,9 @@ export default function LeaderPage() {
                 )}
               </CardContent>
             </Card>
+
+            {/* Mentoring & Booking Section */}
+            <MentoringBookingPanel categoryId={team?.CategoryID} teamId={team?.TeamID} />
           </div>
         </div>
       )}

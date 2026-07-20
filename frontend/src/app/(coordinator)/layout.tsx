@@ -3,7 +3,7 @@
 import React, { useEffect, useState, Suspense } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
-import { ShieldCheck, HelpCircle, ChevronRight, LogOut, Menu, ChevronLeft, Home, Calendar, Users, Ban, Percent, Tags, UserRound, ListChecks, Trophy, UserCog, SlidersHorizontal, Target } from 'lucide-react';
+import { ShieldCheck, HelpCircle, ChevronRight, LogOut, Menu, ChevronLeft, Home, Calendar, Users, Ban, Percent, Tags, UserRound, ListChecks, Trophy, UserCog, SlidersHorizontal, Target, Activity } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -163,6 +163,13 @@ function CoordinatorLayoutContent({
       icon: Target,
       description: 'Tạo & quản lý bài mẫu calibration',
       tabValue: 'calibration-samples'
+    },
+    {
+      label: 'Giám sát Tiến độ (Mentoring)',
+      href: '/coordinator?tab=health-overview',
+      icon: Activity,
+      description: 'Giám sát sức khỏe & tiến độ các đội thi',
+      tabValue: 'health-overview'
     }
   ];
 

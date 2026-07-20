@@ -4,11 +4,11 @@ import { userSkillSchema, normalizeKeys } from './skill';
 export const teamApplicationSchema = z.preprocess(
   normalizeKeys,
   z.object({
-    ApplicationId: z.string().uuid(),
-    RecruitmentId: z.string().uuid(),
-    TeamId: z.string().uuid(),
+    ApplicationId: z.string(),
+    RecruitmentId: z.string(),
+    TeamId: z.string(),
     TeamName: z.string(),
-    UserId: z.string().uuid(),
+    UserId: z.string(),
     ApplicantName: z.string(),
     ApplicantEmail: z.string(),
     ApplicantSkills: z.array(userSkillSchema).default([]),

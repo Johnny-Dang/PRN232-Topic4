@@ -3,16 +3,16 @@
 import React, { Suspense, useEffect, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import {
+  Activity,
+  AlertTriangle,
+  Calendar,
   CheckCircle2,
   Clock,
-  FileCode2,
-  FileText,
-  Info,
   MessageSquare,
+  Plus,
   RefreshCw,
   Send,
-  Users,
-  Video,
+  Trash2,
   XCircle,
 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
@@ -24,53 +24,25 @@ import {
   approveCategoryMentorApi,
   getMentorAssignmentsApi,
   getMentorCategoriesApi,
-  getMentorSubmissionsApi,
   getMentorTeamsApi,
   rejectCategoryMentorApi,
 } from '@/services/api/mentor';
-import type { CategoryMentor, MentorCategory, MentorSubmission, MentorTeam } from '@/services/types/mentor';
+import {
+  createMentoringFeedbackApi,
+  createMentorScheduleApi,
+  deleteMentorScheduleApi,
+  getMyBookingsApi,
+  getMyMentorSchedulesApi,
+  updateBookingStatusApi,
+} from '@/services/api/mentorship';
+import type { CategoryMentor, MentorCategory, MentorTeam } from '@/services/types/mentor';
+import type { MentorBooking, MentorSchedule } from '@/services/types/mentorship';
 
 const getApiErrorMessage = (error: unknown, fallback: string): string => {
   if (typeof error !== 'object' || error === null || !('response' in error)) return fallback;
 
   const response = (error as { response?: { data?: { message?: string } } }).response;
   return response?.data?.message || fallback;
-};
-
-const getStoredUserId = (): string => {
-  if (typeof window === 'undefined') return '';
-
-  const storedUser = localStorage.getItem('seal_user');
-  if (!storedUser) return '';
-
-  try {
-    const parsed = JSON.parse(storedUser) as Record<string, unknown>;
-    const userId = parsed.UserID || parsed.UserId || parsed.userId;
-    return typeof userId === 'string' ? userId : '';
-  } catch {
-    return '';
-  }
-};
-
-const getStoredUserShortId = (): string => {
-  if (typeof window === 'undefined') return '';
-
-  const storedUser = localStorage.getItem('seal_user');
-  if (!storedUser) return '';
-
-  try {
-    const parsed = JSON.parse(storedUser) as Record<string, unknown>;
-    const shortId = parsed.ShortId || parsed.shortId;
-    return typeof shortId === 'string' ? shortId : '';
-  } catch {
-    return '';
-  }
-};
-
-const getAssignmentStatusClass = (status: CategoryMentor['Status']): string => {
-  if (status === 'Approved') return 'bg-emerald-50 text-emerald-700 border-emerald-100';
-  if (status === 'Rejected') return 'bg-rose-50 text-rose-700 border-rose-100';
-  return 'bg-amber-50 text-amber-700 border-amber-100';
 };
 
 const formatDate = (value: string): string => {
@@ -83,39 +55,51 @@ function MentorDashboardContent() {
   const activeTab = searchParams.get('tab') || 'assignments';
 
   const [loading, setLoading] = useState(true);
-  const [actionId, setActionId] = useState('');
   const [submittingFeedback, setSubmittingFeedback] = useState(false);
   const [error, setError] = useState('');
   const [message, setMessage] = useState('');
-  const [currentUserId, setCurrentUserId] = useState('');
-  const [currentUserShortId, setCurrentUserShortId] = useState('');
-  const [selectedTeamId, setSelectedTeamId] = useState('');
-  const [feedbackText, setFeedbackText] = useState('');
+
+  // Data lists
   const [assignments, setAssignments] = useState<CategoryMentor[]>([]);
   const [categories, setCategories] = useState<MentorCategory[]>([]);
   const [teams, setTeams] = useState<MentorTeam[]>([]);
-  const [submissions, setSubmissions] = useState<MentorSubmission[]>([]);
+  const [schedules, setSchedules] = useState<MentorSchedule[]>([]);
+  const [bookings, setBookings] = useState<MentorBooking[]>([]);
+
+  // Create schedule form state
+  const [startTime, setStartTime] = useState('');
+  const [endTime, setEndTime] = useState('');
+  const [location, setLocation] = useState('');
+
+  // Feedback form state
+  const [selectedBookingId, setSelectedBookingId] = useState('');
+  const [healthStatus, setHealthStatus] = useState<'Green' | 'Yellow' | 'Red'>('Green');
+  const [feedbackText, setFeedbackText] = useState('');
 
   const loadData = async () => {
     setLoading(true);
     setError('');
     setMessage('');
-    setCurrentUserId(getStoredUserId());
-    setCurrentUserShortId(getStoredUserShortId());
 
     try {
-      const [fetchedAssignments, fetchedCategories, fetchedTeams, fetchedSubmissions] = await Promise.all([
-        getMentorAssignmentsApi(),
-        getMentorCategoriesApi(),
-        getMentorTeamsApi(),
-        getMentorSubmissionsApi(),
-      ]);
+      const [fetchedAssignments, fetchedCategories, fetchedTeams, fetchedSchedules, fetchedBookings] =
+        await Promise.all([
+          getMentorAssignmentsApi().catch(() => []),
+          getMentorCategoriesApi().catch(() => []),
+          getMentorTeamsApi().catch(() => []),
+          getMyMentorSchedulesApi().catch(() => []),
+          getMyBookingsApi().catch(() => []),
+        ]);
 
       setAssignments(fetchedAssignments);
       setCategories(fetchedCategories);
       setTeams(fetchedTeams);
-      setSubmissions(fetchedSubmissions);
-      setSelectedTeamId((current) => current || fetchedTeams[0]?.TeamId || '');
+      setSchedules(fetchedSchedules);
+      setBookings(fetchedBookings);
+
+      if (fetchedBookings.length > 0) {
+        setSelectedBookingId((current) => current || fetchedBookings[0].bookingId);
+      }
     } catch (loadError: unknown) {
       console.error(loadError);
       setError(getApiErrorMessage(loadError, 'Không thể tải dữ liệu Mentor từ API.'));
@@ -129,7 +113,6 @@ function MentorDashboardContent() {
   }, []);
 
   const handleAssignmentDecision = async (categoryMentorId: string, decision: 'approve' | 'reject') => {
-    setActionId(categoryMentorId);
     setError('');
     setMessage('');
 
@@ -143,18 +126,90 @@ function MentorDashboardContent() {
     } catch (actionError: unknown) {
       console.error(actionError);
       setError(getApiErrorMessage(actionError, 'Không thể cập nhật trạng thái phân công Mentor.'));
-    } finally {
-      setActionId('');
     }
   };
 
-  const handleSendFeedback = (event: React.FormEvent) => {
+  const handleCreateSchedule = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!startTime || !endTime) {
+      setError('Vui lòng chọn thời gian bắt đầu và kết thúc.');
+      return;
+    }
+
+    try {
+      setError('');
+      setMessage('');
+      await createMentorScheduleApi({
+        startTime: new Date(startTime).toISOString(),
+        endTime: new Date(endTime).toISOString(),
+        meetingLocation: location.trim() || undefined,
+      });
+      setMessage('Tạo khung giờ rảnh thành công!');
+      setStartTime('');
+      setEndTime('');
+      setLocation('');
+      await loadData();
+    } catch (err) {
+      console.error(err);
+      setError(getApiErrorMessage(err, 'Không thể tạo khung giờ rảnh.'));
+    }
+  };
+
+  const handleDeleteSchedule = async (scheduleId: string) => {
+    try {
+      setError('');
+      setMessage('');
+      await deleteMentorScheduleApi(scheduleId);
+      setMessage('Đã xóa khung giờ rảnh.');
+      await loadData();
+    } catch (err) {
+      console.error(err);
+      setError(getApiErrorMessage(err, 'Không thể xóa khung giờ rảnh.'));
+    }
+  };
+
+  const handleBookingStatusChange = async (bookingId: string, status: string, link?: string) => {
+    try {
+      setError('');
+      setMessage('');
+      await updateBookingStatusApi(bookingId, {
+        status,
+        meetingLink: link,
+      });
+      setMessage(`Đã cập nhật trạng thái lịch hẹn thành ${status}.`);
+      await loadData();
+    } catch (err) {
+      console.error(err);
+      setError(getApiErrorMessage(err, 'Không thể cập nhật trạng thái lịch hẹn.'));
+    }
+  };
+
+  const handleSendFeedback = async (event: React.FormEvent) => {
     event.preventDefault();
-    if (!feedbackText.trim() || !selectedTeamId) return;
+    if (!feedbackText.trim() || !selectedBookingId) {
+      setError('Vui lòng chọn lịch hẹn và nhập nội dung feedback.');
+      return;
+    }
 
     setSubmittingFeedback(true);
-    setMessage('Backend chưa có API gửi feedback Mentor, nên frontend chưa tạo dữ liệu mới.');
-    setSubmittingFeedback(false);
+    setError('');
+    setMessage('');
+
+    try {
+      await createMentoringFeedbackApi({
+        bookingId: selectedBookingId,
+        healthStatus,
+        content: feedbackText.trim(),
+      });
+      setMessage(`Gửi feedback Checkpoint thành công! Đã cập nhật Health Status của đội thi thành ${healthStatus}.`);
+      setFeedbackText('');
+      await loadData();
+    } catch (err) {
+      console.error(err);
+      setError(getApiErrorMessage(err, 'Không thể gửi feedback Checkpoint.'));
+    } finally {
+      setSubmittingFeedback(false);
+    }
   };
 
   return (
@@ -162,10 +217,10 @@ function MentorDashboardContent() {
       <div className="flex items-center justify-between border-b border-slate-100 pb-5 dark:border-slate-800">
         <div>
           <h2 className="text-2xl font-black tracking-tight text-slate-900 dark:text-white">
-            Cổng Cố Vấn Học Thuật
+            Cổng Cố Vấn Học Thuật (Mentorship Portal)
           </h2>
           <p className="mt-1 text-xs font-medium leading-relaxed text-slate-500 dark:text-slate-400">
-            Nhận phân công Category, theo dõi đội thi và xem bài nộp từ API backend.
+            Thiết lập lịch rảnh, duyệt yêu cầu tư vấn, ghi nhận feedback checkpoint và đánh giá tiến độ sức khỏe các đội thi.
           </p>
         </div>
         <Button
@@ -198,6 +253,179 @@ function MentorDashboardContent() {
         </div>
       ) : (
         <div className="w-full space-y-6">
+          {/* Tab: Schedules */}
+          {activeTab === 'schedules' && (
+            <div className="space-y-6">
+              <Card className="border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2 text-base font-bold">
+                    <Calendar className="h-5 w-5 text-indigo-600 dark:text-indigo-400" />
+                    Tạo Slot Thời Gian Rảnh
+                  </CardTitle>
+                  <CardDescription className="text-xs font-medium text-slate-400">
+                    Cung cấp thời gian rảnh để các Đội thi thuộc Category của bạn đăng ký tư vấn.
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="p-6 pt-0">
+                  <form onSubmit={handleCreateSchedule} className="grid grid-cols-1 gap-4 md:grid-cols-4">
+                    <div>
+                      <label className="block text-xs font-semibold uppercase text-slate-500">Thời gian bắt đầu</label>
+                      <input
+                        type="datetime-local"
+                        value={startTime}
+                        onChange={(e) => setStartTime(e.target.value)}
+                        className="mt-1 h-10 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 text-xs font-semibold focus:outline-none dark:border-slate-700 dark:bg-slate-800"
+                        required
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-semibold uppercase text-slate-500">Thời gian kết thúc</label>
+                      <input
+                        type="datetime-local"
+                        value={endTime}
+                        onChange={(e) => setEndTime(e.target.value)}
+                        className="mt-1 h-10 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 text-xs font-semibold focus:outline-none dark:border-slate-700 dark:bg-slate-800"
+                        required
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-semibold uppercase text-slate-500">Địa điểm / Meeting Link</label>
+                      <input
+                        type="text"
+                        placeholder="Google Meet link hoặc Phòng học"
+                        value={location}
+                        onChange={(e) => setLocation(e.target.value)}
+                        className="mt-1 h-10 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 text-xs font-semibold focus:outline-none dark:border-slate-700 dark:bg-slate-800"
+                      />
+                    </div>
+                    <div className="flex items-end">
+                      <Button type="submit" className="h-10 w-full rounded-xl bg-indigo-600 text-xs font-bold text-white hover:bg-indigo-700">
+                        <Plus className="mr-1.5 h-4 w-4" /> Tạo khung giờ
+                      </Button>
+                    </div>
+                  </form>
+                </CardContent>
+              </Card>
+
+              <Card className="border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900">
+                <CardHeader>
+                  <CardTitle className="text-base font-bold">Danh Sách Lịch Rảnh Của Bạn</CardTitle>
+                </CardHeader>
+                <CardContent className="p-6 pt-0">
+                  {schedules.length === 0 ? (
+                    <p className="text-xs text-slate-400">Bạn chưa tạo khung giờ rảnh nào.</p>
+                  ) : (
+                    <div className="overflow-x-auto rounded-xl border border-slate-100 dark:border-slate-800">
+                      <Table>
+                        <TableHeader className="bg-slate-50 dark:bg-slate-800/50">
+                          <TableRow>
+                            <TableHead className="text-xs font-bold">Bắt đầu</TableHead>
+                            <TableHead className="text-xs font-bold">Kết thúc</TableHead>
+                            <TableHead className="text-xs font-bold">Địa điểm / Link</TableHead>
+                            <TableHead className="text-xs font-bold">Trạng thái</TableHead>
+                            <TableHead className="text-xs font-bold">Thao tác</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {schedules.map((sch) => (
+                            <TableRow key={sch.scheduleId}>
+                              <TableCell className="text-xs font-semibold">{formatDate(sch.startTime)}</TableCell>
+                              <TableCell className="text-xs font-semibold">{formatDate(sch.endTime)}</TableCell>
+                              <TableCell className="text-xs">{sch.meetingLocation || 'N/A'}</TableCell>
+                              <TableCell>
+                                {sch.isBooked ? (
+                                  <Badge className="bg-amber-500 text-white font-bold text-[10px]">Đã được đặt</Badge>
+                                ) : (
+                                  <Badge className="bg-emerald-500 text-white font-bold text-[10px]">Đang rảnh</Badge>
+                                )}
+                              </TableCell>
+                              <TableCell>
+                                {!sch.isBooked && (
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => handleDeleteSchedule(sch.scheduleId)}
+                                    className="h-8 rounded-lg text-rose-600 hover:bg-rose-50"
+                                  >
+                                    <Trash2 className="h-4 w-4" />
+                                  </Button>
+                                )}
+                              </TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            </div>
+          )}
+
+          {/* Tab: Bookings */}
+          {activeTab === 'bookings' && (
+            <Card className="border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2 text-base font-bold">
+                  <MessageSquare className="h-5 w-5 text-indigo-600 dark:text-indigo-400" />
+                  Lịch Hẹn Mentoring Từ Các Đội Thi
+                </CardTitle>
+                <CardDescription className="text-xs font-medium text-slate-400">
+                  Duyệt hoặc từ chối các buổi tư vấn do Đội thi đặt lịch.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="p-6 pt-0">
+                {bookings.length === 0 ? (
+                  <p className="text-xs text-slate-400">Chưa có yêu cầu đặt lịch nào.</p>
+                ) : (
+                  <div className="space-y-4">
+                    {bookings.map((booking) => (
+                      <div key={booking.bookingId} className="rounded-2xl border border-slate-200 bg-slate-50/50 p-4 dark:border-slate-800 dark:bg-slate-800/30">
+                        <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+                          <div>
+                            <div className="flex items-center gap-2">
+                              <h4 className="text-sm font-bold text-slate-900 dark:text-white">{booking.teamName}</h4>
+                              <Badge className="border bg-indigo-50 text-[10px] font-bold text-indigo-700">{booking.status}</Badge>
+                            </div>
+                            <p className="mt-1 text-xs text-slate-600 dark:text-slate-300">
+                              <span className="font-semibold text-slate-500">Mục tiêu:</span> {booking.objective}
+                            </p>
+                            <p className="mt-0.5 text-[11px] text-slate-400">
+                              Khung giờ: {formatDate(booking.startTime)} - {formatDate(booking.endTime)}
+                            </p>
+                          </div>
+
+                          <div className="flex items-center gap-2">
+                            {booking.status === 'PENDING' && (
+                              <>
+                                <Button
+                                  size="sm"
+                                  onClick={() => handleBookingStatusChange(booking.bookingId, 'ACCEPTED')}
+                                  className="h-8 rounded-xl bg-emerald-600 text-xs font-bold text-white hover:bg-emerald-700"
+                                >
+                                  Chấp nhận
+                                </Button>
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={() => handleBookingStatusChange(booking.bookingId, 'REJECTED')}
+                                  className="h-8 rounded-xl border-rose-200 text-xs font-bold text-rose-600 hover:bg-rose-50"
+                                >
+                                  Từ chối
+                                </Button>
+                              </>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Tab: Assignments */}
           {activeTab === 'assignments' && (
             <Card className="border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900">
               <CardHeader>
@@ -210,58 +438,21 @@ function MentorDashboardContent() {
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4 p-6 pt-0">
-                {currentUserId && (
-                  <div className="truncate font-mono text-[10px] text-slate-400">
-                    Mentor Code: {currentUserShortId || currentUserId}
-                  </div>
-                )}
                 {assignments.length === 0 ? (
                   <div className="rounded-xl border border-slate-100 bg-slate-50 p-3 text-xs font-medium text-slate-500 dark:border-slate-800 dark:bg-slate-950">
                     Chưa có yêu cầu phân công từ API.
                   </div>
                 ) : (
                   assignments.map((assignment) => (
-                    <div
-                      key={assignment.CategoryMentorId}
-                      className="space-y-3 rounded-xl border border-slate-100 bg-slate-50/50 p-3 dark:border-slate-800 dark:bg-slate-950/40"
-                    >
-                      <div className="flex items-start justify-between gap-3">
-                        <div className="min-w-0">
-                          <h5 className="truncate text-xs font-bold text-slate-800 dark:text-slate-200">
-                            {assignment.CategoryName || assignment.CategoryId}
-                          </h5>
-                          <span className="block truncate font-mono text-[10px] text-slate-400">
-                            {assignment.CategoryMentorId}
-                          </span>
-                        </div>
-                        <Badge className={`border text-[9px] font-extrabold ${getAssignmentStatusClass(assignment.Status)}`}>
-                          {assignment.Status}
-                        </Badge>
+                    <div key={assignment.CategoryMentorId} className="flex items-center justify-between rounded-xl border p-4">
+                      <div>
+                        <h4 className="font-bold text-slate-900 dark:text-white">{assignment.CategoryName}</h4>
+                        <p className="text-xs text-slate-500">Trạng thái: {assignment.Status}</p>
                       </div>
-
                       {assignment.Status === 'Pending' && (
-                        <div className="grid grid-cols-2 gap-2">
-                          <Button
-                            type="button"
-                            size="sm"
-                            className="rounded-xl bg-emerald-600 text-xs font-bold text-white hover:bg-emerald-700"
-                            disabled={actionId === assignment.CategoryMentorId}
-                            onClick={() => void handleAssignmentDecision(assignment.CategoryMentorId, 'approve')}
-                          >
-                            <CheckCircle2 className="mr-1.5 h-3.5 w-3.5" />
-                            Đồng ý
-                          </Button>
-                          <Button
-                            type="button"
-                            size="sm"
-                            variant="destructive"
-                            className="rounded-xl text-xs font-bold"
-                            disabled={actionId === assignment.CategoryMentorId}
-                            onClick={() => void handleAssignmentDecision(assignment.CategoryMentorId, 'reject')}
-                          >
-                            <XCircle className="mr-1.5 h-3.5 w-3.5" />
-                            Từ chối
-                          </Button>
+                        <div className="flex gap-2">
+                          <Button size="sm" onClick={() => handleAssignmentDecision(assignment.CategoryMentorId, 'approve')}>Accept</Button>
+                          <Button size="sm" variant="outline" onClick={() => handleAssignmentDecision(assignment.CategoryMentorId, 'reject')}>Reject</Button>
                         </div>
                       )}
                     </div>
@@ -271,187 +462,116 @@ function MentorDashboardContent() {
             </Card>
           )}
 
+          {/* Tab: Categories */}
           {activeTab === 'categories' && (
             <Card className="border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900">
               <CardHeader>
-                <CardTitle className="flex items-center gap-2 text-base font-bold">
-                  <CheckCircle2 className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
-                  Hạng mục phụ trách
-                </CardTitle>
-                <CardDescription className="text-xs font-medium text-slate-400">
-                  Chỉ hiển thị Category đã được Mentor chấp thuận.
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-3 p-6 pt-0">
-                {categories.length === 0 ? (
-                  <div className="rounded-xl bg-slate-50 p-3 text-xs font-medium text-slate-500 dark:bg-slate-950">
-                    Chưa có Category đã được phân công.
-                  </div>
-                ) : (
-                  categories.map((category) => (
-                    <div
-                      key={category.CategoryId}
-                      className="rounded-xl border border-slate-100 bg-slate-50/50 p-3 dark:border-slate-800 dark:bg-slate-900/50"
-                    >
-                      <h5 className="text-xs font-bold text-slate-800 dark:text-slate-200">{category.CategoryName}</h5>
-                      <span className="text-[10px] font-semibold uppercase text-slate-400">
-                        {category.EventName || category.EventId}
-                      </span>
-                      {category.Description && (
-                        <p className="mt-1 text-xs font-medium text-slate-500 dark:text-slate-400">
-                          {category.Description}
-                        </p>
-                      )}
-                    </div>
-                  ))
-                )}
-              </CardContent>
-            </Card>
-          )}
-
-          {activeTab === 'submissions' && (
-            <Card className="border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2 text-base font-bold">
-                  <FileCode2 className="h-5 w-5 text-indigo-600 dark:text-indigo-400" />
-                  Bài nộp của các nhóm phụ trách
-                </CardTitle>
-                <CardDescription className="text-xs font-medium text-slate-400">
-                  Danh sách bài nộp thuộc các Category đã được Mentor chấp thuận.
-                </CardDescription>
+                <CardTitle className="text-base font-bold">Hạng mục phụ trách</CardTitle>
               </CardHeader>
               <CardContent className="p-6 pt-0">
-                {submissions.length === 0 ? (
-                  <div className="rounded-xl bg-slate-50 p-4 text-center text-xs font-medium text-slate-500 dark:bg-slate-950">
-                    Chưa có bài nộp thuộc Category được phân công.
+                {categories.map((cat) => (
+                  <div key={cat.CategoryId} className="p-3 border-b">
+                    <p className="font-bold">{cat.CategoryName}</p>
+                    <p className="text-xs text-slate-500">{cat.EventName}</p>
                   </div>
-                ) : (
-                  <div className="overflow-hidden rounded-xl border border-slate-200 dark:border-slate-800">
-                    <Table>
-                      <TableHeader className="bg-slate-50 dark:bg-slate-900/50">
-                        <TableRow>
-                          <TableHead className="text-xs font-bold uppercase text-slate-700">Đội thi</TableHead>
-                          <TableHead className="text-xs font-bold uppercase text-slate-700">Category</TableHead>
-                          <TableHead className="text-xs font-bold uppercase text-slate-700">Vòng</TableHead>
-                          <TableHead className="text-xs font-bold uppercase text-slate-700">Nộp lúc</TableHead>
-                          <TableHead className="text-xs font-bold uppercase text-slate-700">Liên kết</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {submissions.map((submission) => (
-                          <TableRow key={submission.SubmissionId}>
-                            <TableCell className="text-xs font-bold text-slate-800 dark:text-slate-200">
-                              {submission.TeamName}
-                            </TableCell>
-                            <TableCell className="text-xs font-medium text-slate-500">{submission.CategoryName}</TableCell>
-                            <TableCell className="text-xs font-medium text-slate-500">{submission.RoundName}</TableCell>
-                            <TableCell className="text-[10px] text-slate-500 dark:text-slate-400">
-                              {formatDate(submission.SubmittedAt)}
-                            </TableCell>
-                            <TableCell>
-                              <div className="flex flex-wrap gap-2">
-                                {submission.RepositoryURL && (
-                                  <a
-                                    href={submission.RepositoryURL}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    className="flex h-8 items-center gap-1 rounded-lg border border-slate-200 px-2.5 text-[10px] font-bold hover:bg-slate-50 dark:border-slate-700"
-                                  >
-                                    <FileCode2 className="h-3.5 w-3.5 text-slate-500" />
-                                    Code
-                                  </a>
-                                )}
-                                {submission.DemoURL && (
-                                  <a
-                                    href={submission.DemoURL}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    className="flex h-8 items-center gap-1 rounded-lg border border-slate-200 px-2.5 text-[10px] font-bold text-rose-600 hover:bg-slate-50 dark:border-slate-700"
-                                  >
-                                    <Video className="h-3.5 w-3.5" />
-                                    Video
-                                  </a>
-                                )}
-                                {submission.SlideURL && (
-                                  <a
-                                    href={submission.SlideURL}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    className="flex h-8 items-center gap-1 rounded-lg border border-slate-200 px-2.5 text-[10px] font-bold hover:bg-slate-50 dark:border-slate-700"
-                                  >
-                                    <FileText className="h-3.5 w-3.5 text-indigo-500" />
-                                    Slide
-                                  </a>
-                                )}
-                              </div>
-                            </TableCell>
-                          </TableRow>
-                        ))}
-                      </TableBody>
-                    </Table>
-                  </div>
-                )}
+                ))}
               </CardContent>
             </Card>
           )}
 
+          {/* Tab: Feedback Form & Checkpoint */}
           {activeTab === 'feedback-form' && (
             <Card className="border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2 text-base font-bold">
-                  <MessageSquare className="h-5 w-5 text-indigo-600 dark:text-indigo-400" />
-                  Gửi phản hồi / Góp ý
+                  <Activity className="h-5 w-5 text-indigo-600 dark:text-indigo-400" />
+                  Gửi Phản Hồi & Đánh Giá Checkpoint (Health Status)
                 </CardTitle>
                 <CardDescription className="text-xs font-medium text-slate-400">
-                  Backend hiện chưa có API lưu feedback Mentor, nên form chỉ kiểm tra dữ liệu thật của đội.
+                  Sau buổi tư vấn, gửi đánh giá sức khỏe tiến độ của Đội thi (Green: Tốt, Yellow: Chậm, Red: Báo động/bỏ cuộc).
                 </CardDescription>
               </CardHeader>
               <CardContent className="p-6 pt-0">
                 <form onSubmit={handleSendFeedback} className="space-y-4">
                   <div className="space-y-1.5">
-                    <label htmlFor="mentor-feedback-team" className="block text-xs font-semibold uppercase tracking-wider text-slate-500">Chọn đội thi</label>
+                    <label htmlFor="mentor-feedback-booking" className="block text-xs font-semibold uppercase text-slate-500">
+                      Chọn Lịch Hẹn / Đội Thi
+                    </label>
                     <select
-                      id="mentor-feedback-team"
-                      aria-label="Chọn đội thi để gửi phản hồi"
-                      title="Chọn đội thi để gửi phản hồi"
+                      id="mentor-feedback-booking"
                       className="h-10 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 text-xs font-semibold focus:outline-none dark:border-slate-700 dark:bg-slate-800"
-                      value={selectedTeamId}
-                      onChange={(event) => setSelectedTeamId(event.target.value)}
-                      disabled={teams.length === 0}
+                      value={selectedBookingId}
+                      onChange={(e) => setSelectedBookingId(e.target.value)}
                     >
-                      {teams.length === 0 ? (
-                        <option value="">Chưa có đội được phân công</option>
+                      {bookings.length === 0 ? (
+                        <option value="">Chưa có lịch hẹn nào</option>
                       ) : (
-                        teams.map((team) => (
-                          <option key={team.TeamId} value={team.TeamId}>
-                            {team.TeamName} - {team.CategoryName}
+                        bookings.map((b) => (
+                          <option key={b.bookingId} value={b.bookingId}>
+                            {b.teamName} - {b.objective} ({formatDate(b.startTime)})
                           </option>
                         ))
                       )}
                     </select>
                   </div>
+
                   <div className="space-y-1.5">
-                    <label htmlFor="mentor-feedback-text" className="block text-xs font-semibold uppercase tracking-wider text-slate-500">
-                      Nội dung tư vấn / Nhận xét
+                    <label className="block text-xs font-semibold uppercase text-slate-500">
+                      Đánh giá Trạng thái Sức khỏe Tiến độ (Health Status)
+                    </label>
+                    <div className="grid grid-cols-3 gap-3">
+                      <button
+                        type="button"
+                        onClick={() => setHealthStatus('Green')}
+                        className={`flex items-center justify-center gap-2 rounded-xl border p-3 text-xs font-bold transition-all ${
+                          healthStatus === 'Green' ? 'border-emerald-600 bg-emerald-50 text-emerald-700' : 'border-slate-200 text-slate-600'
+                        }`}
+                      >
+                        <CheckCircle2 className="h-4 w-4 text-emerald-600" /> Green (Tốt)
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setHealthStatus('Yellow')}
+                        className={`flex items-center justify-center gap-2 rounded-xl border p-3 text-xs font-bold transition-all ${
+                          healthStatus === 'Yellow' ? 'border-amber-600 bg-amber-50 text-amber-700' : 'border-slate-200 text-slate-600'
+                        }`}
+                      >
+                        <AlertTriangle className="h-4 w-4 text-amber-600" /> Yellow (Chậm)
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setHealthStatus('Red')}
+                        className={`flex items-center justify-center gap-2 rounded-xl border p-3 text-xs font-bold transition-all ${
+                          healthStatus === 'Red' ? 'border-rose-600 bg-rose-50 text-rose-700' : 'border-slate-200 text-slate-600'
+                        }`}
+                      >
+                        <XCircle className="h-4 w-4 text-rose-600" /> Red (Báo động)
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <label htmlFor="mentor-feedback-text" className="block text-xs font-semibold uppercase text-slate-500">
+                      Nội dung Nhận xét / Góp ý Chi tiết
                     </label>
                     <textarea
                       id="mentor-feedback-text"
-                      aria-label="Nội dung tư vấn hoặc nhận xét"
-                      title="Nội dung tư vấn hoặc nhận xét"
                       rows={4}
+                      placeholder="Ví dụ: Team cần cải thiện UI và tối ưu lại API..."
                       className="w-full rounded-xl border border-slate-200 bg-slate-50 p-3 text-xs font-medium focus:outline-none dark:border-slate-700 dark:bg-slate-800"
                       value={feedbackText}
-                      onChange={(event) => setFeedbackText(event.target.value)}
+                      onChange={(e) => setFeedbackText(e.target.value)}
                     />
                   </div>
+
                   <div className="flex justify-end">
                     <Button
                       type="submit"
-                      className="h-10 rounded-xl bg-sky-600 px-5 text-xs font-bold text-white transition-colors hover:bg-sky-700"
-                      disabled={submittingFeedback || teams.length === 0}
+                      className="h-10 rounded-xl bg-indigo-600 px-5 text-xs font-bold text-white hover:bg-indigo-700"
+                      disabled={submittingFeedback || bookings.length === 0}
                     >
                       <Send className="mr-2 h-3.5 w-3.5" />
-                      {submittingFeedback ? 'Đang gửi...' : 'Kiểm tra API feedback'}
+                      {submittingFeedback ? 'Đang gửi...' : 'Gửi Feedback Checkpoint'}
                     </Button>
                   </div>
                 </form>
@@ -459,59 +579,22 @@ function MentorDashboardContent() {
             </Card>
           )}
 
-          {activeTab === 'feedback-logs' && (
-            <Card className="border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2 text-base font-bold">
-                  <Info className="h-5 w-5 text-indigo-600 dark:text-indigo-400" />
-                  Nhật ký góp ý của bạn
-                </CardTitle>
-                <CardDescription className="text-xs font-medium text-slate-400">
-                  Không hiển thị dữ liệu mẫu khi backend chưa có API feedback.
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="p-6 pt-0">
-                <div className="rounded-xl border border-slate-100 bg-slate-50 p-4 text-xs font-medium text-slate-500 dark:border-slate-800 dark:bg-slate-950">
-                  Chưa có API lịch sử feedback Mentor.
-                </div>
-              </CardContent>
-            </Card>
-          )}
-
+          {/* Tab: Teams */}
           {activeTab === 'teams' && (
             <Card className="border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900">
               <CardHeader>
-                <CardTitle className="flex items-center gap-2 text-base font-bold">
-                  <Users className="h-5 w-5 text-indigo-600 dark:text-indigo-400" />
-                  Đội thi phụ trách
-                </CardTitle>
-                <CardDescription className="text-xs font-medium text-slate-400">
-                  Các đội thuộc Category đã được Mentor chấp thuận.
-                </CardDescription>
+                <CardTitle className="text-base font-bold">Đội thi phụ trách</CardTitle>
               </CardHeader>
-              <CardContent className="space-y-3 p-6 pt-0">
-                {teams.length === 0 ? (
-                  <div className="rounded-xl bg-slate-50 p-3 text-xs font-medium text-slate-500 dark:bg-slate-950">
-                    Chưa có đội thi thuộc Category phụ trách.
-                  </div>
-                ) : (
-                  teams.map((team) => (
-                    <div
-                      key={team.TeamId}
-                      className="rounded-xl border border-slate-100 bg-slate-50/50 p-3 dark:border-slate-800 dark:bg-slate-900/50"
-                    >
-                      <div className="flex items-center justify-between gap-3">
-                        <div>
-                          <h5 className="text-xs font-bold text-slate-800 dark:text-slate-200">{team.TeamName}</h5>
-                          <p className="text-[10px] font-semibold uppercase text-slate-400">{team.CategoryName}</p>
-                        </div>
-                        <Badge className="border bg-slate-100 text-[9px] font-extrabold text-slate-600">
-                          {team.TeamStatus}
-                        </Badge>
-                      </div>
+              <CardContent className="p-6 pt-0 space-y-3">
+                {teams.map((t) => (
+                  <div key={t.TeamId} className="p-3 border rounded-xl flex justify-between items-center">
+                    <div>
+                      <p className="font-bold">{t.TeamName}</p>
+                      <p className="text-xs text-slate-500">{t.CategoryName}</p>
                     </div>
-                  ))
-                )}
+                    <Badge>{t.TeamStatus}</Badge>
+                  </div>
+                ))}
               </CardContent>
             </Card>
           )}
