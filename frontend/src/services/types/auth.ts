@@ -11,6 +11,8 @@ const roleSchema = z.enum([
   'EventCoordinator',
   'TeamLeader',
   'TeamMember',
+  'Admin',
+  'Researcher',
 ]);
 
 const normalizedUserSchema = z.object({
@@ -19,7 +21,7 @@ const normalizedUserSchema = z.object({
   FullName: z.string(),
   Phone: z.string(),
   ShortId: z.string(),
-  Role: roleSchema,
+  Role: z.string(),
   AccountStatus: z.string(),
   CreatedAt: z.string(),
 });
