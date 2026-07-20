@@ -23,6 +23,7 @@ namespace BusinessLogicLayer.Services.Implements
         private readonly IGenericRepository<Teams> _teamRepository;
         private readonly IGenericRepository<Users> _userRepository;
         private readonly INotificationService _notificationService;
+        private readonly IGenericRepository<TeamMembers> _teamMemberRepository;
         private readonly IRankingService _rankingService;
         private readonly IUnitOfWork _unitOfWork;
 
@@ -40,6 +41,7 @@ namespace BusinessLogicLayer.Services.Implements
             _roundRepository = _unitOfWork.GetRepository<Rounds>();
             _teamRepository = _unitOfWork.GetRepository<Teams>();
             _userRepository = _unitOfWork.GetRepository<Users>();
+            _teamMemberRepository = _unitOfWork.GetRepository<TeamMembers>();
         }
 
         public async Task<IEnumerable<ScoreDto>> SubmitForSubmissionAsync(Guid submissionId, Guid judgeUserId, SubmitScoresRequest request)
@@ -217,6 +219,49 @@ namespace BusinessLogicLayer.Services.Implements
             }
 
             return result;
+        }
+
+        public async Task<IEnumerable<ScoreDto>> GetScoresBySubmissionForTeamAsync(Guid submissionId, Guid viewerUserId)
+        {
+            var submission = await _submissionRepository.GetByIdAsync(submissionId);
+            if (submission == null)
+                throw new Exception($"Submission with id {submissionId} not found");
+
+            if (!submission.TeamId.HasValue)
+                throw new Exception("Submission is not associated with any team");
+
+            var team = await _teamRepository.GetByIdAsync(submission.TeamId.Value);
+            if (team == null)
+                throw new Exception($"Team with id {submission.TeamId} not found");
+
+            var viewer = await _userRepository.GetByIdAsync(viewerUserId);
+            if (viewer == null)
+                throw new Exception($"Viewer with id {viewerUserId} not found");
+
+            var role = viewer.Role ?? string.Empty;
+            var isTeamViewer = string.Equals(role, "TeamLeader", StringComparison.OrdinalIgnoreCase)
+                || string.Equals(role, "TeamMember", StringComparison.OrdinalIgnoreCase);
+
+            if (isTeamViewer)
+            {
+                var isLeader = team.TeamLeaderId == viewerUserId;
+                if (!isLeader)
+                {
+                    var membership = await _teamMemberRepository.FirstOrDefaultAsync(x =>
+                        x.TeamId == team.TeamId && x.UserId == viewerUserId);
+                    if (membership == null)
+                        throw new Exception("You do not have access to view this submission's scores");
+                }
+            }
+            else if (!string.Equals(role, "Judge", StringComparison.OrdinalIgnoreCase)
+                && !string.Equals(role, "Coordinator", StringComparison.OrdinalIgnoreCase)
+                && !string.Equals(role, "EventCoordinator", StringComparison.OrdinalIgnoreCase))
+            {
+                throw new Exception("You do not have access to view this submission's scores");
+            }
+
+            var scores = await _scoreRepository.FindAsync(x => x.SubmissionId == submissionId);
+            return scores.Select(MapToDto);
         }
 
         private async Task<Submissions> GetScorableSubmissionAsync(Guid submissionId)

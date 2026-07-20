@@ -10,15 +10,15 @@ namespace BusinessLogicLayer.DTOs.Requests
 
         [Url]
         [StringLength(500)]
-        public string RepositoryURL { get; set; } = string.Empty;
+        public string? RepositoryURL { get; set; }
 
         [Url]
         [StringLength(500)]
-        public string DemoURL { get; set; } = string.Empty;
+        public string? DemoURL { get; set; }
 
         [Url]
         [StringLength(500)]
-        public string SlideURL { get; set; } = string.Empty;
+        public string? SlideURL { get; set; }
 
         public Guid? VideoAssetId { get; set; }
 

@@ -45,13 +45,6 @@ namespace BusinessLogicLayer.Services.Implements
             if (creator == null)
                 throw new Exception($"User with id {creatorUserId} not found");
 
-            if (request.CategoryId.HasValue)
-            {
-                throw new Exception(
-                    "Cannot choose a category during team creation. You must have at least 3 members first."
-                );
-            }
-
             // Update user role to TeamLeader when creating a team
             if (creator.Role == "TeamMember" || string.IsNullOrWhiteSpace(creator.Role))
             {
@@ -64,7 +57,7 @@ namespace BusinessLogicLayer.Services.Implements
                 TeamId = Guid.NewGuid(),
                 TeamName = request.TeamName,
                 TeamLeaderId = creatorUserId,
-                CategoryId = request.CategoryId,
+                CategoryId = null,
                 TeamStatus = string.IsNullOrWhiteSpace(request.TeamStatus)
                     ? "Active"
                     : request.TeamStatus,

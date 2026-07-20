@@ -9,8 +9,6 @@ namespace BusinessLogicLayer.DTOs.Requests
         [StringLength(120, MinimumLength = 2)]
         public string TeamName { get; set; } = string.Empty;
 
-        public Guid? CategoryId { get; set; }
-
         [Required]
         [StringLength(30)]
         public string TeamStatus { get; set; } = "Active";
