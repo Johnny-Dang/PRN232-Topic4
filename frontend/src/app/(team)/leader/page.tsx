@@ -82,11 +82,25 @@ const getStoredUserId = (): string | null => {
 };
 
 const getApiErrorMessage = (error: unknown, fallback: string): string => {
-  if (error instanceof Error) return error.message;
-  if (typeof error !== 'object' || error === null || !('response' in error)) return fallback;
+  if (typeof error === 'object' && error !== null && 'response' in error) {
+    const response = (error as {
+      response?: {
+        data?: {
+          message?: string;
+          title?: string;
+          errors?: Record<string, string[]>;
+        };
+      };
+    }).response;
+    const validationMessage = response?.data?.errors
+      ? Object.values(response.data.errors).flat().find((message) => message.trim())
+      : null;
 
-  const response = (error as { response?: { data?: { message?: string } } }).response;
-  return response?.data?.message || fallback;
+    return response?.data?.message || validationMessage || response?.data?.title || fallback;
+  }
+
+  if (error instanceof Error) return error.message;
+  return fallback;
 };
 
 const getSubmissionStatusLabel = (status: Submission['Status']): string => {

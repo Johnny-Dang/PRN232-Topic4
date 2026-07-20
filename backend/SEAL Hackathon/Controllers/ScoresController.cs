@@ -36,6 +36,22 @@ namespace SEALHackathonSystem.Controllers
             }
         }
 
+        [Authorize(Policy = "TeamScoreViewer")]
+        [HttpGet("submissions/{submissionId}")]
+        public async Task<IActionResult> GetScoresBySubmission(Guid submissionId)
+        {
+            try
+            {
+                var viewerUserId = GetCurrentUserId();
+                var result = await _scoresService.GetScoresBySubmissionForTeamAsync(submissionId, viewerUserId);
+                return Ok(result);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+        }
+
         [Authorize(Policy = "JudgeOnly")]
         [HttpPost("submissions/{submissionId}")]
         public async Task<IActionResult> SubmitForSubmission(Guid submissionId, [FromBody] SubmitScoresRequest request)
