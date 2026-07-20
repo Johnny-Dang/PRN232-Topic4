@@ -13,8 +13,12 @@ export async function getEliminationsApi() {
 }
 
 export async function getNotificationsApi() {
-  const response = await apiClient.get('/Notification');
-  return z.array(notificationSchema).parse(response.data);
+  const response = await apiClient.get('/Notification', {
+    withCredentials: false,
+  });
+  const data = response.data;
+  const items = Array.isArray(data) ? data : data?.items;
+  return z.array(notificationSchema).parse(items ?? []);
 }
 
 export async function markNotificationAsReadApi(notificationId: string | number) {

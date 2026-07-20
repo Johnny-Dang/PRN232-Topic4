@@ -25,11 +25,11 @@ export const auditLogSchema = z.object({
 });
 
 export const notificationSchema = z.object({
-  NotificationId: z.string(),
-  UserId: z.string(),
-  Message: z.string(),
-  IsRead: z.boolean(),
-  CreatedAt: z.string(),
+  notificationId: z.string(),
+  userId: z.string(),
+  message: z.string(),
+  isRead: z.boolean(),
+  createdAt: z.string(),
 });
 
 export type AdvancementRule = z.infer<typeof advancementRuleSchema>;

@@ -70,6 +70,12 @@ namespace SEAL_Hackathon.Middlewares
                 }
                 catch
                 {
+                    // Allow SignalR requests to pass through - SignalR handles its own auth
+                    if (context.Request.Path.StartsWithSegments("/notificationHub"))
+                    {
+                        await _next(context);
+                        return;
+                    }
                     context.Response.StatusCode = StatusCodes.Status401Unauthorized;
                     await context.Response.WriteAsync("Invalid or expired token.");
                     return;

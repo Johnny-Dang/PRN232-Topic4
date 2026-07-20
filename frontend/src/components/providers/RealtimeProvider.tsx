@@ -4,13 +4,22 @@ import { useEffect, useRef, useState, useCallback } from 'react';
 import { HubConnectionBuilder, HubConnectionState, LogLevel } from '@microsoft/signalr';
 import { Bell, X } from 'lucide-react';
 import { useQueryClient } from '@tanstack/react-query';
+import { apiClient } from '@/services/api/apiClient';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5279/api';
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://localhost:7086/api';
 const HUB_URL = `${API_URL.replace(/\/api\/?$/, '')}/notificationHub`;
 
 type RealtimeNotification = {
   id: number;
   message: string;
+};
+
+type ApiNotification = {
+  notificationId: string;
+  userId: string;
+  message: string;
+  isRead: boolean;
+  createdAt: string;
 };
 
 const getAccessToken = (): string => {
@@ -47,6 +56,54 @@ export default function RealtimeProvider() {
   const connectionRef = useRef<import('@microsoft/signalr').HubConnection | null>(null);
   const reconnectAttemptRef = useRef(0);
   const maxReconnectAttempts = 5;
+  const lastFetchedCount = useRef(0);
+  const displayedIds = useRef(new Set<string>());
+
+  const loadUnreadNotifications = useCallback(async () => {
+    try {
+      const response = await apiClient.get<{ items: ApiNotification[]; totalCount: number }>(
+        '/Notification?isRead=false&pageSize=10&pageNumber=1'
+      );
+      
+      const items = response.items || [];
+      
+      // Chỉ hiển thị thông báo chưa từng hiển thị
+      const newNotifications: RealtimeNotification[] = [];
+      
+      for (const item of items) {
+        if (!displayedIds.current.has(item.notificationId)) {
+          displayedIds.current.add(item.notificationId);
+          newNotifications.push({
+            id: ++nextId.current,
+            message: item.message,
+          });
+        }
+      }
+      
+      if (newNotifications.length > 0) {
+        setNotifications((current) => [...newNotifications.reverse(), ...current]);
+      }
+      
+      lastFetchedCount.current = items.length;
+      
+      // Lưu vào localStorage để không hiện lại khi reload
+      localStorage.setItem('seal_displayed_notifications', JSON.stringify([...displayedIds.current]));
+    } catch (error) {
+      console.warn('Failed to load notifications:', error);
+    }
+  }, []);
+
+  const loadDisplayedIds = useCallback(() => {
+    try {
+      const stored = localStorage.getItem('seal_displayed_notifications');
+      if (stored) {
+        const ids = JSON.parse(stored) as string[];
+        displayedIds.current = new Set(ids);
+      }
+    } catch {
+      // Ignore
+    }
+  }, []);
 
   const startConnection = useCallback(async () => {
     const accessToken = getAccessToken();
@@ -73,7 +130,7 @@ export default function RealtimeProvider() {
 
     connection.on('ReceiveNotification', (message: string) => {
       const notification = { id: ++nextId.current, message };
-      setNotifications((current) => [...current, notification]);
+      setNotifications((current) => [notification, ...current]);
 
       // Invalidate specific queries related to scoring and rankings
       void queryClient.invalidateQueries({ queryKey: ['scores'] });
@@ -118,6 +175,14 @@ export default function RealtimeProvider() {
   }, []);
 
   useEffect(() => {
+    // Load displayed IDs from localStorage first
+    loadDisplayedIds();
+
+    // Load unread notifications from API
+    if (isLoggedIn()) {
+      void loadUnreadNotifications();
+    }
+
     // Initial connection if already logged in
     if (isLoggedIn()) {
       void startConnection();
@@ -129,7 +194,10 @@ export default function RealtimeProvider() {
         if (e.newValue && !e.oldValue) {
           // User logged in
           console.log('User logged in, starting SignalR connection...');
-          setTimeout(() => void startConnection(), 100);
+          setTimeout(() => {
+            void loadUnreadNotifications();
+            void startConnection();
+          }, 100);
         } else if (!e.newValue && e.oldValue) {
           // User logged out
           console.log('User logged out, stopping SignalR connection...');
@@ -141,7 +209,10 @@ export default function RealtimeProvider() {
     // Listen for custom login event (for same-tab navigation)
     const handleLoginEvent = () => {
       console.log('Login event detected, starting SignalR connection...');
-      setTimeout(() => void startConnection(), 100);
+      setTimeout(() => {
+        void loadUnreadNotifications();
+        void startConnection();
+      }, 100);
     };
 
     window.addEventListener('storage', handleStorageChange);
@@ -152,7 +223,7 @@ export default function RealtimeProvider() {
       window.removeEventListener('seal:login-success', handleLoginEvent);
       void stopConnection();
     };
-  }, [startConnection, stopConnection]);
+  }, [startConnection, stopConnection, loadUnreadNotifications, loadDisplayedIds]);
 
   return (
     <div aria-live="polite" className="fixed right-4 top-4 z-100 w-[min(24rem,calc(100vw-2rem))] space-y-2">
