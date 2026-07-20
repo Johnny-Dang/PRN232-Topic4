@@ -7,6 +7,7 @@ using DataAccessLayer.Repositories.Interfaces;
 using Microsoft.Extensions.Configuration;
 using Microsoft.IdentityModel.Tokens;
 using System;
+using System.Collections.Generic;
 using System.IdentityModel.Tokens.Jwt;
 using System.Linq;
 using System.Security.Claims;
@@ -23,7 +24,7 @@ namespace BusinessLogicLayer.Services.Implements
         private readonly IUnitOfWork _unitOfWork;
         private readonly IConfiguration _configuration;
 
-        private static readonly string[] CoordinatorAllowedRoles = new[] { "TeamMember", "TeamLeader", "Mentor", "Judge", "EventCoordinator", "Researcher" };
+        private static readonly string[] CoordinatorAllowedRoles = new[] { "TeamMember", "TeamLeader", "Mentor", "Judge", "Coordinator", "EventCoordinator", "Researcher" };
 
         public UserService(IUnitOfWork unitOfWork, IConfiguration configuration)
         {
@@ -46,6 +47,7 @@ namespace BusinessLogicLayer.Services.Implements
                 Password = PasswordHasher.Hash(request.Password),
                 FullName = request.FullName,
                 Phone = request.Phone,
+                ShortId = await GenerateUniqueShortIdAsync("TeamMember"),
                 Role = "TeamMember",
                 AccountStatus = "Active",
                 CreatedAt = DateTime.UtcNow
@@ -73,6 +75,7 @@ namespace BusinessLogicLayer.Services.Implements
                 Password = PasswordHasher.Hash(request.Password),
                 FullName = request.FullName,
                 Phone = request.Phone,
+                ShortId = await GenerateUniqueShortIdAsync(request.Role),
                 Role = request.Role,
                 AccountStatus = "Active",
                 CreatedAt = DateTime.UtcNow
@@ -89,6 +92,12 @@ namespace BusinessLogicLayer.Services.Implements
             var user = (await _userRepository.FindAsync(u => u.Email == request.Email)).FirstOrDefault();
             if (user == null) throw new Exception("Invalid credentials");
             if (!PasswordHasher.Verify(request.Password, user.Password)) throw new Exception("Invalid credentials");
+
+            if (string.IsNullOrWhiteSpace(user.ShortId))
+            {
+                user.ShortId = await GenerateUniqueShortIdAsync(user.Role);
+                _userRepository.Update(user);
+            }
 
             // Revoke all existing refresh tokens for this user
             await RevokeAllUserRefreshTokensAsync(user.UserId);
@@ -113,7 +122,19 @@ namespace BusinessLogicLayer.Services.Implements
         {
             var user = await _userRepository.GetByIdAsync(userId);
             if (user == null) return null;
+            await EnsureShortIdAsync(user);
             return MapToDto(user);
+        }
+
+        public async Task<List<UserDto>> GetByRoleAsync(string role)
+        {
+            var users = await _userRepository.FindAsync(user => user.Role == role);
+            foreach (var user in users)
+            {
+                await EnsureShortIdAsync(user);
+            }
+
+            return users.Select(MapToDto).ToList();
         }
 
         public async Task<AuthResponse> RefreshTokenAsync(RefreshTokenRequest request)
@@ -230,6 +251,75 @@ namespace BusinessLogicLayer.Services.Implements
             }
         }
 
+        public async Task<List<UserDto>> SearchUsersAsync(string query)
+        {
+            if (string.IsNullOrWhiteSpace(query))
+                return new List<UserDto>();
+
+            var normalizedQuery = query.Trim().ToLowerInvariant();
+            var users = await _userRepository.GetAllAsync();
+
+            return users
+                .Where(user =>
+                    user.FullName.ToLowerInvariant().Contains(normalizedQuery) ||
+                    user.Email.ToLowerInvariant().Contains(normalizedQuery) ||
+                    (user.ShortId ?? string.Empty).ToLowerInvariant().Contains(normalizedQuery) ||
+                    user.UserId.ToString("N").StartsWith(normalizedQuery, StringComparison.OrdinalIgnoreCase))
+                .Take(10)
+                .Select(MapToDto)
+                .ToList();
+        }
+
+        private async Task EnsureShortIdAsync(Users user)
+        {
+            if (!string.IsNullOrWhiteSpace(user.ShortId))
+                return;
+
+            user.ShortId = await GenerateUniqueShortIdAsync(user.Role);
+            _userRepository.Update(user);
+            await _unitOfWork.SaveChangesAsync();
+        }
+
+        private async Task<string> GenerateUniqueShortIdAsync(string role)
+        {
+            var prefix = GetShortIdPrefix(role);
+
+            for (var attempt = 0; attempt < 50; attempt++)
+            {
+                var candidate = prefix + GenerateBase36Segment(4);
+                var existing = await _userRepository.FirstOrDefaultAsync(user => user.ShortId == candidate);
+                if (existing == null)
+                    return candidate;
+            }
+
+            throw new Exception("Could not generate a unique short user id. Please try again.");
+        }
+
+        private static string GetShortIdPrefix(string role)
+        {
+            return role switch
+            {
+                "Mentor" => "ME",
+                "Judge" => "JU",
+                "Coordinator" or "EventCoordinator" => "CO",
+                "TeamLeader" or "Leader" or "TeamMember" or "Member" => "TM",
+                _ => "US"
+            };
+        }
+
+        private static string GenerateBase36Segment(int length)
+        {
+            const string alphabet = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+            var builder = new StringBuilder(length);
+
+            for (var i = 0; i < length; i++)
+            {
+                builder.Append(alphabet[RandomNumberGenerator.GetInt32(alphabet.Length)]);
+            }
+
+            return builder.ToString();
+        }
+
         private static UserDto MapToDto(Users u)
         {
             return new UserDto
@@ -238,6 +328,7 @@ namespace BusinessLogicLayer.Services.Implements
                 Email = u.Email,
                 FullName = u.FullName,
                 Phone = u.Phone,
+                ShortId = u.ShortId,
                 Role = u.Role,
                 AccountStatus = u.AccountStatus,
                 CreatedAt = u.CreatedAt

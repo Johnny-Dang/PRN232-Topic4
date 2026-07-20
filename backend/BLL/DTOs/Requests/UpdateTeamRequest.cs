@@ -12,6 +12,8 @@ namespace BusinessLogicLayer.DTOs.Requests
         [StringLength(120, MinimumLength = 2)]
         public string TeamName { get; set; } = string.Empty;
 
+        public Guid? EventId { get; set; }
+
         [Required]
         public Guid CategoryId { get; set; }
 

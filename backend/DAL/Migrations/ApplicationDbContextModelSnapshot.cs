@@ -248,11 +248,53 @@ namespace DataAccessLayer.Migrations
                     b.ToTable("EventCriteria", (string)null);
                 });
 
+            modelBuilder.Entity("DataAccessLayer.Database.Entities.EventParticipants", b =>
+                {
+                    b.Property<Guid>("EventParticipantId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("EventId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("RegisteredAt")
+                        .HasColumnType("datetime");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("EventParticipantId");
+
+                    b.HasIndex("EventId");
+
+                    b.HasIndex("UserId", "EventId")
+                        .IsUnique();
+
+                    b.ToTable("EventParticipants", (string)null);
+                });
+
             modelBuilder.Entity("DataAccessLayer.Database.Entities.Events", b =>
                 {
                     b.Property<Guid>("EventId")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Audience")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)")
+                        .HasDefaultValue("Students");
+
+                    b.Property<string>("BannerUrl")
+                        .IsRequired()
+                        .HasMaxLength(2000)
+                        .HasColumnType("nvarchar(2000)");
 
                     b.Property<string>("Description")
                         .IsRequired()
@@ -266,6 +308,44 @@ namespace DataAccessLayer.Migrations
                         .HasMaxLength(255)
                         .HasColumnType("nvarchar(255)");
 
+                    b.Property<string>("Format")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)")
+                        .HasDefaultValue("Online");
+
+                    b.Property<bool>("IsDeleted")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bit")
+                        .HasDefaultValue(false);
+
+                    b.Property<bool>("IsFeatured")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bit")
+                        .HasDefaultValue(false);
+
+                    b.Property<bool>("IsPublished")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bit")
+                        .HasDefaultValue(false);
+
+                    b.Property<string>("Organizer")
+                        .IsRequired()
+                        .HasMaxLength(255)
+                        .HasColumnType("nvarchar(255)");
+
+                    b.Property<string>("Prize")
+                        .IsRequired()
+                        .HasMaxLength(255)
+                        .HasColumnType("nvarchar(255)");
+
+                    b.Property<DateTime?>("PublishedAt")
+                        .HasColumnType("datetime");
+
+                    b.Property<Guid?>("PublishedBy")
+                        .HasColumnType("uniqueidentifier");
+
                     b.Property<string>("Season")
                         .IsRequired()
                         .HasMaxLength(50)
@@ -274,10 +354,19 @@ namespace DataAccessLayer.Migrations
                     b.Property<DateTime>("StartDate")
                         .HasColumnType("datetime");
 
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)")
+                        .HasDefaultValue("Draft");
+
                     b.Property<int>("Year")
                         .HasColumnType("int");
 
                     b.HasKey("EventId");
+
+                    b.HasIndex("IsPublished", "IsFeatured", "StartDate");
 
                     b.ToTable("Events", (string)null);
                 });
@@ -302,6 +391,121 @@ namespace DataAccessLayer.Migrations
                         .IsUnique();
 
                     b.ToTable("JudgeAssignments", (string)null);
+                });
+
+            modelBuilder.Entity("DataAccessLayer.Database.Entities.MentorBookings", b =>
+                {
+                    b.Property<Guid>("BookingId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("MeetingLink")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<Guid>("MentorUserId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Notes")
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
+
+                    b.Property<string>("Objective")
+                        .IsRequired()
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
+
+                    b.Property<Guid>("ScheduleId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<Guid>("TeamId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("BookingId");
+
+                    b.HasIndex("MentorUserId");
+
+                    b.HasIndex("ScheduleId");
+
+                    b.HasIndex("TeamId");
+
+                    b.ToTable("MentorBookings", (string)null);
+                });
+
+            modelBuilder.Entity("DataAccessLayer.Database.Entities.MentorSchedules", b =>
+                {
+                    b.Property<Guid>("ScheduleId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("EndTime")
+                        .HasColumnType("datetime2");
+
+                    b.Property<bool>("IsBooked")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("MeetingLocation")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<Guid>("MentorUserId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("StartTime")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("ScheduleId");
+
+                    b.HasIndex("MentorUserId");
+
+                    b.ToTable("MentorSchedules", (string)null);
+                });
+
+            modelBuilder.Entity("DataAccessLayer.Database.Entities.MentoringFeedbacks", b =>
+                {
+                    b.Property<Guid>("FeedbackId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("BookingId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Content")
+                        .IsRequired()
+                        .HasMaxLength(2000)
+                        .HasColumnType("nvarchar(2000)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("HealthStatus")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<Guid>("MentorUserId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("TeamId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("FeedbackId");
+
+                    b.HasIndex("BookingId");
+
+                    b.HasIndex("MentorUserId");
+
+                    b.HasIndex("TeamId");
+
+                    b.ToTable("MentoringFeedbacks", (string)null);
                 });
 
             modelBuilder.Entity("DataAccessLayer.Database.Entities.Notifications", b =>
@@ -504,6 +708,96 @@ namespace DataAccessLayer.Migrations
                     b.ToTable("StudentProfiles", (string)null);
                 });
 
+            modelBuilder.Entity("DataAccessLayer.Database.Entities.SubmissionAssets", b =>
+                {
+                    b.Property<Guid>("SubmissionAssetId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("AssetType")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<string>("CloudinaryAssetId")
+                        .IsRequired()
+                        .HasMaxLength(255)
+                        .HasColumnType("nvarchar(255)");
+
+                    b.Property<string>("ContentType")
+                        .IsRequired()
+                        .HasMaxLength(150)
+                        .HasColumnType("nvarchar(150)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime");
+
+                    b.Property<double?>("DurationSeconds")
+                        .HasColumnType("float");
+
+                    b.Property<long>("FileSize")
+                        .HasColumnType("bigint");
+
+                    b.Property<string>("Format")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<string>("OriginalFileName")
+                        .IsRequired()
+                        .HasMaxLength(255)
+                        .HasColumnType("nvarchar(255)");
+
+                    b.Property<string>("Provider")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<string>("PublicId")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<string>("ResourceType")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<Guid>("RoundId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("SecureUrl")
+                        .IsRequired()
+                        .HasMaxLength(2000)
+                        .HasColumnType("nvarchar(2000)");
+
+                    b.Property<Guid?>("SubmissionId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("TeamId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("UploadStatus")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<DateTime?>("UploadedAt")
+                        .HasColumnType("datetime");
+
+                    b.HasKey("SubmissionAssetId");
+
+                    b.HasIndex("PublicId");
+
+                    b.HasIndex("RoundId");
+
+                    b.HasIndex("SubmissionId");
+
+                    b.HasIndex("TeamId", "RoundId", "AssetType", "UploadStatus");
+
+                    b.ToTable("SubmissionAssets", (string)null);
+                });
+
             modelBuilder.Entity("DataAccessLayer.Database.Entities.SubmissionTemplates", b =>
                 {
                     b.Property<Guid>("TemplateId")
@@ -567,7 +861,7 @@ namespace DataAccessLayer.Migrations
                     b.Property<DateTime>("SubmittedAt")
                         .HasColumnType("datetime");
 
-                    b.Property<Guid>("TeamId")
+                    b.Property<Guid?>("TeamId")
                         .HasColumnType("uniqueidentifier");
 
                     b.HasKey("SubmissionId");
@@ -577,6 +871,50 @@ namespace DataAccessLayer.Migrations
                     b.HasIndex("TeamId");
 
                     b.ToTable("Submissions", (string)null);
+                });
+
+            modelBuilder.Entity("DataAccessLayer.Database.Entities.TeamApplications", b =>
+                {
+                    b.Property<Guid>("ApplicationId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime");
+
+                    b.Property<string>("Message")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<Guid>("RecruitmentId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)")
+                        .HasDefaultValue("PENDING");
+
+                    b.Property<Guid>("TeamId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("ApplicationId");
+
+                    b.HasIndex("RecruitmentId");
+
+                    b.HasIndex("TeamId");
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("TeamApplications", (string)null);
                 });
 
             modelBuilder.Entity("DataAccessLayer.Database.Entities.TeamMembers", b =>
@@ -603,6 +941,50 @@ namespace DataAccessLayer.Migrations
                     b.ToTable("TeamMembers", (string)null);
                 });
 
+            modelBuilder.Entity("DataAccessLayer.Database.Entities.TeamRecruitments", b =>
+                {
+                    b.Property<Guid>("RecruitmentId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime");
+
+                    b.Property<string>("Description")
+                        .IsRequired()
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
+
+                    b.Property<int>("Quantity")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasDefaultValue(1);
+
+                    b.Property<string>("RoleNeeded")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)")
+                        .HasDefaultValue("OPEN");
+
+                    b.Property<Guid>("TeamId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime");
+
+                    b.HasKey("RecruitmentId");
+
+                    b.HasIndex("TeamId");
+
+                    b.ToTable("TeamRecruitments", (string)null);
+                });
+
             modelBuilder.Entity("DataAccessLayer.Database.Entities.Teams", b =>
                 {
                     b.Property<Guid>("TeamId")
@@ -611,6 +993,13 @@ namespace DataAccessLayer.Migrations
 
                     b.Property<Guid?>("CategoryId")
                         .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid?>("EventId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("HealthStatus")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<Guid>("TeamLeaderId")
                         .HasColumnType("uniqueidentifier");
@@ -629,9 +1018,44 @@ namespace DataAccessLayer.Migrations
 
                     b.HasIndex("CategoryId");
 
+                    b.HasIndex("EventId");
+
                     b.HasIndex("TeamLeaderId");
 
                     b.ToTable("Teams", (string)null);
+                });
+
+            modelBuilder.Entity("DataAccessLayer.Database.Entities.UserSkills", b =>
+                {
+                    b.Property<Guid>("UserSkillId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime");
+
+                    b.Property<string>("ExperienceLevel")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<string>("Role")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("SkillName")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("UserSkillId");
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("UserSkills", (string)null);
                 });
 
             modelBuilder.Entity("DataAccessLayer.Database.Entities.Users", b =>
@@ -673,9 +1097,17 @@ namespace DataAccessLayer.Migrations
                         .HasMaxLength(50)
                         .HasColumnType("nvarchar(50)");
 
+                    b.Property<string>("ShortId")
+                        .IsRequired()
+                        .HasMaxLength(6)
+                        .HasColumnType("nvarchar(6)");
+
                     b.HasKey("UserId");
 
                     b.HasIndex("Email")
+                        .IsUnique();
+
+                    b.HasIndex("ShortId")
                         .IsUnique();
 
                     b.ToTable("Users", (string)null);
@@ -817,6 +1249,25 @@ namespace DataAccessLayer.Migrations
                     b.Navigation("Event");
                 });
 
+            modelBuilder.Entity("DataAccessLayer.Database.Entities.EventParticipants", b =>
+                {
+                    b.HasOne("DataAccessLayer.Database.Entities.Events", "Event")
+                        .WithMany("EventParticipants")
+                        .HasForeignKey("EventId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("DataAccessLayer.Database.Entities.Users", "User")
+                        .WithMany("EventParticipants")
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Event");
+
+                    b.Navigation("User");
+                });
+
             modelBuilder.Entity("DataAccessLayer.Database.Entities.JudgeAssignments", b =>
                 {
                     b.HasOne("DataAccessLayer.Database.Entities.Rounds", "Round")
@@ -834,6 +1285,71 @@ namespace DataAccessLayer.Migrations
                     b.Navigation("Round");
 
                     b.Navigation("User");
+                });
+
+            modelBuilder.Entity("DataAccessLayer.Database.Entities.MentorBookings", b =>
+                {
+                    b.HasOne("DataAccessLayer.Database.Entities.Users", "Mentor")
+                        .WithMany()
+                        .HasForeignKey("MentorUserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("DataAccessLayer.Database.Entities.MentorSchedules", "Schedule")
+                        .WithMany("MentorBookings")
+                        .HasForeignKey("ScheduleId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("DataAccessLayer.Database.Entities.Teams", "Team")
+                        .WithMany("MentorBookings")
+                        .HasForeignKey("TeamId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Mentor");
+
+                    b.Navigation("Schedule");
+
+                    b.Navigation("Team");
+                });
+
+            modelBuilder.Entity("DataAccessLayer.Database.Entities.MentorSchedules", b =>
+                {
+                    b.HasOne("DataAccessLayer.Database.Entities.Users", "Mentor")
+                        .WithMany()
+                        .HasForeignKey("MentorUserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Mentor");
+                });
+
+            modelBuilder.Entity("DataAccessLayer.Database.Entities.MentoringFeedbacks", b =>
+                {
+                    b.HasOne("DataAccessLayer.Database.Entities.MentorBookings", "Booking")
+                        .WithMany("Feedbacks")
+                        .HasForeignKey("BookingId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("DataAccessLayer.Database.Entities.Users", "Mentor")
+                        .WithMany()
+                        .HasForeignKey("MentorUserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("DataAccessLayer.Database.Entities.Teams", "Team")
+                        .WithMany("MentoringFeedbacks")
+                        .HasForeignKey("TeamId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Booking");
+
+                    b.Navigation("Mentor");
+
+                    b.Navigation("Team");
                 });
 
             modelBuilder.Entity("DataAccessLayer.Database.Entities.Notifications", b =>
@@ -901,7 +1417,7 @@ namespace DataAccessLayer.Migrations
                     b.HasOne("DataAccessLayer.Database.Entities.JudgeAssignments", "JudgeAssignment")
                         .WithMany()
                         .HasForeignKey("AssignmentId")
-                        .OnDelete(DeleteBehavior.Restrict)
+                        .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
                     b.HasOne("DataAccessLayer.Database.Entities.Criteria", "Criteria")
@@ -934,6 +1450,32 @@ namespace DataAccessLayer.Migrations
                     b.Navigation("User");
                 });
 
+            modelBuilder.Entity("DataAccessLayer.Database.Entities.SubmissionAssets", b =>
+                {
+                    b.HasOne("DataAccessLayer.Database.Entities.Rounds", "Round")
+                        .WithMany("SubmissionAssets")
+                        .HasForeignKey("RoundId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("DataAccessLayer.Database.Entities.Submissions", "Submission")
+                        .WithMany("SubmissionAssets")
+                        .HasForeignKey("SubmissionId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.HasOne("DataAccessLayer.Database.Entities.Teams", "Team")
+                        .WithMany("SubmissionAssets")
+                        .HasForeignKey("TeamId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Round");
+
+                    b.Navigation("Submission");
+
+                    b.Navigation("Team");
+                });
+
             modelBuilder.Entity("DataAccessLayer.Database.Entities.Submissions", b =>
                 {
                     b.HasOne("DataAccessLayer.Database.Entities.Rounds", "Round")
@@ -945,12 +1487,38 @@ namespace DataAccessLayer.Migrations
                     b.HasOne("DataAccessLayer.Database.Entities.Teams", "Team")
                         .WithMany("Submissions")
                         .HasForeignKey("TeamId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                        .OnDelete(DeleteBehavior.SetNull);
 
                     b.Navigation("Round");
 
                     b.Navigation("Team");
+                });
+
+            modelBuilder.Entity("DataAccessLayer.Database.Entities.TeamApplications", b =>
+                {
+                    b.HasOne("DataAccessLayer.Database.Entities.TeamRecruitments", "Recruitment")
+                        .WithMany("Applications")
+                        .HasForeignKey("RecruitmentId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("DataAccessLayer.Database.Entities.Teams", "Team")
+                        .WithMany()
+                        .HasForeignKey("TeamId")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .IsRequired();
+
+                    b.HasOne("DataAccessLayer.Database.Entities.Users", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .IsRequired();
+
+                    b.Navigation("Recruitment");
+
+                    b.Navigation("Team");
+
+                    b.Navigation("User");
                 });
 
             modelBuilder.Entity("DataAccessLayer.Database.Entities.TeamMembers", b =>
@@ -972,12 +1540,28 @@ namespace DataAccessLayer.Migrations
                     b.Navigation("User");
                 });
 
+            modelBuilder.Entity("DataAccessLayer.Database.Entities.TeamRecruitments", b =>
+                {
+                    b.HasOne("DataAccessLayer.Database.Entities.Teams", "Team")
+                        .WithMany()
+                        .HasForeignKey("TeamId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Team");
+                });
+
             modelBuilder.Entity("DataAccessLayer.Database.Entities.Teams", b =>
                 {
                     b.HasOne("DataAccessLayer.Database.Entities.Categories", "Category")
                         .WithMany("Teams")
                         .HasForeignKey("CategoryId")
                         .OnDelete(DeleteBehavior.Cascade);
+
+                    b.HasOne("DataAccessLayer.Database.Entities.Events", "Event")
+                        .WithMany("Teams")
+                        .HasForeignKey("EventId")
+                        .OnDelete(DeleteBehavior.Restrict);
 
                     b.HasOne("DataAccessLayer.Database.Entities.Users", "TeamLeader")
                         .WithMany()
@@ -987,7 +1571,20 @@ namespace DataAccessLayer.Migrations
 
                     b.Navigation("Category");
 
+                    b.Navigation("Event");
+
                     b.Navigation("TeamLeader");
+                });
+
+            modelBuilder.Entity("DataAccessLayer.Database.Entities.UserSkills", b =>
+                {
+                    b.HasOne("DataAccessLayer.Database.Entities.Users", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("User");
                 });
 
             modelBuilder.Entity("DataAccessLayer.Database.Entities.Categories", b =>
@@ -1014,7 +1611,21 @@ namespace DataAccessLayer.Migrations
 
                     b.Navigation("EventCriteria");
 
+                    b.Navigation("EventParticipants");
+
                     b.Navigation("Rounds");
+
+                    b.Navigation("Teams");
+                });
+
+            modelBuilder.Entity("DataAccessLayer.Database.Entities.MentorBookings", b =>
+                {
+                    b.Navigation("Feedbacks");
+                });
+
+            modelBuilder.Entity("DataAccessLayer.Database.Entities.MentorSchedules", b =>
+                {
+                    b.Navigation("MentorBookings");
                 });
 
             modelBuilder.Entity("DataAccessLayer.Database.Entities.Rounds", b =>
@@ -1024,6 +1635,8 @@ namespace DataAccessLayer.Migrations
                     b.Navigation("JudgeAssignments");
 
                     b.Navigation("Rankings");
+
+                    b.Navigation("SubmissionAssets");
 
                     b.Navigation("Submissions");
                 });
@@ -1040,11 +1653,24 @@ namespace DataAccessLayer.Migrations
                     b.Navigation("Eliminations");
 
                     b.Navigation("Scores");
+
+                    b.Navigation("SubmissionAssets");
+                });
+
+            modelBuilder.Entity("DataAccessLayer.Database.Entities.TeamRecruitments", b =>
+                {
+                    b.Navigation("Applications");
                 });
 
             modelBuilder.Entity("DataAccessLayer.Database.Entities.Teams", b =>
                 {
+                    b.Navigation("MentorBookings");
+
+                    b.Navigation("MentoringFeedbacks");
+
                     b.Navigation("Rankings");
+
+                    b.Navigation("SubmissionAssets");
 
                     b.Navigation("Submissions");
 
@@ -1053,6 +1679,8 @@ namespace DataAccessLayer.Migrations
 
             modelBuilder.Entity("DataAccessLayer.Database.Entities.Users", b =>
                 {
+                    b.Navigation("EventParticipants");
+
                     b.Navigation("RefreshTokens");
 
                     b.Navigation("TeamMembers");

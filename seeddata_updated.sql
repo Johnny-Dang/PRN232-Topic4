@@ -1,11 +1,11 @@
 -- =========================================================
--- SEED DATA SCRIPT - 2 TEAMS, 4 MEMBERS EACH (FULLY HARDCODED GUID)
+-- SEED DATA SCRIPT - SEAL Hackathon
+-- Schema aligned with backend/DAL/Database/Entities
+-- Password for all users: 123456
 -- =========================================================
 USE SEAL_Hackathon;
 GO
 
-<<<<<<< Updated upstream
-=======
 -- Clear existing data (in reverse dependency order)
 DELETE FROM MentoringFeedbacks;
 DELETE FROM MentorBookings;
@@ -37,47 +37,28 @@ DELETE FROM Events;
 DELETE FROM RefreshTokens;
 DELETE FROM Users;
 
->>>>>>> Stashed changes
 -- =========================================================
--- 1. USERS & STUDENT PROFILES
+-- 1. USERS AND STUDENT PROFILES
 -- =========================================================
-<<<<<<< Updated upstream
--- Password: Demo@123
-INSERT INTO Users (UserID, Email, Password, FullName, Phone, Role, AccountStatus, CreatedAt) VALUES
--- Team Leaders
-('00000000-0000-0000-0000-000000000001','leader.phoenix@fpt.edu.vn','$2a$12$cmjmB596X0SzOyRAPapDUeaWFG7lZDmVtJnNI9hCl7R72ljs8AL.i',N'Trần Minh Đức','0901000001','TeamLeader','Approved',GETDATE()),
-('00000000-0000-0000-0000-000000000005','leader.beta@fpt.edu.vn','$2a$12$cmjmB596X0SzOyRAPapDUeaWFG7lZDmVtJnNI9hCl7R72ljs8AL.i',N'Phạm Gia Huy','0901000005','TeamLeader','Approved',GETDATE()),
-=======
 INSERT INTO Users (UserId, Email, Password, FullName, Phone, ShortId, Role, AccountStatus, CreatedAt) VALUES
 -- Team leaders
 ('00000000-0000-0000-0000-000000000001','leader.phoenix@fpt.edu.vn','$2a$12$AWgb9KdKy9sz7BM4KUxXxuH0tPdjFNp.ccFtpnmgB.Zfjv8zXaufm',N'Daniel Tran','0901000001','TM0001','TeamLeader','Approved',GETDATE()),
 ('00000000-0000-0000-0000-000000000005','leader.beta@fpt.edu.vn','$2a$12$AWgb9KdKy9sz7BM4KUxXxuH0tPdjFNp.ccFtpnmgB.Zfjv8zXaufm',N'Henry Pham','0901000005','TM0002','TeamLeader','Approved',GETDATE()),
->>>>>>> Stashed changes
 
--- Team Members - Team Phoenix
-('00000000-0000-0000-0000-000000000002','member.phoenix1@fpt.edu.vn','$2a$12$cmjmB596X0SzOyRAPapDUeaWFG7lZDmVtJnNI9hCl7R72ljs8AL.i',N'Nguyễn Thanh Nam','0901000002','TeamMember','Approved',GETDATE()),
-('00000000-0000-0000-0000-000000000003','member.phoenix2@fpt.edu.vn','$2a$12$cmjmB596X0SzOyRAPapDUeaWFG7lZDmVtJnNI9hCl7R72ljs8AL.i',N'Lê Hoàng Anh','0901000003','TeamMember','Approved',GETDATE()),
-('00000000-0000-0000-0000-000000000004','member.phoenix3@uit.edu.vn','$2a$12$cmjmB596X0SzOyRAPapDUeaWFG7lZDmVtJnNI9hCl7R72ljs8AL.i',N'Võ Minh Khang','0901000004','TeamMember','Approved',GETDATE()),
+-- Team members - Phoenix AI
+('00000000-0000-0000-0000-000000000002','member.phoenix1@fpt.edu.vn','$2a$12$AWgb9KdKy9sz7BM4KUxXxuH0tPdjFNp.ccFtpnmgB.Zfjv8zXaufm',N'Noah Nguyen','0901000002','TM0003','TeamMember','Approved',GETDATE()),
+('00000000-0000-0000-0000-000000000003','member.phoenix2@fpt.edu.vn','$2a$12$AWgb9KdKy9sz7BM4KUxXxuH0tPdjFNp.ccFtpnmgB.Zfjv8zXaufm',N'Leo Le','0901000003','TM0004','TeamMember','Approved',GETDATE()),
+('00000000-0000-0000-0000-000000000004','member.phoenix3@uit.edu.vn','$2a$12$AWgb9KdKy9sz7BM4KUxXxuH0tPdjFNp.ccFtpnmgB.Zfjv8zXaufm',N'Kevin Vo','0901000004','TM0005','TeamMember','Approved',GETDATE()),
 
--- Team Members - Team Beta
-('00000000-0000-0000-0000-000000000006','member.beta1@fpt.edu.vn','$2a$12$cmjmB596X0SzOyRAPapDUeaWFG7lZDmVtJnNI9hCl7R72ljs8AL.i',N'Trương Quốc Bảo','0901000006','TeamMember','Approved',GETDATE()),
-('00000000-0000-0000-0000-000000000007','member.beta2@hcmus.edu.vn','$2a$12$cmjmB596X0SzOyRAPapDUeaWFG7lZDmVtJnNI9hCl7R72ljs8AL.i',N'Đặng Minh Triết','0901000007','TeamMember','Approved',GETDATE()),
-('00000000-0000-0000-0000-000000000008','member.beta3@hcmute.edu.vn','$2a$12$cmjmB596X0SzOyRAPapDUeaWFG7lZDmVtJnNI9hCl7R72ljs8AL.i',N'Bùi Nhật Long','0901000008','TeamMember','Approved',GETDATE()),
+-- Team members - Beta Coders
+('00000000-0000-0000-0000-000000000006','member.beta1@fpt.edu.vn','$2a$12$AWgb9KdKy9sz7BM4KUxXxuH0tPdjFNp.ccFtpnmgB.Zfjv8zXaufm',N'Brian Truong','0901000006','TM0006','TeamMember','Approved',GETDATE()),
+('00000000-0000-0000-0000-000000000007','member.beta2@hcmus.edu.vn','$2a$12$AWgb9KdKy9sz7BM4KUxXxuH0tPdjFNp.ccFtpnmgB.Zfjv8zXaufm',N'Tristan Dang','0901000007','TM0007','TeamMember','Approved',GETDATE()),
+('00000000-0000-0000-0000-000000000008','member.beta3@hcmute.edu.vn','$2a$12$AWgb9KdKy9sz7BM4KUxXxuH0tPdjFNp.ccFtpnmgB.Zfjv8zXaufm',N'Logan Bui','0901000008','TM0008','TeamMember','Approved',GETDATE()),
 
 -- Mentors
-('00000000-0000-0000-0000-000000000009','mentor.ai@fpt.edu.vn','$2a$12$cmjmB596X0SzOyRAPapDUeaWFG7lZDmVtJnNI9hCl7R72ljs8AL.i',N'Phạm Văn Tùng','0901000009','Mentor','Approved',GETDATE()),
-('00000000-0000-0000-0000-000000000010','mentor.web@fpt.edu.vn','$2a$12$cmjmB596X0SzOyRAPapDUeaWFG7lZDmVtJnNI9hCl7R72ljs8AL.i',N'Nguyễn Thị Hương','0901000010','Mentor','Approved',GETDATE()),
+('00000000-0000-0000-0000-000000000009','mentor.ai@fpt.edu.vn','$2a$12$AWgb9KdKy9sz7BM4KUxXxuH0tPdjFNp.ccFtpnmgB.Zfjv8zXaufm',N'Tony Pham','0901000009','ME0001','Mentor','Approved',GETDATE()),
+('00000000-0000-0000-0000-000000000010','mentor.web@fpt.edu.vn','$2a$12$AWgb9KdKy9sz7BM4KUxXxuH0tPdjFNp.ccFtpnmgB.Zfjv8zXaufm',N'Hannah Nguyen','0901000010','ME0002','Mentor','Approved',GETDATE()),
 
-<<<<<<< Updated upstream
--- Judges
-('00000000-0000-0000-0000-000000000011','judge.internal1@fpt.edu.vn','$2a$12$cmjmB596X0SzOyRAPapDUeaWFG7lZDmVtJnNI9hCl7R72ljs8AL.i',N'Lê Minh Hải','0901000011','Judge','Approved',GETDATE()),
-('00000000-0000-0000-0000-000000000012','judge.internal2@fpt.edu.vn','$2a$12$cmjmB596X0SzOyRAPapDUeaWFG7lZDmVtJnNI9hCl7R72ljs8AL.i',N'Trần Bảo Lâm','0901000012','Judge','Approved',GETDATE()),
-
--- Event Coordinators
-('00000000-0000-0000-0000-000000000013','coordinator.se@fpt.edu.vn','$2a$12$cmjmB596X0SzOyRAPapDUeaWFG7lZDmVtJnNI9hCl7R72ljs8AL.i',N'Trần Điều Phối','0901000013','Coordinator','Approved',GETDATE()),
-('00000000-0000-0000-0000-000000000014','coordinator.pdp@fpt.edu.vn','$2a$12$cmjmB596X0SzOyRAPapDUeaWFG7lZDmVtJnNI9hCl7R72ljs8AL.i',N'Nguyễn Event Manager','0901000014','Coordinator','Approved',GETDATE());
-
-=======
 -- Judges (must have AccountStatus = 'Active' to submit scores)
 ('00000000-0000-0000-0000-000000000011','judge.internal1@fpt.edu.vn','$2a$12$AWgb9KdKy9sz7BM4KUxXxuH0tPdjFNp.ccFtpnmgB.Zfjv8zXaufm',N'Harry Le','0901000011','JU0001','Judge','Active',GETDATE()),
 ('00000000-0000-0000-0000-000000000012','judge.internal2@fpt.edu.vn','$2a$12$AWgb9KdKy9sz7BM4KUxXxuH0tPdjFNp.ccFtpnmgB.Zfjv8zXaufm',N'Lam Tran','0901000012','JU0002','Judge','Active',GETDATE()),
@@ -85,7 +66,6 @@ INSERT INTO Users (UserId, Email, Password, FullName, Phone, ShortId, Role, Acco
 -- Event coordinators
 ('00000000-0000-0000-0000-000000000013','coordinator.se@fpt.edu.vn','$2a$12$AWgb9KdKy9sz7BM4KUxXxuH0tPdjFNp.ccFtpnmgB.Zfjv8zXaufm',N'Casey Tran','0901000013','CO0001','Coordinator','Approved',GETDATE()),
 ('00000000-0000-0000-0000-000000000014','coordinator.pdp@fpt.edu.vn','$2a$12$AWgb9KdKy9sz7BM4KUxXxuH0tPdjFNp.ccFtpnmgB.Zfjv8zXaufm',N'Morgan Nguyen','0901000014','CO0002','Coordinator','Approved',GETDATE()),
->>>>>>> Stashed changes
 
 -- Applicants / Candidates (for recruitment and applications simulation)
 ('00000000-0000-0000-0000-000000000015','applicant.ai@fpt.edu.vn','$2a$12$AWgb9KdKy9sz7BM4KUxXxuH0tPdjFNp.ccFtpnmgB.Zfjv8zXaufm',N'Alex Johnson','0901000015','AP0001','TeamMember','Approved',GETDATE()),
@@ -95,28 +75,17 @@ INSERT INTO StudentProfiles (ProfileId, UserId, StudentType, StudentCode, Univer
 ('A1111111-1111-1111-1111-111111111101', '00000000-0000-0000-0000-000000000001', 'FPT', 'SE170001', 'FPT University'),
 ('A1111111-1111-1111-1111-111111111102', '00000000-0000-0000-0000-000000000002', 'FPT', 'SE170002', 'FPT University'),
 ('A1111111-1111-1111-1111-111111111103', '00000000-0000-0000-0000-000000000003', 'FPT', 'SE170003', 'FPT University'),
-('A1111111-1111-1111-1111-111111111104', '00000000-0000-0000-0000-000000000004', 'External', 'UIT001', 'UIT'),
+('A1111111-1111-1111-1111-111111111104', '00000000-0000-0000-0000-000000000004', 'External', 'UIT001', 'University of Information Technology'),
 ('A1111111-1111-1111-1111-111111111105', '00000000-0000-0000-0000-000000000005', 'FPT', 'SE170010', 'FPT University'),
 ('A1111111-1111-1111-1111-111111111106', '00000000-0000-0000-0000-000000000006', 'FPT', 'SE170011', 'FPT University'),
-<<<<<<< Updated upstream
-('A1111111-1111-1111-1111-111111111107', '00000000-0000-0000-0000-000000000007', 'External', 'HCMUS001', 'HCMUS'),
-('A1111111-1111-1111-1111-111111111108', '00000000-0000-0000-0000-000000000008', 'External', 'UTE001', 'HCMUTE');
-=======
 ('A1111111-1111-1111-1111-111111111107', '00000000-0000-0000-0000-000000000007', 'External', 'HCMUS001', 'University of Science HCMC'),
 ('A1111111-1111-1111-1111-111111111108', '00000000-0000-0000-0000-000000000008', 'External', 'UTE001', 'HCMC University of Technology and Education'),
 ('A1111111-1111-1111-1111-111111111115', '00000000-0000-0000-0000-000000000015', 'FPT', 'SE170115', 'FPT University'),
 ('A1111111-1111-1111-1111-111111111116', '00000000-0000-0000-0000-000000000016', 'FPT', 'SE170116', 'FPT University');
->>>>>>> Stashed changes
 
 -- =========================================================
--- 2. EVENTS, ROUNDS & CATEGORIES
+-- 2. EVENTS, ROUNDS, CATEGORIES, AND MENTORS
 -- =========================================================
-<<<<<<< Updated upstream
-INSERT INTO Events (EventID, EventName, Season, Year, Description, StartDate, EndDate) VALUES
-('E0000000-0000-0000-0000-000000000001','SEAL Spring 2026','Spring',2026, N'Software Engineering Agile League Spring 2026', '2026-03-01', '2026-04-30'),
-('E0000000-0000-0000-0000-000000000002','SEAL Summer 2026','Summer',2026, N'Software Engineering Agile League Summer 2026', '2026-06-01', '2026-07-30'),
-('E0000000-0000-0000-0000-000000000003','SEAL Fall 2026','Fall',2026, N'Software Engineering Agile League Fall 2026', '2026-09-01', '2026-10-31');
-=======
 INSERT INTO Events (
     EventId, EventName, Season, Year, Description, StartDate, EndDate,
     Status, IsPublished, PublishedAt, PublishedBy, IsFeatured,
@@ -182,7 +151,6 @@ INSERT INTO Events (
     N'Scholarship and outstanding project awards',
     0
 );
->>>>>>> Stashed changes
 
 INSERT INTO Rounds (RoundId, EventId, RoundName, RoundOrder, SubmissionDeadline, StartDate, EndDate) VALUES
 ('A0000000-0000-0000-0000-000000000001','E0000000-0000-0000-0000-000000000001','Preliminary Round',1,'2026-03-20','2026-03-01','2026-03-25'),
@@ -201,19 +169,6 @@ INSERT INTO Categories (CategoryId, EventId, CategoryName, Description) VALUES
 ('C0000000-0000-0000-0000-000000000006','E0000000-0000-0000-0000-000000000003','AI/ML Solution',N'Machine Learning projects'),
 ('C0000000-0000-0000-0000-000000000007','E0000000-0000-0000-0000-000000000003','IoT Solution',N'Internet of Things projects');
 
-<<<<<<< Updated upstream
-INSERT INTO CategoryMentors (CategoryMentorId, CategoryID, UserId) VALUES
-('B1111111-1111-1111-1111-111111111101','C0000000-0000-0000-0000-000000000001','00000000-0000-0000-0000-000000000009'),
-('B1111111-1111-1111-1111-111111111102','C0000000-0000-0000-0000-000000000003','00000000-0000-0000-0000-000000000009'),
-('B1111111-1111-1111-1111-111111111103','C0000000-0000-0000-0000-000000000006','00000000-0000-0000-0000-000000000010');
-
--- =========================================================
--- 3. TEAMS & MEMBERS
--- =========================================================
-INSERT INTO Teams (TeamID, TeamName, TeamLeaderId, CategoryID, TeamStatus) VALUES
-('70000000-0000-0000-0000-000000000001','Phoenix AI','00000000-0000-0000-0000-000000000001','C0000000-0000-0000-0000-000000000003','Active'),
-('70000000-0000-0000-0000-000000000002','Beta Coders','00000000-0000-0000-0000-000000000005','C0000000-0000-0000-0000-000000000001','Active');
-=======
 INSERT INTO CategoryMentors (CategoryMentorId, CategoryId, UserId, Status) VALUES
 ('B1111111-1111-1111-1111-111111111101','C0000000-0000-0000-0000-000000000001','00000000-0000-0000-0000-000000000009','Approved'),
 ('B1111111-1111-1111-1111-111111111102','C0000000-0000-0000-0000-000000000003','00000000-0000-0000-0000-000000000009','Approved'),
@@ -225,7 +180,6 @@ INSERT INTO CategoryMentors (CategoryMentorId, CategoryId, UserId, Status) VALUE
 INSERT INTO Teams (TeamId, TeamName, TeamLeaderId, EventId, CategoryId, TeamStatus, HealthStatus) VALUES
 ('70000000-0000-0000-0000-000000000001','Phoenix AI','00000000-0000-0000-0000-000000000001','E0000000-0000-0000-0000-000000000001','C0000000-0000-0000-0000-000000000003','Active','Green'),
 ('70000000-0000-0000-0000-000000000002','Beta Coders','00000000-0000-0000-0000-000000000005','E0000000-0000-0000-0000-000000000001','C0000000-0000-0000-0000-000000000001','Active','Green');
->>>>>>> Stashed changes
 
 INSERT INTO TeamMembers (TeamMemberId, TeamId, UserId, JoinDate) VALUES
 ('91111111-1111-1111-1111-111111111101','70000000-0000-0000-0000-000000000001','00000000-0000-0000-0000-000000000001','2026-02-15'),
@@ -239,8 +193,6 @@ INSERT INTO TeamMembers (TeamMemberId, TeamId, UserId, JoinDate) VALUES
 -- Sophia Martinez (Accepted applicant who joined Team Beta Coders)
 ('91111111-1111-1111-1111-111111111109','70000000-0000-0000-0000-000000000002','00000000-0000-0000-0000-000000000016','2026-02-18');
 
-<<<<<<< Updated upstream
-=======
 INSERT INTO EventParticipants (EventParticipantId, EventId, UserId, RegisteredAt, Status) VALUES
 ('A1111111-1111-1111-1111-111111111101','E0000000-0000-0000-0000-000000000001','00000000-0000-0000-0000-000000000001','2026-02-15','Registered'),
 ('A1111111-1111-1111-1111-111111111102','E0000000-0000-0000-0000-000000000001','00000000-0000-0000-0000-000000000002','2026-02-15','Registered'),
@@ -263,21 +215,13 @@ INSERT INTO Notifications (NotificationId, UserId, Message, IsRead, CreatedAt) V
 ('F2000000-0000-0000-0000-000000000001', '00000000-0000-0000-0000-000000000001', N'[NOTIFICATION] Team Phoenix AI đã đăng ký SEAL Spring 2026.', 0, '2026-02-17 09:00:00'),
 ('F2000000-0000-0000-0000-000000000002', '00000000-0000-0000-0000-000000000005', N'[NOTIFICATION] Team Beta Coders đã đăng ký SEAL Spring 2026.', 1, '2026-02-17 09:05:00');
 
->>>>>>> Stashed changes
 -- =========================================================
--- 4. JUDGING TEMPLATES & CRITERIA
+-- 4. JUDGING TEMPLATES AND CRITERIA
 -- =========================================================
-<<<<<<< Updated upstream
-INSERT INTO SubmissionTemplates (TemplateID, TemplateName, Description) VALUES
-('F0000000-0000-0000-0000-000000000001','Default Hackathon Template',N'Tiêu chuẩn đánh giá phần mềm chung'),
-('F0000000-0000-0000-0000-000000000002','AI Hackathon Template',N'Tiêu chuẩn đánh giá dự án AI chuyên sâu'),
-('F0000000-0000-0000-0000-000000000003','Mobile Template',N'Tiêu chuẩn đánh giá ứng dụng di động');
-=======
 INSERT INTO SubmissionTemplates (TemplateId, TemplateName, Description) VALUES
 ('F0000000-0000-0000-0000-000000000001','Default Hackathon Template',N'General software evaluation criteria'),
 ('F0000000-0000-0000-0000-000000000002','AI Hackathon Template',N'Advanced AI project evaluation criteria'),
 ('F0000000-0000-0000-0000-000000000003','Mobile Template',N'Mobile application evaluation criteria');
->>>>>>> Stashed changes
 
 INSERT INTO Criteria (CriteriaId, TemplateId, CriteriaName, Weight) VALUES
 ('CC000000-0000-0000-0000-000000000001','F0000000-0000-0000-0000-000000000001','Innovation',0.4),
@@ -290,34 +234,22 @@ INSERT INTO Criteria (CriteriaId, TemplateId, CriteriaName, Weight) VALUES
 ('CC000000-0000-0000-0000-000000000008','F0000000-0000-0000-0000-000000000003','Performance',0.35),
 ('CC000000-0000-0000-0000-000000000009','F0000000-0000-0000-0000-000000000003','Code Quality',0.3);
 
-<<<<<<< Updated upstream
--- Linking Criteria to Events (Sửa NEWID() thành GUID cố định)
-INSERT INTO EventCriteria (EventCriteriaId, EventID, CriteriaID, Weight) VALUES
-=======
 INSERT INTO EventCriteria (EventCriteriaId, EventId, CriteriaId, Weight) VALUES
->>>>>>> Stashed changes
 ('ECA00001-0001-0001-0001-000000000001','E0000000-0000-0000-0000-000000000001','CC000000-0000-0000-0000-000000000001',0.4),
 ('ECA00001-0001-0001-0001-000000000002','E0000000-0000-0000-0000-000000000001','CC000000-0000-0000-0000-000000000002',0.3),
 ('ECA00001-0001-0001-0001-000000000003','E0000000-0000-0000-0000-000000000001','CC000000-0000-0000-0000-000000000003',0.3),
 ('ECA00001-0001-0001-0001-000000000004','E0000000-0000-0000-0000-000000000002','CC000000-0000-0000-0000-000000000001',0.35),
 ('ECA00001-0001-0001-0001-000000000005','E0000000-0000-0000-0000-000000000002','CC000000-0000-0000-0000-000000000004',0.35),
-('ECA00001-0001-0001-0001-000000000006','E0000000-0000-0000-0000-000000000002','CC000000-0000-0000-0000-000000000006',0.3),
+('ECA00001-0001-0001-0001-000000000006','E0000000-0000-0000-0000-000000000002','CC000000-0000-0000-0000-000000000006',0.35),
 ('ECA00001-0001-0001-0001-000000000007','E0000000-0000-0000-0000-000000000003','CC000000-0000-0000-0000-000000000001',0.4),
 ('ECA00001-0001-0001-0001-000000000008','E0000000-0000-0000-0000-000000000003','CC000000-0000-0000-0000-000000000002',0.3),
 ('ECA00001-0001-0001-0001-000000000009','E0000000-0000-0000-0000-000000000003','CC000000-0000-0000-0000-000000000003',0.3);
 
 -- =========================================================
-<<<<<<< Updated upstream
--- 5. SUBMISSIONS & SCORING
--- =========================================================
--- JudgeAssignments (Sửa NEWID() thành GUID cố định)
-INSERT INTO JudgeAssignments (AssignmentId, UserId, RoundID) VALUES
-=======
 -- 5. SUBMISSIONS AND SCORING
 -- (Set IsCalibrationSample = 1 for D...0001, D...0002, D...0005, D...0009 to align with CalibrationScores)
 -- =========================================================
 INSERT INTO JudgeAssignments (AssignmentId, UserId, RoundId) VALUES
->>>>>>> Stashed changes
 ('AAA00001-0001-0001-0001-000000000001','00000000-0000-0000-0000-000000000011','A0000000-0000-0000-0000-000000000001'),
 ('AAA00001-0001-0001-0001-000000000002','00000000-0000-0000-0000-000000000012','A0000000-0000-0000-0000-000000000001'),
 ('AAA00001-0001-0001-0001-000000000003','00000000-0000-0000-0000-000000000011','A0000000-0000-0000-0000-000000000002'),
@@ -327,14 +259,6 @@ INSERT INTO JudgeAssignments (AssignmentId, UserId, RoundId) VALUES
 ('AAA00001-0001-0001-0001-000000000007','00000000-0000-0000-0000-000000000011','A0000000-0000-0000-0000-000000000005'),
 ('AAA00001-0001-0001-0001-000000000008','00000000-0000-0000-0000-000000000012','A0000000-0000-0000-0000-000000000006');
 
-<<<<<<< Updated upstream
--- Ensure your table column names match your database schema. 
--- Replace 'RepositoryURL' and 'DemoURL' with 'RepoURL' and 'VideoURL' if your schema requires the shorter names.
-INSERT INTO Submissions (SubmissionID, TeamID, RoundID, RepositoryURL, DemoURL, SlideURL, SubmittedAt, Status) VALUES
--- Event 1 - Preliminary
-('D0000000-0000-0000-0000-000000000001', '70000000-0000-0000-0000-000000000001', 'A0000000-0000-0000-0000-000000000001', 'https://github.com/phoenix-ai/project-v1', 'https://youtube.com/phoenix-demo-1', 'https://drive.google.com/phoenix-slide-1', '2026-03-19 14:00:00', 'Submitted'),
-('D0000000-0000-0000-0000-000000000002', '70000000-0000-0000-0000-000000000002', 'A0000000-0000-0000-0000-000000000001', 'https://github.com/beta-coders/web-project', 'https://youtube.com/beta-demo-1', 'https://drive.google.com/beta-slide-1', '2026-03-19 15:30:00', 'Submitted'),
-=======
 INSERT INTO Submissions (SubmissionId, TeamId, RoundId, RepositoryURL, DemoURL, SlideURL, SubmittedAt, Status, IsCalibrationSample, CalibrationTitle) VALUES
 ('D0000000-0000-0000-0000-000000000001', '70000000-0000-0000-0000-000000000001', 'A0000000-0000-0000-0000-000000000001', 'https://github.com/phoenix-ai/project-v1', 'https://youtube.com/phoenix-demo-1', 'https://drive.google.com/phoenix-slide-1', '2026-03-19 14:00:00', 'CalibrationSample', 1, N'Baseline AI Project'),
 ('D0000000-0000-0000-0000-000000000002', '70000000-0000-0000-0000-000000000002', 'A0000000-0000-0000-0000-000000000001', 'https://github.com/beta-coders/web-project', 'https://youtube.com/beta-demo-1', 'https://drive.google.com/beta-slide-1', '2026-03-19 15:30:00', 'CalibrationSample', 1, N'Baseline Web Project'),
@@ -343,41 +267,38 @@ INSERT INTO Submissions (SubmissionId, TeamId, RoundId, RepositoryURL, DemoURL, 
 ('D0000000-0000-0000-0000-000000000005', '70000000-0000-0000-0000-000000000001', 'A0000000-0000-0000-0000-000000000003', 'https://github.com/phoenix-ai/project-final', 'https://youtube.com/phoenix-demo-final', 'https://drive.google.com/phoenix-slide-final', '2026-04-18 09:00:00', 'CalibrationSample', 1, N'Calibration Sample Round 3'),
 ('D0000000-0000-0000-0000-000000000006', '70000000-0000-0000-0000-000000000002', 'A0000000-0000-0000-0000-000000000003', 'https://github.com/beta-coders/web-project-final', 'https://youtube.com/beta-demo-final', 'https://drive.google.com/beta-slide-final', '2026-04-18 10:00:00', 'Submitted', 0, N''),
 ('D0000000-0000-0000-0000-000000000007', '70000000-0000-0000-0000-000000000001', 'A0000000-0000-0000-0000-000000000004', 'https://github.com/phoenix-ai/blockchain-project', 'https://youtube.com/phoenix-demo-3', 'https://drive.google.com/phoenix-slide-3', '2026-06-18 13:00:00', 'Submitted', 0, N''),
-('D0000000-0000-0000-0000-000000000008', '70000000-0000-0000-0000-000000000002', 'A0000000-0000-0000-0000-000000000004', 'https://github.com/beta-coders/web-v3', 'https://youtube.com/beta-demo-3', 'https://drive.google.com/beta-slide-3', '2026-06-18 14:30:00', 'Submitted', 0, N''),
+('D0000000-0000-0000-0000-000000000002', '70000000-0000-0000-0000-000000000002', 'A0000000-0000-0000-0000-000000000004', 'https://github.com/beta-coders/web-v3', 'https://youtube.com/beta-demo-3', 'https://drive.google.com/beta-slide-3', '2026-06-18 14:30:00', 'Submitted', 0, N''),
 ('D0000000-0000-0000-0000-000000000009', '70000000-0000-0000-0000-000000000001', 'A0000000-0000-0000-0000-000000000005', 'https://github.com/phoenix-ai/blockchain-final', 'https://youtube.com/phoenix-demo-final-2', 'https://drive.google.com/phoenix-slide-final-2', '2026-07-08 10:00:00', 'CalibrationSample', 1, N'Calibration Sample Round 5'),
 ('D0000000-0000-0000-0000-000000000010', '70000000-0000-0000-0000-000000000002', 'A0000000-0000-0000-0000-000000000005', 'https://github.com/beta-coders/web-final', 'https://youtube.com/beta-demo-final', 'https://drive.google.com/beta-slide-final', '2026-07-08 11:00:00', 'Submitted', 0, N''),
 ('D0000000-0000-0000-0000-000000000011', '70000000-0000-0000-0000-000000000001', 'A0000000-0000-0000-0000-000000000006', 'https://github.com/phoenix-ai/ml-project', 'https://youtube.com/phoenix-demo-4', 'https://drive.google.com/phoenix-slide-4', '2026-09-19 15:00:00', 'Submitted', 0, N''),
 ('D0000000-0000-0000-0000-000000000012', '70000000-0000-0000-0000-000000000002', 'A0000000-0000-0000-0000-000000000006', 'https://github.com/beta-coders/iot-project', 'https://youtube.com/beta-demo-4', 'https://drive.google.com/beta-slide-4', '2026-09-19 16:00:00', 'Submitted', 0, N'');
->>>>>>> Stashed changes
 
--- Event 1 - Semi Final
-('D0000000-0000-0000-0000-000000000003', '70000000-0000-0000-0000-000000000001', 'A0000000-0000-0000-0000-000000000002', 'https://github.com/phoenix-ai/project-v2', 'https://youtube.com/phoenix-demo-2', 'https://drive.google.com/phoenix-slide-2', '2026-04-02 10:00:00', 'Submitted'),
-('D0000000-0000-0000-0000-000000000004', '70000000-0000-0000-0000-000000000002', 'A0000000-0000-0000-0000-000000000002', 'https://github.com/beta-coders/web-project-v2', 'https://youtube.com/beta-demo-2', 'https://drive.google.com/beta-slide-2', '2026-04-02 11:00:00', 'Submitted'),
+-- Entity: SubmissionAssets (all required Cloudinary metadata columns are present).
+INSERT INTO SubmissionAssets (
+    SubmissionAssetId, SubmissionId, TeamId, RoundId, AssetType, Provider,
+    CloudinaryAssetId, PublicId, SecureUrl, ResourceType, OriginalFileName,
+    Format, ContentType, FileSize, DurationSeconds, UploadStatus, CreatedAt, UploadedAt
+) VALUES
+(
+    'F3000000-0000-0000-0000-000000000001', 'D0000000-0000-0000-0000-000000000001',
+    '70000000-0000-0000-0000-000000000001', 'A0000000-0000-0000-0000-000000000001',
+    'VideoDemo', 'Cloudinary', 'seed-video-asset-001', 'seal-hackathon/seed/phoenix-demo-1',
+    'https://res.cloudinary.com/hackathon/video/upload/v1/seal-hackathon/seed/phoenix-demo-1.mp4',
+    'video', 'phoenix-demo-1.mp4', 'mp4', 'video/mp4', 10485760, 120.5, 'Uploaded',
+    '2026-03-19 13:45:00', '2026-03-19 13:46:00'
+),
+(
+    'F3000000-0000-0000-0000-000000000002', 'D0000000-0000-0000-0000-000000000002',
+    '70000000-0000-0000-0000-000000000002', 'A0000000-0000-0000-0000-000000000001',
+    'SlideDocument', 'Cloudinary', 'seed-slide-asset-002', 'seal-hackathon/seed/beta-slide-1',
+    'https://res.cloudinary.com/hackathon/raw/upload/v1/seal-hackathon/seed/beta-slide-1.pdf',
+    'raw', 'beta-slide-1.pdf', 'pdf', 'application/pdf', 524288, NULL, 'Uploaded',
+    '2026-03-19 15:15:00', '2026-03-19 15:16:00'
+);
 
--- Event 1 - Final
-('D0000000-0000-0000-0000-000000000005', '70000000-0000-0000-0000-000000000001', 'A0000000-0000-0000-0000-000000000003', 'https://github.com/phoenix-ai/project-final', 'https://youtube.com/phoenix-demo-final', 'https://drive.google.com/phoenix-slide-final', '2026-04-18 09:00:00', 'Submitted'),
-('D0000000-0000-0000-0000-000000000006', '70000000-0000-0000-0000-000000000002', 'A0000000-0000-0000-0000-000000000003', 'https://github.com/beta-coders/web-project-final', 'https://youtube.com/beta-demo-final', 'https://drive.google.com/beta-slide-final', '2026-04-18 10:00:00', 'Submitted'),
-
--- Event 2 - Preliminary
-('D0000000-0000-0000-0000-000000000007', '70000000-0000-0000-0000-000000000001', 'A0000000-0000-0000-0000-000000000004', 'https://github.com/phoenix-ai/blockchain-project', 'https://youtube.com/phoenix-demo-3', 'https://drive.google.com/phoenix-slide-3', '2026-06-18 13:00:00', 'Submitted'),
-('D0000000-0000-0000-0000-000000000008', '70000000-0000-0000-0000-000000000002', 'A0000000-0000-0000-0000-000000000004', 'https://github.com/beta-coders/web-v3', 'https://youtube.com/beta-demo-3', 'https://drive.google.com/beta-slide-3', '2026-06-18 14:30:00', 'Submitted'),
-
--- Event 2 - Final
-('D0000000-0000-0000-0000-000000000009', '70000000-0000-0000-0000-000000000001', 'A0000000-0000-0000-0000-000000000005', 'https://github.com/phoenix-ai/blockchain-final', 'https://youtube.com/phoenix-demo-final-2', 'https://drive.google.com/phoenix-slide-final-2', '2026-07-08 10:00:00', 'Submitted'),
-('D0000000-0000-0000-0000-000000000010', '70000000-0000-0000-0000-000000000002', 'A0000000-0000-0000-0000-000000000005', 'https://github.com/beta-coders/web-final', 'https://youtube.com/beta-demo-final', 'https://drive.google.com/beta-slide-final', '2026-07-08 11:00:00', 'Submitted'),
-
--- Event 3 - Preliminary
-('D0000000-0000-0000-0000-000000000011', '70000000-0000-0000-0000-000000000001', 'A0000000-0000-0000-0000-000000000006', 'https://github.com/phoenix-ai/ml-project', 'https://youtube.com/phoenix-demo-4', 'https://drive.google.com/phoenix-slide-4', '2026-09-19 15:00:00', 'Submitted'),
-('D0000000-0000-0000-0000-000000000012', '70000000-0000-0000-0000-000000000002', 'A0000000-0000-0000-0000-000000000006', 'https://github.com/beta-coders/iot-project', 'https://youtube.com/beta-demo-4', 'https://drive.google.com/beta-slide-4', '2026-09-19 16:00:00', 'Submitted');
-
-<<<<<<< Updated upstream
-INSERT INTO Scores (ScoreID, SubmissionID, AssignmentId, CriteriaID, ScoreValue, Comment, ScoredAt) VALUES
--- Event 1 - Preliminary Round (Sử dụng mã Assignment 0001 và 0002)
-=======
 -- (Scores updated to correct corresponding round JudgeAssignmentId mismatches)
 INSERT INTO Scores (ScoreId, SubmissionId, AssignmentId, CriteriaId, ScoreValue, Comment, ScoredAt) VALUES
 -- D...0001 (Round 1, uses Round 1 Assignment ...0001)
->>>>>>> Stashed changes
 ('D1111111-1111-1111-1111-000000000001','D0000000-0000-0000-0000-000000000001','AAA00001-0001-0001-0001-000000000001','CC000000-0000-0000-0000-000000000001',9.0, N'Excellent AI innovation', '2026-03-21 09:00:00'),
 ('D1111111-1111-1111-1111-000000000002','D0000000-0000-0000-0000-000000000001','AAA00001-0001-0001-0001-000000000001','CC000000-0000-0000-0000-000000000002',8.5, N'Good architecture and scalability', '2026-03-21 09:10:00'),
 ('D1111111-1111-1111-1111-000000000003','D0000000-0000-0000-0000-000000000001','AAA00001-0001-0001-0001-000000000001','CC000000-0000-0000-0000-000000000003',8.0, N'Nice interface and user experience', '2026-03-21 09:20:00'),
@@ -387,11 +308,7 @@ INSERT INTO Scores (ScoreId, SubmissionId, AssignmentId, CriteriaId, ScoreValue,
 ('D1111111-1111-1111-1111-000000000005','D0000000-0000-0000-0000-000000000002','AAA00001-0001-0001-0001-000000000002','CC000000-0000-0000-0000-000000000002',8.8, N'Excellent technical implementation', '2026-03-21 10:10:00'),
 ('D1111111-1111-1111-1111-000000000006','D0000000-0000-0000-0000-000000000002','AAA00001-0001-0001-0001-000000000002','CC000000-0000-0000-0000-000000000003',8.5, N'Good UI/UX design', '2026-03-21 10:20:00'),
 
-<<<<<<< Updated upstream
--- Event 1 - Semi Final Round (Sử dụng mã Assignment 0003 và 0004)
-=======
 -- D...0003 (Round 2, uses Round 2 Assignment ...0003)
->>>>>>> Stashed changes
 ('D1111111-1111-1111-1111-000000000007','D0000000-0000-0000-0000-000000000003','AAA00001-0001-0001-0001-000000000003','CC000000-0000-0000-0000-000000000001',9.2, N'Outstanding AI innovation and improvements', '2026-04-04 09:00:00'),
 ('D1111111-1111-1111-1111-000000000008','D0000000-0000-0000-0000-000000000003','AAA00001-0001-0001-0001-000000000003','CC000000-0000-0000-0000-000000000002',8.8, N'Excellent technical complexity', '2026-04-04 09:10:00'),
 ('D1111111-1111-1111-1111-000000000009','D0000000-0000-0000-0000-000000000003','AAA00001-0001-0001-0001-000000000003','CC000000-0000-0000-0000-000000000003',8.3, N'Very good UI improvements', '2026-04-04 09:20:00'),
@@ -401,44 +318,6 @@ INSERT INTO Scores (ScoreId, SubmissionId, AssignmentId, CriteriaId, ScoreValue,
 ('D1111111-1111-1111-1111-000000000011','D0000000-0000-0000-0000-000000000004','AAA00001-0001-0001-0001-000000000004','CC000000-0000-0000-0000-000000000002',9.0, N'Outstanding technical implementation', '2026-04-04 10:10:00'),
 ('D1111111-1111-1111-1111-000000000012','D0000000-0000-0000-0000-000000000004','AAA00001-0001-0001-0001-000000000004','CC000000-0000-0000-0000-000000000003',8.8, N'Excellent UI/UX', '2026-04-04 10:20:00'),
 
-<<<<<<< Updated upstream
--- Event 1 - Final Round (Sử dụng mã Assignment 0005 và 0004 làm mẫu cho giám khảo tương ứng)
-('D1111111-1111-1111-1111-000000000013','D0000000-0000-0000-0000-000000000005','AAA00001-0001-0001-0001-000000000005','CC000000-0000-0000-0000-000000000001',9.3, N'Outstanding AI innovation - Champion level', '2026-04-21 09:00:00'),
-('D1111111-1111-1111-1111-000000000014','D0000000-0000-0000-0000-000000000005','AAA00001-0001-0001-0001-000000000005','CC000000-0000-0000-0000-000000000002',9.0, N'Excellent technical complexity', '2026-04-21 09:10:00'),
-('D1111111-1111-1111-1111-000000000015','D0000000-0000-0000-0000-000000000005','AAA00001-0001-0001-0001-000000000005','CC000000-0000-0000-0000-000000000003',8.5, N'Very good UI/UX', '2026-04-21 09:20:00'),
-('D1111111-1111-1111-1111-000000000016','D0000000-0000-0000-0000-000000000006','AAA00001-0001-0001-0001-000000000004','CC000000-0000-0000-0000-000000000001',8.9, N'Excellent web innovation', '2026-04-21 10:00:00'),
-('D1111111-1111-1111-1111-000000000017','D0000000-0000-0000-0000-000000000006','AAA00001-0001-0001-0001-000000000004','CC000000-0000-0000-0000-000000000002',8.8, N'Excellent technical implementation', '2026-04-21 10:10:00'),
-('D1111111-1111-1111-1111-000000000018','D0000000-0000-0000-0000-000000000006','AAA00001-0001-0001-0001-000000000004','CC000000-0000-0000-0000-000000000003',8.7, N'Very good UI/UX', '2026-04-21 10:20:00'),
-
--- Event 2 - Preliminary Round (Sử dụng mã Assignment 0006 và 0005)
-('D1111111-1111-1111-1111-000000000019','D0000000-0000-0000-0000-000000000007','AAA00001-0001-0001-0001-000000000006','CC000000-0000-0000-0000-000000000001',8.5, N'Good blockchain innovation', '2026-06-20 10:00:00'),
-('D1111111-1111-1111-1111-000000000020','D0000000-0000-0000-0000-000000000007','AAA00001-0001-0001-0001-000000000006','CC000000-0000-0000-0000-000000000004',8.2, N'Good technical implementation', '2026-06-20 10:10:00'),
-('D1111111-1111-1111-1111-000000000021','D0000000-0000-0000-0000-000000000007','AAA00001-0001-0001-0001-000000000006','CC000000-0000-0000-0000-000000000006',7.8, N'Good design', '2026-06-20 10:20:00'),
-('D1111111-1111-1111-1111-000000000022','D0000000-0000-0000-0000-000000000008','AAA00001-0001-0001-0001-000000000005','CC000000-0000-0000-0000-000000000001',8.0, N'Good web innovation', '2026-06-20 11:00:00'),
-('D1111111-1111-1111-1111-000000000023','D0000000-0000-0000-0000-000000000008','AAA00001-0001-0001-0001-000000000005','CC000000-0000-0000-0000-000000000004',8.5, N'Good technical implementation', '2026-06-20 11:10:00'),
-('D1111111-1111-1111-1111-000000000024','D0000000-0000-0000-0000-000000000008','AAA00001-0001-0001-0001-000000000005','CC000000-0000-0000-0000-000000000006',8.3, N'Good UI', '2026-06-20 11:20:00'),
-
--- Event 2 - Final Round (Sử dụng mã Assignment 0007 và 0008)
-('D1111111-1111-1111-1111-000000000025','D0000000-0000-0000-0000-000000000009','AAA00001-0001-0001-0001-000000000007','CC000000-0000-0000-0000-000000000001',9.0, N'Excellent blockchain innovation', '2026-07-10 09:00:00'),
-('D1111111-1111-1111-1111-000000000026','D0000000-0000-0000-0000-000000000009','AAA00001-0001-0001-0001-000000000007','CC000000-0000-0000-0000-000000000004',8.8, N'Excellent technical complexity', '2026-07-10 09:10:00'),
-('D1111111-1111-1111-1111-000000000027','D0000000-0000-0000-0000-000000000009','AAA00001-0001-0001-0001-000000000007','CC000000-0000-0000-0000-000000000006',8.5, N'Good design', '2026-07-10 09:20:00'),
-('D1111111-1111-1111-1111-000000000028','D0000000-0000-0000-0000-000000000010','AAA00001-0001-0001-0001-000000000008','CC000000-0000-0000-0000-000000000001',8.8, N'Excellent web innovation', '2026-07-10 10:00:00'),
-('D1111111-1111-1111-1111-000000000029','D0000000-0000-0000-0000-000000000010','AAA00001-0001-0001-0001-000000000008','CC000000-0000-0000-0000-000000000004',8.7, N'Excellent technical implementation', '2026-07-10 10:10:00'),
-('D1111111-1111-1111-1111-000000000030','D0000000-0000-0000-0000-000000000010','AAA00001-0001-0001-0001-000000000008','CC000000-0000-0000-0000-000000000006',8.6, N'Good UI', '2026-07-10 10:20:00'),
-
--- Event 3 - Preliminary Round (Sử dụng mã Assignment 0007 và 0008 làm mẫu)
-('D1111111-1111-1111-1111-000000000031','D0000000-0000-0000-0000-000000000011','AAA00001-0001-0001-0001-000000000007','CC000000-0000-0000-0000-000000000001',9.0, N'Excellent ML innovation', '2026-09-21 10:00:00'),
-('D1111111-1111-1111-1111-000000000032','D0000000-0000-0000-0000-000000000011','AAA00001-0001-0001-0001-000000000007','CC000000-0000-0000-0000-000000000002',8.8, N'Excellent model implementation', '2026-09-21 10:10:00'),
-('D1111111-1111-1111-1111-000000000033','D0000000-0000-0000-0000-000000000011','AAA00001-0001-0001-0001-000000000007','CC000000-0000-0000-0000-000000000003',8.3, N'Good visualization', '2026-09-21 10:20:00'),
-('D1111111-1111-1111-1111-000000000034','D0000000-0000-0000-0000-000000000012','AAA00001-0001-0001-0001-000000000008','CC000000-0000-0000-0000-000000000001',8.2, N'Good IoT innovation', '2026-09-21 11:00:00'),
-('D1111111-1111-1111-1111-000000000035','D0000000-0000-0000-0000-000000000012','AAA00001-0001-0001-0001-000000000008','CC000000-0000-0000-0000-000000000002',8.0, N'Good technical implementation', '2026-09-21 11:10:00');
--- CalibrationScores (Sửa NEWID() thành GUID cố định dạng CAC00001-...)
-INSERT INTO CalibrationScores (CalibrationId, JudgeID, CriteriaID, SubmissionID, ScoreValue) VALUES
-('CAC00001-0001-0001-0001-000000000001','00000000-0000-0000-0000-000000000011','CC000000-0000-0000-0000-000000000001','D0000000-0000-0000-0000-000000000001',9.0),
-('CAC00001-0001-0001-0001-000000000002','00000000-0000-0000-0000-000000000012','CC000000-0000-0000-0000-000000000001','D0000000-0000-0000-0000-000000000002',8.5),
-('CAC00001-0001-0001-0001-000000000003','00000000-0000-0000-0000-000000000011','CC000000-0000-0000-0000-000000000001','D0000000-0000-0000-0000-000000000005',9.3),
-('CAC00001-0001-0001-0001-000000000004','00000000-0000-0000-0000-000000000012','CC000000-0000-0000-0000-000000000001','D0000000-0000-0000-0000-000000000009',9.0);
-=======
 -- D...0005 (Round 3, uses Round 3 Assignment ...0005)
 ('D1111111-1111-1111-1111-000000000013','D0000000-0000-0000-0000-000000000005','AAA00001-0001-0001-0001-000000000005','CC000000-0000-0000-0000-000000000001',9.3, N'Outstanding AI innovation - champion level', '2026-04-21 09:00:00'),
 ('D1111111-1111-1111-1111-000000000014','D0000000-0000-0000-0000-000000000005','AAA00001-0001-0001-0001-000000000005','CC000000-0000-0000-0000-000000000002',9.0, N'Excellent technical complexity', '2026-04-21 09:10:00'),
@@ -455,9 +334,9 @@ INSERT INTO CalibrationScores (CalibrationId, JudgeID, CriteriaID, SubmissionID,
 ('D1111111-1111-1111-1111-000000000021','D0000000-0000-0000-0000-000000000007','AAA00001-0001-0001-0001-000000000006','CC000000-0000-0000-0000-000000000006',7.8, N'Good design', '2026-06-20 10:20:00'),
 
 -- D...0008 (Round 4, uses Round 4 Assignment ...0006)
-('D1111111-1111-1111-1111-000000000022','D0000000-0000-0000-0000-000000000008','AAA00001-0001-0001-0001-000000000006','CC000000-0000-0000-0000-000000000001',8.0, N'Good web innovation', '2026-06-20 11:00:00'),
-('D1111111-1111-1111-1111-000000000023','D0000000-0000-0000-0000-000000000008','AAA00001-0001-0001-0001-000000000006','CC000000-0000-0000-0000-000000000004',8.5, N'Good technical implementation', '2026-06-20 11:10:00'),
-('D1111111-1111-1111-1111-000000000024','D0000000-0000-0000-0000-000000000008','AAA00001-0001-0001-0001-000000000006','CC000000-0000-0000-0000-000000000006',8.3, N'Good UI', '2026-06-20 11:20:00'),
+('D1111111-1111-1111-1111-000000000022','D0000000-0000-0000-0000-000000000002','AAA00001-0001-0001-0001-000000000006','CC000000-0000-0000-0000-000000000001',8.0, N'Good web innovation', '2026-06-20 11:00:00'),
+('D1111111-1111-1111-1111-000000000023','D0000000-0000-0000-0000-000000000002','AAA00001-0001-0001-0001-000000000006','CC000000-0000-0000-0000-000000000004',8.5, N'Good technical implementation', '2026-06-20 11:10:00'),
+('D1111111-1111-1111-1111-000000000024','D0000000-0000-0000-0000-000000000002','AAA00001-0001-0001-0001-000000000006','CC000000-0000-0000-0000-000000000006',8.3, N'Good UI', '2026-06-20 11:20:00'),
 
 -- D...0009 (Round 5, uses Round 5 Assignment ...0007)
 ('D1111111-1111-1111-1111-000000000025','D0000000-0000-0000-0000-000000000009','AAA00001-0001-0001-0001-000000000007','CC000000-0000-0000-0000-000000000001',9.0, N'Excellent blockchain innovation', '2026-07-10 09:00:00'),
@@ -483,18 +362,11 @@ INSERT INTO CalibrationScores (CalibrationId, JudgeId, CriteriaId, SubmissionId,
 ('CAC00001-0001-0001-0001-000000000002','00000000-0000-0000-0000-000000000012','CC000000-0000-0000-0000-000000000001','D0000000-0000-0000-0000-000000000002',8.5, N'Calibration baseline score', '2026-03-21 08:05:00'),
 ('CAC00001-0001-0001-0001-000000000003','00000000-0000-0000-0000-000000000011','CC000000-0000-0000-0000-000000000001','D0000000-0000-0000-0000-000000000005',9.3, N'Calibration baseline score', '2026-04-21 08:00:00'),
 ('CAC00001-0001-0001-0001-000000000004','00000000-0000-0000-0000-000000000012','CC000000-0000-0000-0000-000000000001','D0000000-0000-0000-0000-000000000009',9.0, N'Calibration baseline score', '2026-07-10 08:00:00');
->>>>>>> Stashed changes
 
 -- =========================================================
--- 6. LOGS & ELIMINATIONS
+-- 6. LOGS, ADVANCEMENT, RANKINGS, AND ELIMINATIONS
 -- =========================================================
-<<<<<<< Updated upstream
--- AuditLogs (Sửa NEWID() thành GUID cố định dạng LAA00001-...)
-
-INSERT INTO AuditLogs (LogID, UserID, ActionType, OldValue, NewValue, CreatedAt) VALUES
-=======
 INSERT INTO AuditLogs (LogId, UserId, ActionType, OldValue, NewValue, CreatedAt) VALUES
->>>>>>> Stashed changes
 ('AAA00001-0001-0001-0001-000000000001','00000000-0000-0000-0000-000000000013','EVENT_CREATE', NULL, '{"EventName":"SEAL Spring 2026"}', '2026-01-01 08:00:00'),
 ('AAA00001-0001-0001-0001-000000000002','00000000-0000-0000-0000-000000000013','EVENT_CREATE', NULL, '{"EventName":"SEAL Summer 2026"}', '2026-05-01 08:00:00'),
 ('AAA00001-0001-0001-0001-000000000003','00000000-0000-0000-0000-000000000014','EVENT_CREATE', NULL, '{"EventName":"SEAL Fall 2026"}', '2026-08-01 08:00:00'),
@@ -506,54 +378,26 @@ INSERT INTO AuditLogs (LogId, UserId, ActionType, OldValue, NewValue, CreatedAt)
 ('AAA00001-0001-0001-0001-000000000009','00000000-0000-0000-0000-000000000012','SCORING_CREATE', NULL, '{"Score":8.5}', '2026-03-21 10:00:00'),
 ('AAA00001-0001-0001-0001-000000000010','00000000-0000-0000-0000-000000000001','TEAM_UPDATE', '{"Status":"Pending"}', '{"Status":"Active"}', '2026-02-20 10:00:00');
 
-
 INSERT INTO AdvancementRules (RuleId, RoundId, CategoryId, TopN) VALUES
--- Event 1 - Sơ loại (RD001): Web Application (CAT001) lấy Top 2
 ('B0000000-0000-0000-0000-000000000001', 'A0000000-0000-0000-0000-000000000001', 'C0000000-0000-0000-0000-000000000001', 2),
--- Event 1 - Sơ loại (RD001): AI Solution (CAT003) lấy Top 2
 ('B0000000-0000-0000-0000-000000000002', 'A0000000-0000-0000-0000-000000000001', 'C0000000-0000-0000-0000-000000000003', 2),
--- Event 1 - Bán kết (RD002): AI Solution (CAT003) lấy Top 1 vào Chung Kết
 ('B0000000-0000-0000-0000-000000000003', 'A0000000-0000-0000-0000-000000000002', 'C0000000-0000-0000-0000-000000000003', 1),
--- Event 2 - Sơ loại (RD004): Blockchain Solution (CAT004) lấy Top 1
 ('B0000000-0000-0000-0000-000000000004', 'A0000000-0000-0000-0000-000000000004', 'C0000000-0000-0000-0000-000000000004', 1);
 
-INSERT INTO Rankings (RankingId, TeamId, RoundId, RankPosition, TotalScore) VALUES
--- Event 1 - Preliminary Round (RD001)
--- TEAM002 (Beta Coders) có tổng điểm: 8.5 + 8.8 + 8.5 = 25.8
-('A1000000-0000-0000-0000-000000000001', '70000000-0000-0000-0000-000000000002', 'A0000000-0000-0000-0000-000000000001', 1, 25.80),
--- TEAM001 (Phoenix AI) có tổng điểm: 9.0 + 8.5 + 8.0 = 25.5
-('A1000000-0000-0000-0000-000000000002', '70000000-0000-0000-0000-000000000001', 'A0000000-0000-0000-0000-000000000001', 2, 25.50),
-
--- Event 1 - Semi Final Round (RD002)
--- TEAM002 (Beta Coders): 8.8 + 9.0 + 8.8 = 26.6
-('A1000000-0000-0000-0000-000000000003', '70000000-0000-0000-0000-000000000002', 'A0000000-0000-0000-0000-000000000002', 1, 26.60),
--- TEAM001 (Phoenix AI): 9.2 + 8.8 + 8.3 = 26.3
-('A1000000-0000-0000-0000-000000000004', '70000000-0000-0000-0000-000000000001', 'A0000000-0000-0000-0000-000000000002', 2, 26.30),
-
--- Event 1 - Final Round (RD003)
--- TEAM001 (Phoenix AI): 9.3 + 9.0 + 8.5 = 26.8 -> Quán quân Event 1
-('A1000000-0000-0000-0000-000000000005', '70000000-0000-0000-0000-000000000001', 'A0000000-0000-0000-0000-000000000003', 1, 26.80),
--- TEAM002 (Beta Coders): 8.9 + 8.8 + 8.7 = 26.4 -> Á quân Event 1
-('A1000000-0000-0000-0000-000000000006', '70000000-0000-0000-0000-000000000002', 'A0000000-0000-0000-0000-000000000003', 2, 26.40),
-
--- Event 2 - Preliminary Round (RD004)
--- TEAM002 (Beta Coders): 8.0 + 8.5 + 8.3 = 24.8
-('A1000000-0000-0000-0000-000000000007', '70000000-0000-0000-0000-000000000002', 'A0000000-0000-0000-0000-000000000004', 1, 24.80),
--- TEAM001 (Phoenix AI): 8.5 + 8.2 + 7.8 = 24.5
-('A1000000-0000-0000-0000-000000000008', '70000000-0000-0000-0000-000000000001', 'A0000000-0000-0000-0000-000000000004', 2, 24.50);
+INSERT INTO Rankings (RankingId, TeamId, RoundId, CategoryId, RankPosition, TotalScore, GeneratedAt) VALUES
+('A1000000-0000-0000-0000-000000000001', '70000000-0000-0000-0000-000000000002', 'A0000000-0000-0000-0000-000000000001', 'C0000000-0000-0000-0000-000000000001', 1, 25.80, '2026-03-22 08:00:00'),
+('A1000000-0000-0000-0000-000000000002', '70000000-0000-0000-0000-000000000001', 'A0000000-0000-0000-0000-000000000001', 'C0000000-0000-0000-0000-000000000003', 2, 25.50, '2026-03-22 08:00:00'),
+('A1000000-0000-0000-0000-000000000003', '70000000-0000-0000-0000-000000000002', 'A0000000-0000-0000-0000-000000000002', 'C0000000-0000-0000-0000-000000000001', 1, 26.60, '2026-04-05 08:00:00'),
+('A1000000-0000-0000-0000-000000000004', '70000000-0000-0000-0000-000000000001', 'A0000000-0000-0000-0000-000000000002', 'C0000000-0000-0000-0000-000000000003', 2, 26.30, '2026-04-05 08:00:00'),
+('A1000000-0000-0000-0000-000000000005', '70000000-0000-0000-0000-000000000001', 'A0000000-0000-0000-0000-000000000003', 'C0000000-0000-0000-0000-000000000003', 1, 26.80, '2026-04-22 08:00:00'),
+('A1000000-0000-0000-0000-000000000006', '70000000-0000-0000-0000-000000000002', 'A0000000-0000-0000-0000-000000000003', 'C0000000-0000-0000-0000-000000000001', 2, 26.40, '2026-04-22 08:00:00'),
+('A1000000-0000-0000-0000-000000000007', '70000000-0000-0000-0000-000000000002', 'A0000000-0000-0000-0000-000000000004', 'C0000000-0000-0000-0000-000000000001', 1, 24.80, '2026-06-21 08:00:00'),
+('A1000000-0000-0000-0000-000000000008', '70000000-0000-0000-0000-000000000001', 'A0000000-0000-0000-0000-000000000004', 'C0000000-0000-0000-0000-000000000003', 2, 24.50, '2026-06-21 08:00:00');
 
 INSERT INTO Eliminations (EliminationId, SubmissionId, UserId, Reason, EliminatedAt) VALUES
--- Event 1 - Bài nộp SUB006 của Beta Coders (TEAM002) bị loại ở Chung kết do tổng điểm thấp hơn đối thủ
 ('E0000000-0000-0000-0000-000000000001', 'D0000000-0000-0000-0000-000000000006', '00000000-0000-0000-0000-000000000013', N'Lower total score in final round comparison', '2026-04-22 11:00:00'),
-
--- Event 3 - Bài nộp SUB012 của Beta Coders (TEAM002) bị loại ở vòng Sơ loại do vi phạm quy chế sao chép mã nguồn (Plagiarism)
 ('E0000000-0000-0000-0000-000000000002', 'D0000000-0000-0000-0000-000000000012', '00000000-0000-0000-0000-000000000014', N'Plagiarism detected in repository source code', '2026-09-22 14:30:00');
 
-<<<<<<< Updated upstream
-select * from Users
-
-select * from Categories
-=======
 -- =========================================================
 -- 7. NEWLY ADDED ENTITIES (UserSkills, Recruitments, Bookings, Feedbacks)
 -- =========================================================
@@ -591,4 +435,3 @@ INSERT INTO MentoringFeedbacks (FeedbackId, BookingId, TeamId, MentorUserId, Hea
 -- Verify data
 SELECT * FROM Users;
 SELECT * FROM Categories;
->>>>>>> Stashed changes

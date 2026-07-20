@@ -1,8 +1,8 @@
+using System;
 using BusinessLogicLayer.DTOs.Requests;
 using BusinessLogicLayer.Services.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using System;
 
 namespace SEALHackathonSystem.Controllers
 {
@@ -55,6 +55,36 @@ namespace SEALHackathonSystem.Controllers
             {
                 var auth = await _userService.LoginAsync(request);
                 return Ok(auth);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+        }
+
+        [Authorize(Policy = "CoordinatorOnly")]
+        [HttpGet("mentors")]
+        public async Task<IActionResult> GetMentors()
+        {
+            try
+            {
+                var mentors = await _userService.GetByRoleAsync("Mentor");
+                return Ok(mentors);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+        }
+
+        [Authorize]
+        [HttpGet("search")]
+        public async Task<IActionResult> Search([FromQuery] string query)
+        {
+            try
+            {
+                var users = await _userService.SearchUsersAsync(query);
+                return Ok(users);
             }
             catch (Exception ex)
             {

@@ -40,6 +40,16 @@ namespace DataAccessLayer.Repositories.Implementations
             return await _dbSet.FirstOrDefaultAsync(predicate, cancellationToken);
         }
 
+        public virtual async Task<T?> FirstOrDefaultWithIncludeAsync(Expression<Func<T, bool>> predicate, params Expression<Func<T, object>>[] includeProperties)
+        {
+            return await includeProperties.Aggregate<Expression<Func<T, object>>, IQueryable<T>>(_dbSet, (current, includeProperty) => current.Include(includeProperty)).FirstOrDefaultAsync(predicate);
+        }
+
+        public virtual async Task<IReadOnlyList<T>> GetAllWithIncludeAsync(params Expression<Func<T, object>>[] includeProperties)
+        {
+            return await includeProperties.Aggregate<Expression<Func<T, object>>, IQueryable<T>>(_dbSet, (current, includeProperty) => current.Include(includeProperty)).ToListAsync();
+        }
+
         public virtual async Task<T> AddAsync(T entity, CancellationToken cancellationToken = default)
         {
             await _dbSet.AddAsync(entity, cancellationToken);

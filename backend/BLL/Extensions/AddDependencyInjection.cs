@@ -1,3 +1,4 @@
+using BusinessLogicLayer.DTOs.Requests;
 using BusinessLogicLayer.Services.Implements;
 using BusinessLogicLayer.Services.Interfaces;
 using DataAccessLayer.Database;
@@ -7,12 +8,6 @@ using DataAccessLayer.Repositories.Interfaces;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Runtime.CompilerServices;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace BusinessLogicLayer.Extensions
 {
@@ -25,6 +20,9 @@ namespace BusinessLogicLayer.Extensions
                     configuration.GetConnectionString("DefaultConnection"),
                     b => b.MigrationsAssembly("DataAccessLayer"))
             );
+
+            serviceCollection.Configure<CloudinaryOptions>(
+                configuration.GetSection(CloudinaryOptions.SectionName));
 
             serviceCollection.AddScoped<IApplicationDbContext>(sp =>
                 sp.GetRequiredService<ApplicationDbContext>()
@@ -45,12 +43,19 @@ namespace BusinessLogicLayer.Extensions
             serviceCollection.AddScoped<ITeamService, TeamService>();
             serviceCollection.AddScoped<IRoundService, RoundService>();
             serviceCollection.AddScoped<ISubmissionService, SubmissionService>();
+            serviceCollection.AddScoped<ISubmissionAssetService, SubmissionAssetService>();
             serviceCollection.AddScoped<IScoresService, ScoresService>();
             serviceCollection.AddScoped<IJudgeAssignmentService, JudgeAssignmentService>();
             serviceCollection.AddScoped<INotificationService, NotificationService>();
             serviceCollection.AddScoped<IRankingService, RankingService>();
             serviceCollection.AddScoped<IEventCriteriaService, EventCriteriaService>();
             serviceCollection.AddScoped<ICalibrationService, CalibrationService>();
+            serviceCollection.AddScoped<IEventBannerUploadService, EventBannerUploadService>();
+            serviceCollection.AddScoped<ICloudinaryService, CloudinaryService>();
+            serviceCollection.AddScoped<IUserSkillService, UserSkillService>();
+            serviceCollection.AddScoped<ITeamRecruitmentService, TeamRecruitmentService>();
+            serviceCollection.AddScoped<ITeamApplicationService, TeamApplicationService>();
+            serviceCollection.AddScoped<IMentorshipService, MentorshipService>();
         }
     }
 }

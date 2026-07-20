@@ -6,18 +6,20 @@ import { Card, CardHeader, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
-import { DetailedCompetition } from '@/lib/api';
+import type { DetailedCompetition } from '@/lib/api';
 
 interface DeadlineFocusProps {
   deadlineCompetitions: DetailedCompetition[];
   loading: boolean;
   handleAction: (title: string, message: string) => void;
+  onViewDetails: (comp: DetailedCompetition) => void;
 }
 
 export default function DeadlineFocus({
   deadlineCompetitions,
   loading,
   handleAction,
+  onViewDetails,
 }: DeadlineFocusProps) {
   // Take top 3 closest to deadline
   const displayItems = deadlineCompetitions.slice(0, 3);
@@ -29,7 +31,7 @@ export default function DeadlineFocus({
       <div className="space-y-1 border-b border-slate-200 pb-5 dark:border-slate-800/80">
         <div className="flex items-center gap-2">
           <AlarmClock className="w-6 h-6 text-amber-500 animate-swing" />
-          <h3 className="text-xl font-black text-slate-850 dark:text-white">
+          <h3 className="text-xl font-black text-slate-855 dark:text-white">
             Tiêu Điểm Hạn Chót (Deadline Focus)
           </h3>
         </div>
@@ -60,7 +62,10 @@ export default function DeadlineFocus({
                   HẠN CHÓT GẤP
                 </Badge>
 
-                <h4 className="text-sm font-bold text-white group-hover:text-indigo-400 transition-colors leading-tight pt-1">
+                <h4 
+                  onClick={() => onViewDetails(comp)}
+                  className="text-sm font-bold text-white group-hover:text-indigo-400 transition-colors leading-tight pt-1 cursor-pointer"
+                >
                   {comp.Name}
                 </h4>
                 <p className="text-[10px] text-slate-400 font-semibold">
@@ -75,21 +80,30 @@ export default function DeadlineFocus({
 
                 <div className="space-y-1.5 bg-white/5 rounded-xl p-2.5 border border-white/5 mt-2">
                   <div className="flex justify-between items-center text-[10.5px]">
-                    <span className="text-slate-450 font-semibold">Hình thức:</span>
+                    <span className="text-slate-400 font-semibold">Hình thức:</span>
                     <span className="font-extrabold text-white">{comp.Format}</span>
                   </div>
                   <div className="flex justify-between items-center text-[10.5px]">
-                    <span className="text-slate-455 font-semibold">Giải thưởng:</span>
+                    <span className="text-slate-400 font-semibold">Giải thưởng:</span>
                     <span className="font-extrabold text-amber-300">{comp.Prize}</span>
                   </div>
                 </div>
 
-                <Button
-                  onClick={() => handleAction(`Đăng ký ${comp.Name}`, `Xác nhận đăng ký tham dự ${comp.Name} do thời hạn sắp kết thúc.`)}
-                  className="w-full rounded-xl bg-amber-550 hover:bg-amber-600 text-white border-none text-[11px] font-bold h-8.5 mt-3 cursor-pointer"
-                >
-                  Đăng Ký Tham Gia Ngay
-                </Button>
+                <div className="pt-2 flex gap-2 mt-3">
+                  <Button
+                    variant="outline"
+                    onClick={() => onViewDetails(comp)}
+                    className="flex-1 rounded-xl text-[11px] font-semibold h-8.5 border-slate-700 text-slate-300 hover:text-white hover:bg-slate-800 cursor-pointer"
+                  >
+                    Chi tiết
+                  </Button>
+                  <Button
+                    onClick={() => handleAction(`Đăng ký ${comp.Name}`, `Xác nhận đăng ký tham dự ${comp.Name} do thời hạn sắp kết thúc.`)}
+                    className="flex-1 rounded-xl bg-amber-500 hover:bg-amber-600 text-white border-none text-[11px] font-bold h-8.5 cursor-pointer"
+                  >
+                    Đăng ký
+                  </Button>
+                </div>
               </CardContent>
             </Card>
           ))}

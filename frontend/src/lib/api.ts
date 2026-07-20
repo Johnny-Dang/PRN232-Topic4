@@ -1,16 +1,19 @@
+import { apiClient } from "../services/api/apiClient";
+
 export interface User {
   UserID: string;
   Email: string;
   FullName: string;
   Phone: string;
-  Role: 'Leader' | 'Member' | 'Mentor' | 'Judge' | 'Coordinator';
+  ShortId: string;
+  Role: "Leader" | "Member" | "Mentor" | "Judge" | "Coordinator";
   AccountStatus: string;
 }
 
 export interface StudentProfile {
   ProfileID: string;
   UserID: string;
-  StudentType: 'FPT' | 'External';
+  StudentType: "FPT" | "External";
   StudentCode: string;
   UniversityName: string;
 }
@@ -23,6 +26,9 @@ export interface Event {
   Description: string;
   StartDate: string;
   EndDate: string;
+  Status: string;
+  IsPublished: boolean;
+  Format: string;
 }
 
 export interface Round {
@@ -46,8 +52,9 @@ export interface Team {
   TeamID: string;
   TeamName: string;
   TeamLeaderId: string;
+  EventID: string;
   CategoryID: string;
-  TeamStatus: 'Active' | 'Pending' | 'Disqualified';
+  TeamStatus: "Active" | "Pending" | "Disqualified";
 }
 
 export interface TeamMember {
@@ -65,7 +72,44 @@ export interface Submission {
   DemoURL: string;
   SlideURL: string;
   SubmittedAt: string;
-  Status: 'Submitted' | 'Graded' | 'Disqualified';
+  Status: "Submitted" | "Updated" | "Graded" | "Disqualified";
+}
+
+export type SubmissionAssetType = "VideoDemo" | "SlideDocument";
+
+export interface SubmissionAsset {
+  SubmissionAssetId: string;
+  SubmissionId: string;
+  TeamID: string;
+  RoundID: string;
+  AssetType: SubmissionAssetType;
+  Provider: string;
+  CloudinaryAssetId: string;
+  PublicId: string;
+  SecureUrl: string;
+  ResourceType: "video" | "raw";
+  OriginalFileName: string;
+  Format: string;
+  ContentType: string;
+  FileSize: number;
+  DurationSeconds?: number | null;
+  UploadStatus: "Pending" | "Uploaded" | "Failed" | "Deleted";
+  CreatedAt: string;
+  UploadedAt?: string | null;
+}
+
+export interface CloudinaryUploadSignature {
+  SubmissionAssetId: string;
+  CloudName: string;
+  ApiKey: string;
+  Timestamp: number;
+  Signature: string;
+  Folder: string;
+  PublicId: string;
+  ResourceType: "video" | "raw";
+  UploadUrl: string;
+  AllowedFormats: string[];
+  MaxFileSize: number;
 }
 
 export interface Criteria {
@@ -80,6 +124,7 @@ export interface EventCriteria {
   EventID: string;
   CriteriaID: string;
   Weight: number;
+  CriteriaName?: string;
 }
 
 export interface Score {
@@ -91,6 +136,187 @@ export interface Score {
   Comment: string;
   ScoredAt: string;
 }
+
+// ============================================================================
+// CALIBRATION TYPES
+// ============================================================================
+
+export interface CalibrationSubmission {
+  CalibrationId: string;
+  EventId?: string;
+  EventName?: string;
+  RoundId: string;
+  RoundName?: string;
+  CalibrationTitle: string;
+  RepositoryURL?: string;
+  DemoURL?: string;
+  SlideURL?: string;
+  SubmittedAt: string;
+  Status: "Pending" | "InProgress" | "Completed";
+  JudgeCount: number;
+  TotalJudges?: number;
+}
+
+export interface CalibrationScoreInput {
+  CriteriaId: string;
+  ScoreValue: number;
+  Comment?: string;
+}
+
+export interface CalibrationScoreOutput {
+  CalibrationScoreId: string;
+  CalibrationId: string;
+  JudgeId: string;
+  JudgeCode: string;
+  CriteriaId: string;
+  CriteriaName: string;
+  ScoreValue: number;
+  Comment?: string;
+  ScoredAt: string;
+}
+
+export interface CalibrationScoreWithMyScore {
+  scores: CalibrationScoreOutput[];
+  myScore?: CalibrationScoreOutput[];
+  hasScored?: boolean;
+}
+
+export interface CriteriaVariance {
+  CriteriaId: string;
+  CriteriaName: string;
+  MeanScore: number;
+  Variance: number;
+  StandardDeviation: number;
+  MinScore: number;
+  MaxScore: number;
+  ScoreRange: number;
+}
+
+export interface JudgeSummary {
+  JudgeId: string;
+  JudgeCode: string;
+  AverageScore: number;
+  DeviationFromGroupMean: number;
+  ConsistencyLabel: "Harsher" | "Neutral" | "Lenient" | "Consistent";
+}
+
+export interface CalibrationAnalysis {
+  SubmissionId: string;
+  CalibrationTitle: string;
+  JudgeCount: number;
+  CriteriaCount: number;
+  OverallMean: number;
+  CriteriaVariance: CriteriaVariance[];
+  JudgeSummaries: JudgeSummary[];
+  InconsistencyFlags: string[];
+}
+
+export interface BackendCalibrationSubmission {
+  calibrationId?: string;
+  CalibrationId?: string;
+  submissionId?: string;
+  SubmissionId?: string;
+  eventId?: string;
+  EventId?: string;
+  eventName?: string;
+  EventName?: string;
+  roundId?: string;
+  RoundId?: string;
+  roundName?: string;
+  RoundName?: string;
+  calibrationTitle?: string;
+  CalibrationTitle?: string;
+  repositoryURL?: string;
+  RepositoryURL?: string;
+  demoURL?: string;
+  DemoURL?: string;
+  slideURL?: string;
+  SlideURL?: string;
+  submittedAt?: string;
+  SubmittedAt?: string;
+  status?: string;
+  Status?: string;
+  judgeCount?: number;
+  JudgeCount?: number;
+  totalJudges?: number;
+  TotalJudges?: number;
+}
+
+export interface BackendCalibrationScore {
+  calibrationScoreId?: string;
+  CalibrationScoreId?: string;
+  calibrationId?: string;
+  CalibrationId?: string;
+  judgeId?: string;
+  JudgeId?: string;
+  judgeCode?: string;
+  JudgeCode?: string;
+  criteriaId?: string;
+  CriteriaId?: string;
+  criteriaName?: string;
+  CriteriaName?: string;
+  scoreValue?: number;
+  ScoreValue?: number;
+  comment?: string;
+  Comment?: string;
+  scoredAt?: string;
+  ScoredAt?: string;
+}
+
+export interface BackendCalibrationAnalysis {
+  submissionId?: string;
+  SubmissionId?: string;
+  calibrationTitle?: string;
+  CalibrationTitle?: string;
+  judgeCount?: number;
+  JudgeCount?: number;
+  criteriaCount?: number;
+  CriteriaCount?: number;
+  overallMean?: number;
+  OverallMean?: number;
+  criteriaVariance?: BackendCriteriaVariance[];
+  CriteriaVariance?: BackendCriteriaVariance[];
+  judgeSummaries?: BackendJudgeSummary[];
+  JudgeSummaries?: BackendJudgeSummary[];
+  inconsistencyFlags?: string[];
+  InconsistencyFlags?: string[];
+}
+
+export interface BackendCriteriaVariance {
+  criteriaId?: string;
+  CriteriaId?: string;
+  criteriaName?: string;
+  CriteriaName?: string;
+  meanScore?: number;
+  MeanScore?: number;
+  variance?: number;
+  Variance?: number;
+  standardDeviation?: number;
+  StandardDeviation?: number;
+  minScore?: number;
+  MinScore?: number;
+  maxScore?: number;
+  MaxScore?: number;
+  scoreRange?: number;
+  ScoreRange?: number;
+}
+
+export interface BackendJudgeSummary {
+  judgeId?: string;
+  JudgeId?: string;
+  judgeCode?: string;
+  JudgeCode?: string;
+  averageScore?: number;
+  AverageScore?: number;
+  deviationFromGroupMean?: number;
+  DeviationFromGroupMean?: number;
+  consistencyLabel?: string;
+  ConsistencyLabel?: string;
+}
+
+// ============================================================================
+// EXISTING INTERFACES (keeping for reference)
+// ============================================================================
 
 export interface CalibrationScore {
   CalibrationId: string;
@@ -132,11 +358,26 @@ export interface Ranking {
   TotalScore: number;
 }
 
+export interface JudgeAssignedSubmission {
+  submissionId: string;
+  teamId: string;
+  teamName: string;
+  roundId: string;
+  assignmentId: string;
+  categoryId: string | null;
+  repositoryURL: string;
+  demoURL: string;
+  slideURL: string;
+  status: string;
+  submittedAt: string;
+  scores: Score[];
+}
+
 export interface Announcement {
   AnnouncementID: string;
   Title: string;
   Content: string;
-  Type: 'info' | 'warning' | 'success' | 'danger';
+  Type: "info" | "warning" | "success" | "danger";
   PublishedAt: string;
   EventID?: string;
   RoundID?: string;
@@ -146,12 +387,12 @@ export interface DetailedCompetition {
   ID: string;
   Name: string;
   Description: string;
-  Category: 'Technology' | 'Design' | 'Academic' | 'Startup' | 'Language' | 'Science' | 'Environment' | 'SoftSkills' | 'Volunteer' | 'Art';
+  Category: string;
   CategoryLabel: string;
-  Status: 'open' | 'expiring' | 'upcoming' | 'closed';
+  Status: "open" | "expiring" | "upcoming" | "closed";
   Deadline: string;
-  Format: 'Online' | 'Offline' | 'Hybrid';
-  Audience: 'Học sinh' | 'Sinh viên' | 'Tất cả';
+  Format: "Online" | "Offline" | "Hybrid";
+  Audience: "Hoc sinh" | "Sinh vien" | "Tat ca";
   Organizer: string;
   Prize: string;
   BannerUrl: string;
@@ -159,399 +400,6 @@ export interface DetailedCompetition {
   IsFeatured?: boolean;
 }
 
-
-// Mock database data representing seeddata_updated.sql
-export const mockUsers: User[] = [
-  { UserID: '00000000-0000-0000-0000-000000000001', Email: 'leader.phoenix@fpt.edu.vn', FullName: 'Trần Minh Đức', Phone: '0901000001', Role: 'Leader', AccountStatus: 'Approved' },
-  { UserID: '00000000-0000-0000-0000-000000000005', Email: 'leader.beta@fpt.edu.vn', FullName: 'Phạm Gia Huy', Phone: '0901000005', Role: 'Leader', AccountStatus: 'Approved' },
-  { UserID: '00000000-0000-0000-0000-000000000002', Email: 'member.phoenix1@fpt.edu.vn', FullName: 'Nguyễn Thanh Nam', Phone: '0901000002', Role: 'Member', AccountStatus: 'Approved' },
-  { UserID: '00000000-0000-0000-0000-000000000003', Email: 'member.phoenix2@fpt.edu.vn', FullName: 'Lê Hoàng Anh', Phone: '0901000003', Role: 'Member', AccountStatus: 'Approved' },
-  { UserID: '00000000-0000-0000-0000-000000000004', Email: 'member.phoenix3@uit.edu.vn', FullName: 'Võ Minh Khang', Phone: '0901000004', Role: 'Member', AccountStatus: 'Approved' },
-  { UserID: '00000000-0000-0000-0000-000000000006', Email: 'member.beta1@fpt.edu.vn', FullName: 'Trương Quốc Bảo', Phone: '0901000006', Role: 'Member', AccountStatus: 'Approved' },
-  { UserID: '00000000-0000-0000-0000-000000000007', Email: 'member.beta2@hcmus.edu.vn', FullName: 'Đặng Minh Triết', Phone: '0901000007', Role: 'Member', AccountStatus: 'Approved' },
-  { UserID: '00000000-0000-0000-0000-000000000008', Email: 'member.beta3@hcmute.edu.vn', FullName: 'Bùi Nhật Long', Phone: '0901000008', Role: 'Member', AccountStatus: 'Approved' },
-  { UserID: '00000000-0000-0000-0000-000000000009', Email: 'mentor.ai@fpt.edu.vn', FullName: 'Phạm Văn Tùng', Phone: '0901000009', Role: 'Mentor', AccountStatus: 'Approved' },
-  { UserID: '00000000-0000-0000-0000-000000000010', Email: 'mentor.web@fpt.edu.vn', FullName: 'Nguyễn Thị Hương', Phone: '0901000010', Role: 'Mentor', AccountStatus: 'Approved' },
-  { UserID: '00000000-0000-0000-0000-000000000011', Email: 'judge.internal1@fpt.edu.vn', FullName: 'Lê Minh Hải', Phone: '0901000011', Role: 'Judge', AccountStatus: 'Approved' },
-  { UserID: '00000000-0000-0000-0000-000000000012', Email: 'judge.internal2@fpt.edu.vn', FullName: 'Trần Bảo Lâm', Phone: '0901000012', Role: 'Judge', AccountStatus: 'Approved' },
-  { UserID: '00000000-0000-0000-0000-000000000013', Email: 'coordinator.se@fpt.edu.vn', FullName: 'Trần Điều Phối', Phone: '0901000013', Role: 'Coordinator', AccountStatus: 'Approved' },
-  { UserID: '00000000-0000-0000-0000-000000000014', Email: 'coordinator.pdp@fpt.edu.vn', FullName: 'Nguyễn Event Manager', Phone: '0901000014', Role: 'Coordinator', AccountStatus: 'Approved' },
-];
-
-export const mockStudentProfiles: StudentProfile[] = [
-  { ProfileID: 'A1111111-1111-1111-1111-111111111101', UserID: '00000000-0000-0000-0000-000000000001', StudentType: 'FPT', StudentCode: 'SE170001', UniversityName: 'FPT University' },
-  { ProfileID: 'A1111111-1111-1111-1111-111111111102', UserID: '00000000-0000-0000-0000-000000000002', StudentType: 'FPT', StudentCode: 'SE170002', UniversityName: 'FPT University' },
-  { ProfileID: 'A1111111-1111-1111-1111-111111111103', UserID: '00000000-0000-0000-0000-000000000003', StudentType: 'FPT', StudentCode: 'SE170003', UniversityName: 'FPT University' },
-  { ProfileID: 'A1111111-1111-1111-1111-111111111104', UserID: '00000000-0000-0000-0000-000000000004', StudentType: 'External', StudentCode: 'UIT001', UniversityName: 'UIT' },
-  { ProfileID: 'A1111111-1111-1111-1111-111111111105', UserID: '00000000-0000-0000-0000-000000000005', StudentType: 'FPT', StudentCode: 'SE170010', UniversityName: 'FPT University' },
-  { ProfileID: 'A1111111-1111-1111-1111-111111111106', UserID: '00000000-0000-0000-0000-000000000006', StudentType: 'FPT', StudentCode: 'SE170011', UniversityName: 'FPT University' },
-  { ProfileID: 'A1111111-1111-1111-1111-111111111107', UserID: '00000000-0000-0000-0000-000000000007', StudentType: 'External', StudentCode: 'HCMUS001', UniversityName: 'HCMUS' },
-  { ProfileID: 'A1111111-1111-1111-1111-111111111108', UserID: '00000000-0000-0000-0000-000000000008', StudentType: 'External', StudentCode: 'UTE001', UniversityName: 'HCMUTE' },
-];
-
-export const mockEvents: Event[] = [
-  { EventID: 'E0000000-0000-0000-0000-000000000001', EventName: 'SEAL Spring 2026', Season: 'Spring', Year: 2026, Description: 'Software Engineering Agile League Spring 2026', StartDate: '2026-03-01', EndDate: '2026-04-30' },
-  { EventID: 'E0000000-0000-0000-0000-000000000002', EventName: 'SEAL Summer 2026', Season: 'Summer', Year: 2026, Description: 'Software Engineering Agile League Summer 2026', StartDate: '2026-06-01', EndDate: '2026-07-30' },
-  { EventID: 'E0000000-0000-0000-0000-000000000003', EventName: 'SEAL Fall 2026', Season: 'Fall', Year: 2026, Description: 'Software Engineering Agile League Fall 2026', StartDate: '2026-09-01', EndDate: '2026-10-31' },
-];
-
-export const mockRounds: Round[] = [
-  { RoundID: 'A0000000-0000-0000-0000-000000000001', EventID: 'E0000000-0000-0000-0000-000000000001', RoundName: 'Preliminary Round', RoundOrder: 1, SubmissionDeadline: '2026-03-20', StartDate: '2026-03-01', EndDate: '2026-03-25' },
-  { RoundID: 'A0000000-0000-0000-0000-000000000002', EventID: 'E0000000-0000-0000-0000-000000000001', RoundName: 'Semi Final Round', RoundOrder: 2, SubmissionDeadline: '2026-04-05', StartDate: '2026-03-28', EndDate: '2026-04-07' },
-  { RoundID: 'A0000000-0000-0000-0000-000000000003', EventID: 'E0000000-0000-0000-0000-000000000001', RoundName: 'Final Round', RoundOrder: 3, SubmissionDeadline: '2026-04-20', StartDate: '2026-04-15', EndDate: '2026-04-25' },
-  { RoundID: 'A0000000-0000-0000-0000-000000000004', EventID: 'E0000000-0000-0000-0000-000000000002', RoundName: 'Preliminary Round', RoundOrder: 1, SubmissionDeadline: '2026-06-20', StartDate: '2026-06-01', EndDate: '2026-06-25' },
-  { RoundID: 'A0000000-0000-0000-0000-000000000005', EventID: 'E0000000-0000-0000-0000-000000000002', RoundName: 'Final Round', RoundOrder: 2, SubmissionDeadline: '2026-07-10', StartDate: '2026-07-01', EndDate: '2026-07-15' },
-  { RoundID: 'A0000000-0000-0000-0000-000000000006', EventID: 'E0000000-0000-0000-0000-000000000003', RoundName: 'Preliminary Round', RoundOrder: 1, SubmissionDeadline: '2026-09-20', StartDate: '2026-09-01', EndDate: '2026-09-25' },
-];
-
-export const mockCategories: Category[] = [
-  { CategoryID: 'C0000000-0000-0000-0000-000000000001', EventID: 'E0000000-0000-0000-0000-000000000001', CategoryName: 'Web Application', Description: 'Web-based software projects' },
-  { CategoryID: 'C0000000-0000-0000-0000-000000000002', EventID: 'E0000000-0000-0000-0000-000000000001', CategoryName: 'Mobile Application', Description: 'Mobile software solutions' },
-  { CategoryID: 'C0000000-0000-0000-0000-000000000003', EventID: 'E0000000-0000-0000-0000-000000000001', CategoryName: 'AI Solution', Description: 'Artificial Intelligence projects' },
-  { CategoryID: 'C0000000-0000-0000-0000-000000000004', EventID: 'E0000000-0000-0000-0000-000000000002', CategoryName: 'Blockchain Solution', Description: 'Blockchain applications' },
-  { CategoryID: 'C0000000-0000-0000-0000-000000000005', EventID: 'E0000000-0000-0000-0000-000000000002', CategoryName: 'Web Application', Description: 'Web-based software projects' },
-  { CategoryID: 'C0000000-0000-0000-0000-000000000006', EventID: 'E0000000-0000-0000-0000-000000000003', CategoryName: 'AI/ML Solution', Description: 'Machine Learning projects' },
-  { CategoryID: 'C0000000-0000-0000-0000-000000000007', EventID: 'E0000000-0000-0000-0000-000000000003', CategoryName: 'IoT Solution', Description: 'Internet of Things projects' },
-];
-
-export const mockTeams: Team[] = [
-  { TeamID: '70000000-0000-0000-0000-000000000001', TeamName: 'Phoenix AI', TeamLeaderId: '00000000-0000-0000-0000-000000000001', CategoryID: 'C0000000-0000-0000-0000-000000000003', TeamStatus: 'Active' },
-  { TeamID: '70000000-0000-0000-0000-000000000002', TeamName: 'Beta Coders', TeamLeaderId: '00000000-0000-0000-0000-000000000005', CategoryID: 'C0000000-0000-0000-0000-000000000001', TeamStatus: 'Active' },
-];
-
-export const mockTeamMembers: TeamMember[] = [
-  { TeamMemberId: '91111111-1111-1111-1111-111111111101', TeamID: '70000000-0000-0000-0000-000000000001', UserId: '00000000-0000-0000-0000-000000000001', JoinDate: '2026-02-15' },
-  { TeamMemberId: '91111111-1111-1111-1111-111111111102', TeamID: '70000000-0000-0000-0000-000000000001', UserId: '00000000-0000-0000-0000-000000000002', JoinDate: '2026-02-15' },
-  { TeamMemberId: '91111111-1111-1111-1111-111111111103', TeamID: '70000000-0000-0000-0000-000000000001', UserId: '00000000-0000-0000-0000-000000000003', JoinDate: '2026-02-16' },
-  { TeamMemberId: '91111111-1111-1111-1111-111111111104', TeamID: '70000000-0000-0000-0000-000000000001', UserId: '00000000-0000-0000-0000-000000000004', JoinDate: '2026-02-17' },
-  { TeamMemberId: '91111111-1111-1111-1111-111111111105', TeamID: '70000000-0000-0000-0000-000000000002', UserId: '00000000-0000-0000-0000-000000000005', JoinDate: '2026-02-14' },
-  { TeamMemberId: '91111111-1111-1111-1111-111111111106', TeamID: '70000000-0000-0000-0000-000000000002', UserId: '00000000-0000-0000-0000-000000000006', JoinDate: '2026-02-15' },
-  { TeamMemberId: '91111111-1111-1111-1111-111111111107', TeamID: '70000000-0000-0000-0000-000000000002', UserId: '00000000-0000-0000-0000-000000000007', JoinDate: '2026-02-16' },
-  { TeamMemberId: '91111111-1111-1111-1111-111111111108', TeamID: '70000000-0000-0000-0000-000000000002', UserId: '00000000-0000-0000-0000-000000000008', JoinDate: '2026-02-17' },
-];
-
-export const mockCriteria: Criteria[] = [
-  { CriteriaID: 'CC000000-0000-0000-0000-000000000001', TemplateID: 'F0000000-0000-0000-0000-000000000001', CriteriaName: 'Innovation', Weight: 0.4 },
-  { CriteriaID: 'CC000000-0000-0000-0000-000000000002', TemplateID: 'F0000000-0000-0000-0000-000000000001', CriteriaName: 'Technical Complexity', Weight: 0.3 },
-  { CriteriaID: 'CC000000-0000-0000-0000-000000000003', TemplateID: 'F0000000-0000-0000-0000-000000000001', CriteriaName: 'UI/UX', Weight: 0.3 },
-  { CriteriaID: 'CC000000-0000-0000-0000-000000000004', TemplateID: 'F0000000-0000-0000-0000-000000000002', CriteriaName: 'AI Accuracy', Weight: 0.4 },
-  { CriteriaID: 'CC000000-0000-0000-0000-000000000005', TemplateID: 'F0000000-0000-0000-0000-000000000002', CriteriaName: 'Model Performance', Weight: 0.3 },
-  { CriteriaID: 'CC000000-0000-0000-0000-000000000006', TemplateID: 'F0000000-0000-0000-0000-000000000002', CriteriaName: 'Business Impact', Weight: 0.3 },
-  { CriteriaID: 'CC000000-0000-0000-0000-000000000007', TemplateID: 'F0000000-0000-0000-0000-000000000003', CriteriaName: 'User Experience', Weight: 0.35 },
-  { CriteriaID: 'CC000000-0000-0000-0000-000000000008', TemplateID: 'F0000000-0000-0000-0000-000000000003', CriteriaName: 'Performance', Weight: 0.35 },
-  { CriteriaID: 'CC000000-0000-0000-0000-000000000009', TemplateID: 'F0000000-0000-0000-0000-000000000003', CriteriaName: 'Code Quality', Weight: 0.3 },
-];
-
-export const mockSubmissions: Submission[] = [
-  // Event 1 - Preliminary
-  { SubmissionID: 'D0000000-0000-0000-0000-000000000001', TeamID: '70000000-0000-0000-0000-000000000001', RoundID: 'A0000000-0000-0000-0000-000000000001', RepositoryURL: 'https://github.com/phoenix-ai/project-v1', DemoURL: 'https://youtube.com/phoenix-demo-1', SlideURL: 'https://drive.google.com/phoenix-slide-1', SubmittedAt: '2026-03-19 14:00:00', Status: 'Graded' },
-  { SubmissionID: 'D0000000-0000-0000-0000-000000000002', TeamID: '70000000-0000-0000-0000-000000000002', RoundID: 'A0000000-0000-0000-0000-000000000001', RepositoryURL: 'https://github.com/beta-coders/web-project', DemoURL: 'https://youtube.com/beta-demo-1', SlideURL: 'https://drive.google.com/beta-slide-1', SubmittedAt: '2026-03-19 15:30:00', Status: 'Graded' },
-  // Event 1 - Semi Final
-  { SubmissionID: 'D0000000-0000-0000-0000-000000000003', TeamID: '70000000-0000-0000-0000-000000000001', RoundID: 'A0000000-0000-0000-0000-000000000002', RepositoryURL: 'https://github.com/phoenix-ai/project-v2', DemoURL: 'https://youtube.com/phoenix-demo-2', SlideURL: 'https://drive.google.com/phoenix-slide-2', SubmittedAt: '2026-04-02 10:00:00', Status: 'Graded' },
-  { SubmissionID: 'D0000000-0000-0000-0000-000000000004', TeamID: '70000000-0000-0000-0000-000000000002', RoundID: 'A0000000-0000-0000-0000-000000000002', RepositoryURL: 'https://github.com/beta-coders/web-project-v2', DemoURL: 'https://youtube.com/beta-demo-2', SlideURL: 'https://drive.google.com/beta-slide-2', SubmittedAt: '2026-04-02 11:00:00', Status: 'Graded' },
-  // Event 1 - Final
-  { SubmissionID: 'D0000000-0000-0000-0000-000000000005', TeamID: '70000000-0000-0000-0000-000000000001', RoundID: 'A0000000-0000-0000-0000-000000000003', RepositoryURL: 'https://github.com/phoenix-ai/project-final', DemoURL: 'https://youtube.com/phoenix-demo-final', SlideURL: 'https://drive.google.com/phoenix-slide-final', SubmittedAt: '2026-04-18 09:00:00', Status: 'Graded' },
-  { SubmissionID: 'D0000000-0000-0000-0000-000000000006', TeamID: '70000000-0000-0000-0000-000000000002', RoundID: 'A0000000-0000-0000-0000-000000000003', RepositoryURL: 'https://github.com/beta-coders/web-project-final', DemoURL: 'https://youtube.com/beta-demo-final', SlideURL: 'https://drive.google.com/beta-slide-final', SubmittedAt: '2026-04-18 10:00:00', Status: 'Disqualified' }, // Disqualified due to low score comparison
-  // Event 2 - Preliminary
-  { SubmissionID: 'D0000000-0000-0000-0000-000000000007', TeamID: '70000000-0000-0000-0000-000000000001', RoundID: 'A0000000-0000-0000-0000-000000000004', RepositoryURL: 'https://github.com/phoenix-ai/blockchain-project', DemoURL: 'https://youtube.com/phoenix-demo-3', SlideURL: 'https://drive.google.com/phoenix-slide-3', SubmittedAt: '2026-06-18 13:00:00', Status: 'Graded' },
-  { SubmissionID: 'D0000000-0000-0000-0000-000000000008', TeamID: '70000000-0000-0000-0000-000000000002', RoundID: 'A0000000-0000-0000-0000-000000000004', RepositoryURL: 'https://github.com/beta-coders/web-v3', DemoURL: 'https://youtube.com/beta-demo-3', SlideURL: 'https://drive.google.com/beta-slide-3', SubmittedAt: '2026-06-18 14:30:00', Status: 'Graded' },
-  // Event 2 - Final
-  { SubmissionID: 'D0000000-0000-0000-0000-000000000009', TeamID: '70000000-0000-0000-0000-000000000001', RoundID: 'A0000000-0000-0000-0000-000000000005', RepositoryURL: 'https://github.com/phoenix-ai/blockchain-final', DemoURL: 'https://youtube.com/phoenix-demo-final-2', SlideURL: 'https://drive.google.com/phoenix-slide-final-2', SubmittedAt: '2026-07-08 10:00:00', Status: 'Graded' },
-  { SubmissionID: 'D0000000-0000-0000-0000-000000000010', TeamID: '70000000-0000-0000-0000-000000000002', RoundID: 'A0000000-0000-0000-0000-000000000005', RepositoryURL: 'https://github.com/beta-coders/web-final', DemoURL: 'https://youtube.com/beta-demo-final', SlideURL: 'https://drive.google.com/beta-slide-final', SubmittedAt: '2026-07-08 11:00:00', Status: 'Graded' },
-  // Event 3 - Preliminary
-  { SubmissionID: 'D0000000-0000-0000-0000-000000000011', TeamID: '70000000-0000-0000-0000-000000000001', RoundID: 'A0000000-0000-0000-0000-000000000006', RepositoryURL: 'https://github.com/phoenix-ai/ml-project', DemoURL: 'https://youtube.com/phoenix-demo-4', SlideURL: 'https://drive.google.com/phoenix-slide-4', SubmittedAt: '2026-09-19 15:00:00', Status: 'Graded' },
-  { SubmissionID: 'D0000000-0000-0000-0000-000000000012', TeamID: '70000000-0000-0000-0000-000000000002', RoundID: 'A0000000-0000-0000-0000-000000000006', RepositoryURL: 'https://github.com/beta-coders/iot-project', DemoURL: 'https://youtube.com/beta-demo-4', SlideURL: 'https://drive.google.com/beta-slide-4', SubmittedAt: '2026-09-19 16:00:00', Status: 'Disqualified' }, // Plagiarism
-];
-
-export const mockScores: Score[] = [
-  // Event 1 - Preliminary Round (Phoenix AI - Innovation, Technical, UI/UX)
-  { ScoreID: 'D1111111-1111-1111-1111-000000000001', SubmissionID: 'D0000000-0000-0000-0000-000000000001', AssignmentId: 'AAA00001-0001-0001-0001-000000000001', CriteriaID: 'CC000000-0000-0000-0000-000000000001', ScoreValue: 9.0, Comment: 'Excellent AI innovation', ScoredAt: '2026-03-21 09:00:00' },
-  { ScoreID: 'D1111111-1111-1111-1111-000000000002', SubmissionID: 'D0000000-0000-0000-0000-000000000001', AssignmentId: 'AAA00001-0001-0001-0001-000000000001', CriteriaID: 'CC000000-0000-0000-0000-000000000002', ScoreValue: 8.5, Comment: 'Good architecture and scalability', ScoredAt: '2026-03-21 09:10:00' },
-  { ScoreID: 'D1111111-1111-1111-1111-000000000003', SubmissionID: 'D0000000-0000-0000-0000-000000000001', AssignmentId: 'AAA00001-0001-0001-0001-000000000001', CriteriaID: 'CC000000-0000-0000-0000-000000000003', ScoreValue: 8.0, Comment: 'Nice interface and user experience', ScoredAt: '2026-03-21 09:20:00' },
-
-  // Event 1 - Preliminary Round (Phoenix AI - Scored by Judge 2 as well, to show variance)
-  { ScoreID: 'D1111111-1111-1111-1111-000000000001-j2', SubmissionID: 'D0000000-0000-0000-0000-000000000001', AssignmentId: 'AAA00001-0001-0001-0001-000000000002', CriteriaID: 'CC000000-0000-0000-0000-000000000001', ScoreValue: 8.5, Comment: 'Impressive ideas but needs refinement', ScoredAt: '2026-03-21 09:30:00' },
-  { ScoreID: 'D1111111-1111-1111-1111-000000000002-j2', SubmissionID: 'D0000000-0000-0000-0000-000000000001', AssignmentId: 'AAA00001-0001-0001-0001-000000000002', CriteriaID: 'CC000000-0000-0000-0000-000000000002', ScoreValue: 8.8, Comment: 'Very neat tech stack', ScoredAt: '2026-03-21 09:40:00' },
-  { ScoreID: 'D1111111-1111-1111-1111-000000000003-j2', SubmissionID: 'D0000000-0000-0000-0000-000000000001', AssignmentId: 'AAA00001-0001-0001-0001-000000000002', CriteriaID: 'CC000000-0000-0000-0000-000000000003', ScoreValue: 7.5, Comment: 'Design could be more polished', ScoredAt: '2026-03-21 09:50:00' },
-
-  // Event 1 - Preliminary Round (Beta Coders - Innovation, Technical, UI/UX)
-  { ScoreID: 'D1111111-1111-1111-1111-000000000004', SubmissionID: 'D0000000-0000-0000-0000-000000000002', AssignmentId: 'AAA00001-0001-0001-0001-000000000002', CriteriaID: 'CC000000-0000-0000-0000-000000000001', ScoreValue: 8.5, Comment: 'Good web innovation', ScoredAt: '2026-03-21 10:00:00' },
-  { ScoreID: 'D1111111-1111-1111-1111-000000000005', SubmissionID: 'D0000000-0000-0000-0000-000000000002', AssignmentId: 'AAA00001-0001-0001-0001-000000000002', CriteriaID: 'CC000000-0000-0000-0000-000000000002', ScoreValue: 8.8, Comment: 'Excellent technical implementation', ScoredAt: '2026-03-21 10:10:00' },
-  { ScoreID: 'D1111111-1111-1111-1111-000000000006', SubmissionID: 'D0000000-0000-0000-0000-000000000002', AssignmentId: 'AAA00001-0001-0001-0001-000000000002', CriteriaID: 'CC000000-0000-0000-0000-000000000003', ScoreValue: 8.5, Comment: 'Good UI/UX design', ScoredAt: '2026-03-21 10:20:00' },
-
-  // Event 1 - Preliminary Round (Beta Coders - Scored by Judge 1 as well)
-  { ScoreID: 'D1111111-1111-1111-1111-000000000004-j1', SubmissionID: 'D0000000-0000-0000-0000-000000000002', AssignmentId: 'AAA00001-0001-0001-0001-000000000001', CriteriaID: 'CC000000-0000-0000-0000-000000000001', ScoreValue: 8.0, Comment: 'Standard web app', ScoredAt: '2026-03-21 10:30:00' },
-  { ScoreID: 'D1111111-1111-1111-1111-000000000005-j1', SubmissionID: 'D0000000-0000-0000-0000-000000000002', AssignmentId: 'AAA00001-0001-0001-0001-000000000001', CriteriaID: 'CC000000-0000-0000-0000-000000000002', ScoreValue: 8.0, Comment: 'Decent code structure', ScoredAt: '2026-03-21 10:40:00' },
-  { ScoreID: 'D1111111-1111-1111-1111-000000000006-j1', SubmissionID: 'D0000000-0000-0000-0000-000000000002', AssignmentId: 'AAA00001-0001-0001-0001-000000000001', CriteriaID: 'CC000000-0000-0000-0000-000000000003', ScoreValue: 9.0, Comment: 'Outstanding colors and styling', ScoredAt: '2026-03-21 10:50:00' },
-
-  // Event 1 - Semi Final Round (Phoenix AI)
-  { ScoreID: 'D1111111-1111-1111-1111-000000000007', SubmissionID: 'D0000000-0000-0000-0000-000000000003', AssignmentId: 'AAA00001-0001-0001-0001-000000000003', CriteriaID: 'CC000000-0000-0000-0000-000000000001', ScoreValue: 9.2, Comment: 'Outstanding AI innovation and improvements', ScoredAt: '2026-04-04 09:00:00' },
-  { ScoreID: 'D1111111-1111-1111-1111-000000000008', SubmissionID: 'D0000000-0000-0000-0000-000000000003', AssignmentId: 'AAA00001-0001-0001-0001-000000000003', CriteriaID: 'CC000000-0000-0000-0000-000000000002', ScoreValue: 8.8, Comment: 'Excellent technical complexity', ScoredAt: '2026-04-04 09:10:00' },
-  { ScoreID: 'D1111111-1111-1111-1111-000000000009', SubmissionID: 'D0000000-0000-0000-0000-000000000003', AssignmentId: 'AAA00001-0001-0001-0001-000000000003', CriteriaID: 'CC000000-0000-0000-0000-000000000003', ScoreValue: 8.3, Comment: 'Very good UI improvements', ScoredAt: '2026-04-04 09:20:00' },
-
-  // Event 1 - Semi Final Round (Beta Coders)
-  { ScoreID: 'D1111111-1111-1111-1111-000000000010', SubmissionID: 'D0000000-0000-0000-0000-000000000004', AssignmentId: 'AAA00001-0001-0001-0001-000000000004', CriteriaID: 'CC000000-0000-0000-0000-000000000001', ScoreValue: 8.8, Comment: 'Excellent web innovation', ScoredAt: '2026-04-04 10:00:00' },
-  { ScoreID: 'D1111111-1111-1111-1111-000000000011', SubmissionID: 'D0000000-0000-0000-0000-000000000004', AssignmentId: 'AAA00001-0001-0001-0001-000000000004', CriteriaID: 'CC000000-0000-0000-0000-000000000002', ScoreValue: 9.0, Comment: 'Outstanding technical implementation', ScoredAt: '2026-04-04 10:10:00' },
-  { ScoreID: 'D1111111-1111-1111-1111-000000000012', SubmissionID: 'D0000000-0000-0000-0000-000000000004', AssignmentId: 'AAA00001-0001-0001-0001-000000000004', CriteriaID: 'CC000000-0000-0000-0000-000000000003', ScoreValue: 8.8, Comment: 'Excellent UI/UX', ScoredAt: '2026-04-04 10:20:00' },
-
-  // Event 1 - Final Round (Phoenix AI)
-  { ScoreID: 'D1111111-1111-1111-1111-000000000013', SubmissionID: 'D0000000-0000-0000-0000-000000000005', AssignmentId: 'AAA00001-0001-0001-0001-000000000005', CriteriaID: 'CC000000-0000-0000-0000-000000000001', ScoreValue: 9.3, Comment: 'Outstanding AI innovation - Champion level', ScoredAt: '2026-04-21 09:00:00' },
-  { ScoreID: 'D1111111-1111-1111-1111-000000000014', SubmissionID: 'D0000000-0000-0000-0000-000000000005', AssignmentId: 'AAA00001-0001-0001-0001-000000000005', CriteriaID: 'CC000000-0000-0000-0000-000000000002', ScoreValue: 9.0, Comment: 'Excellent technical complexity', ScoredAt: '2026-04-21 09:10:00' },
-  { ScoreID: 'D1111111-1111-1111-1111-000000000015', SubmissionID: 'D0000000-0000-0000-0000-000000000005', AssignmentId: 'AAA00001-0001-0001-0001-000000000005', CriteriaID: 'CC000000-0000-0000-0000-000000000003', ScoreValue: 8.5, Comment: 'Very good UI/UX', ScoredAt: '2026-04-21 09:20:00' },
-
-  // Event 1 - Final Round (Beta Coders)
-  { ScoreID: 'D1111111-1111-1111-1111-000000000016', SubmissionID: 'D0000000-0000-0000-0000-000000000006', AssignmentId: 'AAA00001-0001-0001-0001-000000000004', CriteriaID: 'CC000000-0000-0000-0000-000000000001', ScoreValue: 8.9, Comment: 'Excellent web innovation', ScoredAt: '2026-04-21 10:00:00' },
-  { ScoreID: 'D1111111-1111-1111-1111-000000000017', SubmissionID: 'D0000000-0000-0000-0000-000000000006', AssignmentId: 'AAA00001-0001-0001-0001-000000000004', CriteriaID: 'CC000000-0000-0000-0000-000000000002', ScoreValue: 8.8, Comment: 'Excellent technical implementation', ScoredAt: '2026-04-21 10:10:00' },
-  { ScoreID: 'D1111111-1111-1111-1111-000000000018', SubmissionID: 'D0000000-0000-0000-0000-000000000006', AssignmentId: 'AAA00001-0001-0001-0001-000000000004', CriteriaID: 'CC000000-0000-0000-0000-000000000003', ScoreValue: 8.7, Comment: 'Very good UI/UX', ScoredAt: '2026-04-21 10:20:00' },
-
-  // Event 2 - Preliminary Round (Phoenix AI)
-  { ScoreID: 'D1111111-1111-1111-1111-000000000019', SubmissionID: 'D0000000-0000-0000-0000-000000000007', AssignmentId: 'AAA00001-0001-0001-0001-000000000006', CriteriaID: 'CC000000-0000-0000-0000-000000000001', ScoreValue: 8.5, Comment: 'Good blockchain innovation', ScoredAt: '2026-06-20 10:00:00' },
-  { ScoreID: 'D1111111-1111-1111-1111-000000000020', SubmissionID: 'D0000000-0000-0000-0000-000000000007', AssignmentId: 'AAA00001-0001-0001-0001-000000000006', CriteriaID: 'CC000000-0000-0000-0000-000000000004', ScoreValue: 8.2, Comment: 'Good technical implementation', ScoredAt: '2026-06-20 10:10:00' },
-  { ScoreID: 'D1111111-1111-1111-1111-000000000021', SubmissionID: 'D0000000-0000-0000-0000-000000000007', AssignmentId: 'AAA00001-0001-0001-0001-000000000006', CriteriaID: 'CC000000-0000-0000-0000-000000000006', ScoreValue: 7.8, Comment: 'Good design', ScoredAt: '2026-06-20 10:20:00' },
-
-  // Event 2 - Preliminary Round (Beta Coders)
-  { ScoreID: 'D1111111-1111-1111-1111-000000000022', SubmissionID: 'D0000000-0000-0000-0000-000000000008', AssignmentId: 'AAA00001-0001-0001-0001-000000000005', CriteriaID: 'CC000000-0000-0000-0000-000000000001', ScoreValue: 8.0, Comment: 'Good web innovation', ScoredAt: '2026-06-20 11:00:00' },
-  { ScoreID: 'D1111111-1111-1111-1111-000000000023', SubmissionID: 'D0000000-0000-0000-0000-000000000008', AssignmentId: 'AAA00001-0001-0001-0001-000000000005', CriteriaID: 'CC000000-0000-0000-0000-000000000004', ScoreValue: 8.5, Comment: 'Good technical implementation', ScoredAt: '2026-06-20 11:10:00' },
-  { ScoreID: 'D1111111-1111-1111-1111-000000000024', SubmissionID: 'D0000000-0000-0000-0000-000000000008', AssignmentId: 'AAA00001-0001-0001-0001-000000000005', CriteriaID: 'CC000000-0000-0000-0000-000000000006', ScoreValue: 8.3, Comment: 'Good UI', ScoredAt: '2026-06-20 11:20:00' },
-
-  // Event 2 - Final Round (Phoenix AI)
-  { ScoreID: 'D1111111-1111-1111-1111-000000000025', SubmissionID: 'D0000000-0000-0000-0000-000000000009', AssignmentId: 'AAA00001-0001-0001-0001-000000000007', CriteriaID: 'CC000000-0000-0000-0000-000000000001', ScoreValue: 9.0, Comment: 'Excellent blockchain innovation', ScoredAt: '2026-07-10 09:00:00' },
-  { ScoreID: 'D1111111-1111-1111-1111-000000000026', SubmissionID: 'D0000000-0000-0000-0000-000000000009', AssignmentId: 'AAA00001-0001-0001-0001-000000000007', CriteriaID: 'CC000000-0000-0000-0000-000000000004', ScoreValue: 8.8, Comment: 'Excellent technical complexity', ScoredAt: '2026-07-10 09:10:00' },
-  { ScoreID: 'D1111111-1111-1111-1111-000000000027', SubmissionID: 'D0000000-0000-0000-0000-000000000009', AssignmentId: 'AAA00001-0001-0001-0001-000000000007', CriteriaID: 'CC000000-0000-0000-0000-000000000006', ScoreValue: 8.5, Comment: 'Good design', ScoredAt: '2026-07-10 09:20:00' },
-
-  // Event 2 - Final Round (Beta Coders)
-  { ScoreID: 'D1111111-1111-1111-1111-000000000028', SubmissionID: 'D0000000-0000-0000-0000-000000000010', AssignmentId: 'AAA00001-0001-0001-0001-000000000008', CriteriaID: 'CC000000-0000-0000-0000-000000000001', ScoreValue: 8.8, Comment: 'Excellent web innovation', ScoredAt: '2026-07-10 10:00:00' },
-  { ScoreID: 'D1111111-1111-1111-1111-000000000029', SubmissionID: 'D0000000-0000-0000-0000-000000000010', AssignmentId: 'AAA00001-0001-0001-0001-000000000008', CriteriaID: 'CC000000-0000-0000-0000-000000000004', ScoreValue: 8.7, Comment: 'Excellent technical implementation', ScoredAt: '2026-07-10 10:10:00' },
-  { ScoreID: 'D1111111-1111-1111-1111-000000000030', SubmissionID: 'D0000000-0000-0000-0000-000000000010', AssignmentId: 'AAA00001-0001-0001-0001-000000000008', CriteriaID: 'CC000000-0000-0000-0000-000000000006', ScoreValue: 8.6, Comment: 'Good UI', ScoredAt: '2026-07-10 10:20:00' },
-
-  // Event 3 - Preliminary Round (Phoenix AI)
-  { ScoreID: 'D1111111-1111-1111-1111-000000000031', SubmissionID: 'D0000000-0000-0000-0000-000000000011', AssignmentId: 'AAA00001-0001-0001-0001-000000000007', CriteriaID: 'CC000000-0000-0000-0000-000000000001', ScoreValue: 9.0, Comment: 'Excellent ML innovation', ScoredAt: '2026-09-21 10:00:00' },
-  { ScoreID: 'D1111111-1111-1111-1111-000000000032', SubmissionID: 'D0000000-0000-0000-0000-000000000011', AssignmentId: 'AAA00001-0001-0001-0001-000000000007', CriteriaID: 'CC000000-0000-0000-0000-000000000002', ScoreValue: 8.8, Comment: 'Excellent model implementation', ScoredAt: '2026-09-21 10:10:00' },
-  { ScoreID: 'D1111111-1111-1111-1111-000000000033', SubmissionID: 'D0000000-0000-0000-0000-000000000011', AssignmentId: 'AAA00001-0001-0001-0001-000000000007', CriteriaID: 'CC000000-0000-0000-0000-000000000003', ScoreValue: 8.3, Comment: 'Good visualization', ScoredAt: '2026-09-21 10:20:00' },
-
-  // Event 3 - Preliminary Round (Beta Coders)
-  { ScoreID: 'D1111111-1111-1111-1111-000000000034', SubmissionID: 'D0000000-0000-0000-0000-000000000012', AssignmentId: 'AAA00001-0001-0001-0001-000000000008', CriteriaID: 'CC000000-0000-0000-0000-000000000001', ScoreValue: 8.2, Comment: 'Good IoT innovation', ScoredAt: '2026-09-21 11:00:00' },
-  { ScoreID: 'D1111111-1111-1111-1111-000000000035', SubmissionID: 'D0000000-0000-0000-0000-000000000012', AssignmentId: 'AAA00001-0001-0001-0001-000000000008', CriteriaID: 'CC000000-0000-0000-0000-000000000002', ScoreValue: 8.0, Comment: 'Good technical implementation', ScoredAt: '2026-09-21 11:10:00' },
-];
-
-export const mockCalibrationScores: CalibrationScore[] = [
-  { CalibrationId: 'CAC00001-0001-0001-0001-000000000001', JudgeID: '00000000-0000-0000-0000-000000000011', CriteriaID: 'CC000000-0000-0000-0000-000000000001', SubmissionID: 'D0000000-0000-0000-0000-000000000001', ScoreValue: 9.0 },
-  { CalibrationId: 'CAC00001-0001-0001-0001-000000000002', JudgeID: '00000000-0000-0000-0000-000000000012', CriteriaID: 'CC000000-0000-0000-0000-000000000001', SubmissionID: 'D0000000-0000-0000-0000-000000000001', ScoreValue: 8.5 },
-  { CalibrationId: 'CAC00001-0001-0001-0001-000000000003', JudgeID: '00000000-0000-0000-0000-000000000011', CriteriaID: 'CC000000-0000-0000-0000-000000000001', SubmissionID: 'D0000000-0000-0000-0000-000000000005', ScoreValue: 9.3 },
-  { CalibrationId: 'CAC00001-0001-0001-0001-000000000004', JudgeID: '00000000-0000-0000-0000-000000000012', CriteriaID: 'CC000000-0000-0000-0000-000000000001', SubmissionID: 'D0000000-0000-0000-0000-000000000005', ScoreValue: 9.0 },
-];
-
-export const mockAdvancementRules: AdvancementRule[] = [
-  { RuleId: 'B0000000-0000-0000-0000-000000000001', RoundId: 'A0000000-0000-0000-0000-000000000001', CategoryId: 'C0000000-0000-0000-0000-000000000001', TopN: 2 },
-  { RuleId: 'B0000000-0000-0000-0000-000000000002', RoundId: 'A0000000-0000-0000-0000-000000000001', CategoryId: 'C0000000-0000-0000-0000-000000000003', TopN: 2 },
-  { RuleId: 'B0000000-0000-0000-0000-000000000003', RoundId: 'A0000000-0000-0000-0000-000000000002', CategoryId: 'C0000000-0000-0000-0000-000000000003', TopN: 1 },
-  { RuleId: 'B0000000-0000-0000-0000-000000000004', RoundId: 'A0000000-0000-0000-0000-000000000004', CategoryId: 'C0000000-0000-0000-0000-000000000004', TopN: 1 },
-];
-
-export const mockEliminations: Elimination[] = [
-  { EliminationId: 'E0000000-0000-0000-0000-000000000001', SubmissionId: 'D0000000-0000-0000-0000-000000000006', UserId: '00000000-0000-0000-0000-000000000013', Reason: 'Lower total score in final round comparison', EliminatedAt: '2026-04-22 11:00:00' },
-  { EliminationId: 'E0000000-0000-0000-0000-000000000002', SubmissionId: 'D0000000-0000-0000-0000-000000000012', UserId: '00000000-0000-0000-0000-000000000014', Reason: 'Plagiarism detected in repository source code (copying UI component library codes without accreditation)', EliminatedAt: '2026-09-22 14:30:00' },
-];
-
-export const mockAuditLogs: AuditLog[] = [
-  { LogID: 'AAA00001-0001-0001-0001-000000000001', UserID: '00000000-0000-0000-0000-000000000013', ActionType: 'EVENT_CREATE', OldValue: null, NewValue: '{"EventName":"SEAL Spring 2026"}', CreatedAt: '2026-01-01 08:00:00' },
-  { LogID: 'AAA00001-0001-0001-0001-000000000002', UserID: '00000000-0000-0000-0000-000000000013', ActionType: 'EVENT_CREATE', OldValue: null, NewValue: '{"EventName":"SEAL Summer 2026"}', CreatedAt: '2026-05-01 08:00:00' },
-  { LogID: 'AAA00001-0001-0001-0001-000000000003', UserID: '00000000-0000-0000-0000-000000000014', ActionType: 'EVENT_CREATE', OldValue: null, NewValue: '{"EventName":"SEAL Fall 2026"}', CreatedAt: '2026-08-01 08:00:00' },
-  { LogID: 'AAA00001-0001-0001-0001-000000000004', UserID: '00000000-0000-0000-0000-000000000001', ActionType: 'TEAM_CREATE', OldValue: null, NewValue: '{"TeamName":"Phoenix AI"}', CreatedAt: '2026-02-15 09:00:00' },
-  { LogID: 'AAA00001-0001-0001-0001-000000000005', UserID: '00000000-0000-0000-0000-000000000005', ActionType: 'TEAM_CREATE', OldValue: null, NewValue: '{"TeamName":"Beta Coders"}', CreatedAt: '2026-02-14 09:00:00' },
-  { LogID: 'AAA00001-0001-0001-0001-000000000006', UserID: '00000000-0000-0000-0000-000000000001', ActionType: 'SUBMISSION_CREATE', OldValue: null, NewValue: '{"Repository":"phoenix-ai/project-v1"}', CreatedAt: '2026-03-19 14:00:00' },
-  { LogID: 'AAA00001-0001-0001-0001-000000000007', UserID: '00000000-0000-0000-0000-000000000005', ActionType: 'SUBMISSION_CREATE', OldValue: null, NewValue: '{"Repository":"beta-coders/web-project"}', CreatedAt: '2026-03-19 15:30:00' },
-];
-
-export const mockRankings: Ranking[] = [
-  { RankingId: 'A1000000-0000-0000-0000-000000000001', TeamId: '70000000-0000-0000-0000-000000000002', RoundId: 'A0000000-0000-0000-0000-000000000001', RankPosition: 1, TotalScore: 25.80 },
-  { RankingId: 'A1000000-0000-0000-0000-000000000002', TeamId: '70000000-0000-0000-0000-000000000001', RoundId: 'A0000000-0000-0000-0000-000000000001', RankPosition: 2, TotalScore: 25.50 },
-  { RankingId: 'A1000000-0000-0000-0000-000000000003', TeamId: '70000000-0000-0000-0000-000000000002', RoundId: 'A0000000-0000-0000-0000-000000000002', RankPosition: 1, TotalScore: 26.60 },
-  { RankingId: 'A1000000-0000-0000-0000-000000000004', TeamId: '70000000-0000-0000-0000-000000000001', RoundId: 'A0000000-0000-0000-0000-000000000002', RankPosition: 2, TotalScore: 26.30 },
-  { RankingId: 'A1000000-0000-0000-0000-000000000005', TeamId: '70000000-0000-0000-0000-000000000001', RoundId: 'A0000000-0000-0000-0000-000000000003', RankPosition: 1, TotalScore: 26.80 },
-  { RankingId: 'A1000000-0000-0000-0000-000000000006', TeamId: '70000000-0000-0000-0000-000000000002', RoundId: 'A0000000-0000-0000-0000-000000000003', RankPosition: 2, TotalScore: 26.40 },
-  { RankingId: 'A1000000-0000-0000-0000-000000000007', TeamId: '70000000-0000-0000-0000-000000000002', RoundId: 'A0000000-0000-0000-0000-000000000004', RankPosition: 1, TotalScore: 24.80 },
-  { RankingId: 'A1000000-0000-0000-0000-000000000008', TeamId: '70000000-0000-0000-0000-000000000001', RoundId: 'A0000000-0000-0000-0000-000000000004', RankPosition: 2, TotalScore: 24.50 },
-];
-
-export const mockAnnouncements: Announcement[] = [
-  {
-    AnnouncementID: 'N001',
-    Title: 'Mở cổng nộp bài Vòng Chung Kết SEAL Summer 2026',
-    Content: 'Hệ thống đã chính thức mở cổng nộp bài cho Vòng Chung Kết mùa Summer 2026. Hạn cuối nộp liên kết Repository, Video Demo và Slide thuyết trình là 23:59 ngày 10/07/2026. Các đội trưởng lưu ý cập nhật thông tin chính xác qua Cổng Trưởng nhóm.',
-    Type: 'info',
-    PublishedAt: '2026-07-01 08:00:00',
-    EventID: 'E0000000-0000-0000-0000-000000000002',
-    RoundID: 'A0000000-0000-0000-0000-000000000005'
-  },
-  {
-    AnnouncementID: 'N002',
-    Title: 'Công bố Kết quả Vòng Sơ Loại SEAL Summer 2026',
-    Content: 'Ban tổ chức công bố bảng xếp hạng chính thức của Vòng Sơ Loại SEAL Summer 2026 hạng mục Blockchain Solution. Xin chúc mừng đội Beta Coders dẫn đầu với tổng điểm 24.8, tiếp theo là Phoenix AI với 24.5. Cả hai đội chính thức bước vào Vòng Chung Kết!',
-    Type: 'success',
-    PublishedAt: '2026-06-26 15:30:00',
-    EventID: 'E0000000-0000-0000-0000-000000000002',
-    RoundID: 'A0000000-0000-0000-0000-000000000004'
-  },
-  {
-    AnnouncementID: 'N003',
-    Title: 'Cảnh cáo và Loại Đội thi vi phạm quy chế SEAL Fall 2026',
-    Content: 'Ban tổ chức rất tiếc phải thông báo quyết định loại đội thi Beta Coders khỏi hạng mục IoT Solution ở Vòng Sơ loại SEAL Fall 2026 do hệ thống và hội đồng chuyên môn phát hiện hành vi sao chép mã nguồn (Plagiarism) trong dự án nộp ngày 19/09/2026.',
-    Type: 'danger',
-    PublishedAt: '2026-09-22 14:30:00',
-    EventID: 'E0000000-0000-0000-0000-000000000003',
-    RoundID: 'A0000000-0000-0000-0000-000000000006'
-  },
-  {
-    AnnouncementID: 'N004',
-    Title: 'Vinh danh Nhà Vô Địch SEAL Spring 2026',
-    Content: 'Trận chung kết SEAL Spring 2026 đã khép lại thành công rực rỡ! Ngôi vị Quán quân đã chính thức thuộc về Phoenix AI với dự án AI Solution xuất sắc đạt 26.8 điểm. Giải Á quân thuộc về Beta Coders hạng mục Web Application với 26.4 điểm.',
-    Type: 'success',
-    PublishedAt: '2026-04-26 10:00:00',
-    EventID: 'E0000000-0000-0000-0000-000000000001'
-  },
-  {
-    AnnouncementID: 'N005',
-    Title: 'Thông tin Thể lệ & Trọng số Điểm thi SEAL Hackathon 2026',
-    Content: 'Thể lệ cuộc thi SEAL Hackathon 2026 yêu cầu các dự án phải giải quyết các vấn đề thực tiễn. Trọng số chấm điểm vòng Chung kết cho các hạng mục: Hạng mục AI Solution tập trung vào Độ chính xác AI (40%) và Hiệu suất mô hình (30%). Hạng mục Web Application tập trung vào Sự cải tiến (40%) và Độ phức tạp công nghệ (30%). Chi tiết được hiển thị tại tab Thể lệ mục tiêu.',
-    Type: 'info',
-    PublishedAt: '2026-03-01 09:00:00'
-  }
-];
-
-export const mockDetailedCompetitions: DetailedCompetition[] = [
-  {
-    ID: 'DC001',
-    Name: 'Cuộc thi Sáng tạo Công nghệ 2026',
-    Description: 'Tìm kiếm các giải pháp công nghệ số sáng tạo giúp tối ưu hóa cuộc sống và học tập thường nhật của học sinh, sinh viên.',
-    Category: 'Technology',
-    CategoryLabel: 'Công nghệ',
-    Status: 'open',
-    Deadline: '25/07/2026',
-    Format: 'Online',
-    Audience: 'Sinh viên',
-    Organizer: 'FPT University',
-    Prize: '50.000.000 VND',
-    BannerUrl: 'https://images.unsplash.com/photo-1518770660439-4636190af475?w=600&auto=format&fit=crop&q=80',
-    DaysLeft: 24,
-    IsFeatured: true
-  },
-  {
-    ID: 'DC002',
-    Name: 'Olympic Tin học Sinh viên Toàn quốc',
-    Description: 'Kỳ thi học thuật thường niên lớn nhất dành cho sinh viên ngành Công nghệ thông tin nhằm khẳng định năng lực thuật toán và lập trình.',
-    Category: 'Academic',
-    CategoryLabel: 'Học thuật',
-    Status: 'open',
-    Deadline: '30/07/2026',
-    Format: 'Offline',
-    Audience: 'Sinh viên',
-    Organizer: 'Hội Tin học Việt Nam',
-    Prize: '30.000.000 VND',
-    BannerUrl: 'https://images.unsplash.com/photo-1507537297725-24a1c029d3ca?w=600&auto=format&fit=crop&q=80',
-    DaysLeft: 29,
-    IsFeatured: true
-  },
-  {
-    ID: 'DC003',
-    Name: 'Ý tưởng Khởi nghiệp Trẻ 2026',
-    Description: 'Bệ phóng cho các dự án kinh doanh sáng tạo và tinh thần khởi nghiệp Agile bền vững của thế hệ trẻ.',
-    Category: 'Startup',
-    CategoryLabel: 'Khởi nghiệp',
-    Status: 'expiring',
-    Deadline: '03/07/2026',
-    Format: 'Hybrid',
-    Audience: 'Tất cả',
-    Organizer: 'FPT Enterprise',
-    Prize: '100.000.000 VND',
-    BannerUrl: 'https://images.unsplash.com/photo-1519389950473-47ba0277781c?w=600&auto=format&fit=crop&q=80',
-    DaysLeft: 2,
-    IsFeatured: true
-  },
-  {
-    ID: 'DC004',
-    Name: 'Thiết kế Poster Truyền thông Xanh',
-    Description: 'Nơi thể hiện tư duy thẩm mỹ và lan tỏa thông điệp bảo vệ môi trường thông qua tác phẩm thiết kế đồ họa độc đáo.',
-    Category: 'Design',
-    CategoryLabel: 'Thiết kế',
-    Status: 'open',
-    Deadline: '06/07/2026',
-    Format: 'Online',
-    Audience: 'Học sinh',
-    Organizer: 'FPT Arena',
-    Prize: '15.000.000 VND',
-    BannerUrl: 'https://images.unsplash.com/photo-1550684848-fac1c5b4e853?w=600&auto=format&fit=crop&q=80',
-    DaysLeft: 5,
-    IsFeatured: false
-  },
-  {
-    ID: 'DC005',
-    Name: 'Cuộc thi Hùng biện Tiếng Anh Global Voices',
-    Description: 'Thử thách kỹ năng hùng biện bằng tiếng Anh, tư duy biện luận phản biện và sự tự tin thể hiện góc nhìn cá nhân trước thế giới.',
-    Category: 'Language',
-    CategoryLabel: 'Ngoại ngữ',
-    Status: 'upcoming',
-    Deadline: '01/08/2026',
-    Format: 'Offline',
-    Audience: 'Tất cả',
-    Organizer: 'Global Education',
-    Prize: '25.000.000 VND',
-    BannerUrl: 'https://images.unsplash.com/photo-1546410531-bb4caa6b424d?w=600&auto=format&fit=crop&q=80',
-    DaysLeft: 31,
-    IsFeatured: false
-  },
-  {
-    ID: 'DC006',
-    Name: 'Nghiên cứu Khoa học Sinh viên Lần XV',
-    Description: 'Khuyến khích hoạt động nghiên cứu khoa học chuyên sâu và ứng dụng thực tiễn giải pháp mới trong đời sống xã hội.',
-    Category: 'Science',
-    CategoryLabel: 'Khoa học',
-    Status: 'closed',
-    Deadline: '20/06/2026',
-    Format: 'Hybrid',
-    Audience: 'Sinh viên',
-    Organizer: 'Bộ Giáo dục & Đào tạo',
-    Prize: '40.000.000 VND',
-    BannerUrl: 'https://images.unsplash.com/photo-1532094349884-543bc11b234d?w=600&auto=format&fit=crop&q=80',
-    DaysLeft: 0,
-    IsFeatured: false
-  }
-];
-
-
-
-// Active source config (mock vs live API)
-import { apiClient } from '../services/api/apiClient';
-
-// Active source config (mock vs live API)
-let useLiveApi = true;
-
-export const isLiveApiEnabled = () => useLiveApi;
-export const setLiveApi = (enabled: boolean) => {
-  useLiveApi = enabled;
-};
-
-// Asynchronous simulation helper
-const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
-
-// Statistics utilities for RBL (Research-Based Learning)
-export const calculateMean = (values: number[]): number => {
-  if (values.length === 0) return 0;
-  return values.reduce((sum, val) => sum + val, 0) / values.length;
-};
-
-export const calculateVariance = (values: number[]): number => {
-  if (values.length <= 1) return 0;
-  const mean = calculateMean(values);
-  const sumOfSquares = values.reduce((sum, val) => sum + Math.pow(val - mean, 2), 0);
-  return sumOfSquares / (values.length - 1); // Sample variance
-};
-
-export const calculateStdDev = (values: number[]): number => {
-  return Math.sqrt(calculateVariance(values));
-};
-
-// Standard Backend DTO configurations/interfaces
 export interface BackendEvent {
   eventId?: string;
   EventId?: string;
@@ -568,7 +416,24 @@ export interface BackendEvent {
   StartDate?: string;
   endDate?: string;
   EndDate?: string;
+  status?: string;
+  Status?: string;
+  isPublished?: boolean;
+  IsPublished?: boolean;
+  isFeatured?: boolean;
+  IsFeatured?: boolean;
+  bannerUrl?: string;
+  BannerUrl?: string;
+  organizer?: string;
+  Organizer?: string;
+  format?: string;
+  Format?: string;
+  audience?: string;
+  Audience?: string;
+  prize?: string;
+  Prize?: string;
   rounds?: BackendRound[];
+  Rounds?: BackendRound[];
 }
 
 export interface BackendRound {
@@ -611,6 +476,9 @@ export interface BackendTeam {
   TeamName?: string;
   teamLeaderId?: string;
   TeamLeaderId?: string;
+  eventId?: string;
+  EventId?: string;
+  EventID?: string;
   categoryId?: string;
   CategoryId?: string;
   CategoryID?: string;
@@ -641,6 +509,82 @@ export interface BackendSubmission {
   SubmittedAt?: string;
   status?: string;
   Status?: string;
+}
+
+export interface BackendSubmissionAsset {
+  submissionAssetId?: string;
+  SubmissionAssetId?: string;
+  submissionId?: string | null;
+  SubmissionId?: string | null;
+  teamId?: string;
+  TeamId?: string;
+  TeamID?: string;
+  roundId?: string;
+  RoundId?: string;
+  RoundID?: string;
+  assetType?: string;
+  AssetType?: string;
+  provider?: string;
+  Provider?: string;
+  cloudinaryAssetId?: string;
+  CloudinaryAssetId?: string;
+  publicId?: string;
+  PublicId?: string;
+  secureUrl?: string;
+  SecureUrl?: string;
+  resourceType?: string;
+  ResourceType?: string;
+  originalFileName?: string;
+  OriginalFileName?: string;
+  format?: string;
+  Format?: string;
+  contentType?: string;
+  ContentType?: string;
+  fileSize?: number;
+  FileSize?: number;
+  durationSeconds?: number | null;
+  DurationSeconds?: number | null;
+  uploadStatus?: string;
+  UploadStatus?: string;
+  createdAt?: string;
+  CreatedAt?: string;
+  uploadedAt?: string | null;
+  UploadedAt?: string | null;
+}
+
+export interface BackendCloudinaryUploadSignature {
+  submissionAssetId?: string;
+  SubmissionAssetId?: string;
+  cloudName?: string;
+  CloudName?: string;
+  apiKey?: string;
+  ApiKey?: string;
+  timestamp?: number;
+  Timestamp?: number;
+  signature?: string;
+  Signature?: string;
+  folder?: string;
+  Folder?: string;
+  publicId?: string;
+  PublicId?: string;
+  resourceType?: string;
+  ResourceType?: string;
+  uploadUrl?: string;
+  UploadUrl?: string;
+  allowedFormats?: string[];
+  AllowedFormats?: string[];
+  maxFileSize?: number;
+  MaxFileSize?: number;
+}
+
+interface CloudinaryUploadResponse {
+  asset_id?: string;
+  public_id?: string;
+  secure_url?: string;
+  resource_type?: string;
+  format?: string;
+  bytes?: number;
+  duration?: number;
 }
 
 export interface BackendScore {
@@ -678,6 +622,50 @@ export interface BackendAdvancementRule {
   TopN?: number;
 }
 
+export interface JudgeAssignment {
+  AssignmentId: string;
+  UserId: string;
+  UserFullName: string;
+  UserEmail: string;
+  RoundId: string;
+  User?: User;
+  Round?: Round;
+}
+
+export interface BackendJudgeAssignment {
+  assignmentId?: string;
+  AssignmentId?: string;
+  userId?: string;
+  UserId?: string;
+  userFullName?: string;
+  UserFullName?: string;
+  userEmail?: string;
+  UserEmail?: string;
+  roundId?: string;
+  RoundId?: string;
+  user?: BackendUser;
+  User?: BackendUser;
+  round?: BackendRound;
+  Round?: BackendRound;
+}
+
+export interface BackendUser {
+  userId?: string;
+  UserId?: string;
+  email?: string;
+  Email?: string;
+  fullName?: string;
+  FullName?: string;
+  phone?: string;
+  Phone?: string;
+  shortId?: string;
+  ShortId?: string;
+  role?: string;
+  Role?: string;
+  accountStatus?: string;
+  AccountStatus?: string;
+}
+
 export interface BackendRanking {
   rankingId?: string;
   RankingId?: string;
@@ -691,312 +679,1268 @@ export interface BackendRanking {
   TotalScore?: number;
 }
 
-interface BackendSubmissionWithScores extends BackendSubmission {
-  scores?: BackendScore[];
+export interface BackendEventCriteria {
+  eventCriteriaId?: string;
+  EventCriteriaId?: string;
+  eventId?: string;
+  EventId?: string;
+  criteriaId?: string;
+  CriteriaId?: string;
+  criteriaName?: string;
+  CriteriaName?: string;
+  weight?: number;
+  Weight?: number;
 }
 
-// Casing mapping helpers (camelCase backend -> PascalCase/capitalized frontend)
-const mapEvent = (e: BackendEvent): Event => ({
-  EventID: e.eventId || e.EventId || e.EventID || '',
-  EventName: e.eventName || e.EventName || '',
-  Season: e.season || e.Season || '',
-  Year: e.year || e.Year || 0,
-  Description: e.description || e.Description || '',
-  StartDate: e.startDate || e.StartDate || '',
-  EndDate: e.endDate || e.EndDate || '',
+interface BackendSubmissionWithScores extends BackendSubmission {
+  scores?: BackendScore[];
+  Scores?: BackendScore[];
+}
+
+let useLiveApi = true;
+
+export const isLiveApiEnabled = () => useLiveApi;
+export const setLiveApiEnabled = (enabled: boolean) => {
+  useLiveApi = enabled;
+};
+
+const emptyUser = (userId = ""): User => ({
+  UserID: userId,
+  Email: "",
+  FullName: "",
+  Phone: "",
+  ShortId: "",
+  Role: "Member",
+  AccountStatus: "",
 });
 
-const mapRound = (r: BackendRound): Round => ({
-  RoundID: r.roundId || r.RoundId || r.RoundID || '',
-  EventID: r.eventId || r.EventId || r.EventID || '',
-  RoundName: r.roundName || r.RoundName || '',
-  RoundOrder: r.roundOrder || r.RoundOrder || 0,
-  SubmissionDeadline: r.submissionDeadline || r.SubmissionDeadline || '',
-  StartDate: r.startDate || r.StartDate || '',
-  EndDate: r.endDate || r.EndDate || '',
+const logApiError = (source: string, error: unknown) => {
+  const status =
+    typeof error === "object" && error !== null && "response" in error
+      ? (error as { response?: { status?: number } }).response?.status
+      : undefined;
+  console.warn(
+    `Live API error for ${source}${status ? ` (HTTP ${status})` : ""}. Returning empty data.`,
+  );
+};
+
+export const calculateMean = (values: number[]): number => {
+  if (values.length === 0) return 0;
+  return values.reduce((sum, value) => sum + value, 0) / values.length;
+};
+
+export const calculateVariance = (values: number[]): number => {
+  if (values.length === 0) return 0;
+  const mean = calculateMean(values);
+  return (
+    values.reduce((sum, value) => sum + Math.pow(value - mean, 2), 0) /
+    values.length
+  );
+};
+
+export const calculateStdDev = (values: number[]): number => {
+  return Math.sqrt(calculateVariance(values));
+};
+
+const mapEvent = (event: BackendEvent): Event => ({
+  EventID: event.eventId || event.EventId || event.EventID || "",
+  EventName: event.eventName || event.EventName || "",
+  Season: event.season || event.Season || "",
+  Year: event.year || event.Year || 0,
+  Description: event.description || event.Description || "",
+  StartDate: event.startDate || event.StartDate || "",
+  EndDate: event.endDate || event.EndDate || "",
+  Status: event.status || event.Status || "",
+  IsPublished: event.isPublished ?? event.IsPublished ?? false,
+  Format: event.format || event.Format || "",
 });
 
-const mapCategory = (c: BackendCategory): Category => ({
-  CategoryID: c.categoryId || c.CategoryId || c.CategoryID || '',
-  EventID: c.eventId || c.EventId || c.EventID || '',
-  CategoryName: c.categoryName || c.CategoryName || '',
-  Description: c.description || c.Description || '',
+const mapUser = (user: BackendUser): User => ({
+  UserID: user.userId || user.UserId || "",
+  Email: user.email || user.Email || "",
+  FullName: user.fullName || user.FullName || "",
+  Phone: user.phone || user.Phone || "",
+  ShortId: user.shortId || user.ShortId || "",
+  Role: (user.role || user.Role || "Member") as User["Role"],
+  AccountStatus: user.accountStatus || user.AccountStatus || "",
 });
 
-const mapTeam = (t: BackendTeam): Team => ({
-  TeamID: t.teamId || t.TeamId || t.TeamID || '',
-  TeamName: t.teamName || t.TeamName || '',
-  TeamLeaderId: t.teamLeaderId || t.TeamLeaderId || '',
-  CategoryID: t.categoryId || t.CategoryId || t.CategoryID || '',
-  TeamStatus: (t.teamStatus || t.TeamStatus || 'Active') as Team['TeamStatus'],
+const mapRound = (round: BackendRound): Round => ({
+  RoundID: round.roundId || round.RoundId || round.RoundID || "",
+  EventID: round.eventId || round.EventId || round.EventID || "",
+  RoundName: round.roundName || round.RoundName || "",
+  RoundOrder: round.roundOrder || round.RoundOrder || 0,
+  SubmissionDeadline:
+    round.submissionDeadline || round.SubmissionDeadline || "",
+  StartDate: round.startDate || round.StartDate || "",
+  EndDate: round.endDate || round.EndDate || "",
 });
 
-const mapSubmission = (s: BackendSubmission): Submission => ({
-  SubmissionID: s.submissionId || s.SubmissionId || s.SubmissionID || '',
-  TeamID: s.teamId || s.TeamId || s.TeamID || '',
-  RoundID: s.roundId || s.RoundId || s.RoundID || '',
-  RepositoryURL: s.repositoryURL || s.repositoryUrl || s.RepositoryURL || '',
-  DemoURL: s.demoURL || s.demoUrl || s.DemoURL || '',
-  SlideURL: s.slideURL || s.slideUrl || s.SlideURL || '',
-  SubmittedAt: s.submittedAt || s.SubmittedAt || '',
-  Status: (s.status || s.Status || 'Submitted') as Submission['Status'],
+const mapCategory = (category: BackendCategory): Category => ({
+  CategoryID:
+    category.categoryId || category.CategoryId || category.CategoryID || "",
+  EventID: category.eventId || category.EventId || category.EventID || "",
+  CategoryName: category.categoryName || category.CategoryName || "",
+  Description: category.description || category.Description || "",
 });
 
-const mapScore = (s: BackendScore): Score => ({
-  ScoreID: s.scoreId || s.ScoreId || s.ScoreID || '',
-  SubmissionID: s.submissionId || s.SubmissionId || s.SubmissionID || '',
-  AssignmentId: s.assignmentId || s.AssignmentId || '',
-  CriteriaID: s.criteriaId || s.CriteriaId || s.CriteriaID || '',
-  ScoreValue: s.scoreValue || s.ScoreValue || 0,
-  Comment: s.comment || s.Comment || '',
-  ScoredAt: s.scoredAt || s.ScoredAt || '',
+const mapTeam = (team: BackendTeam): Team => ({
+  TeamID: team.teamId || team.TeamId || team.TeamID || "",
+  TeamName: team.teamName || team.TeamName || "",
+  TeamLeaderId: team.teamLeaderId || team.TeamLeaderId || "",
+  EventID: team.eventId || team.EventId || team.EventID || "",
+  CategoryID: team.categoryId || team.CategoryId || team.CategoryID || "",
+  TeamStatus: (team.teamStatus ||
+    team.TeamStatus ||
+    "Pending") as Team["TeamStatus"],
 });
 
-const mapAdvancementRule = (r: BackendAdvancementRule): AdvancementRule => ({
-  RuleId: r.ruleId || r.RuleId || '',
-  RoundId: r.roundId || r.RoundId || '',
-  CategoryId: r.categoryId || r.CategoryId || '',
-  TopN: r.topN || r.TopN || 0,
+const mapSubmission = (submission: BackendSubmission): Submission => ({
+  SubmissionID:
+    submission.submissionId ||
+    submission.SubmissionId ||
+    submission.SubmissionID ||
+    "",
+  TeamID: submission.teamId || submission.TeamId || submission.TeamID || "",
+  RoundID: submission.roundId || submission.RoundId || submission.RoundID || "",
+  RepositoryURL:
+    submission.repositoryURL ||
+    submission.repositoryUrl ||
+    submission.RepositoryURL ||
+    "",
+  DemoURL: submission.demoURL || submission.demoUrl || submission.DemoURL || "",
+  SlideURL:
+    submission.slideURL || submission.slideUrl || submission.SlideURL || "",
+  SubmittedAt: submission.submittedAt || submission.SubmittedAt || "",
+  Status: (submission.status ||
+    submission.Status ||
+    "Submitted") as Submission["Status"],
 });
 
-const mapRanking = (r: BackendRanking): Ranking => ({
-  RankingId: r.rankingId || r.RankingId || '',
-  TeamId: r.teamId || r.TeamId || '',
-  RoundId: r.roundId || r.RoundId || '',
-  RankPosition: r.rankPosition || r.RankPosition || 0,
-  TotalScore: r.totalScore || r.TotalScore || 0,
+const mapSubmissionAsset = (
+  asset: BackendSubmissionAsset,
+): SubmissionAsset => ({
+  SubmissionAssetId: asset.submissionAssetId || asset.SubmissionAssetId || "",
+  SubmissionId: asset.submissionId || asset.SubmissionId || "",
+  TeamID: asset.teamId || asset.TeamId || asset.TeamID || "",
+  RoundID: asset.roundId || asset.RoundId || asset.RoundID || "",
+  AssetType: (asset.assetType ||
+    asset.AssetType ||
+    "VideoDemo") as SubmissionAssetType,
+  Provider: asset.provider || asset.Provider || "Cloudinary",
+  CloudinaryAssetId: asset.cloudinaryAssetId || asset.CloudinaryAssetId || "",
+  PublicId: asset.publicId || asset.PublicId || "",
+  SecureUrl: asset.secureUrl || asset.SecureUrl || "",
+  ResourceType: (asset.resourceType ||
+    asset.ResourceType ||
+    "raw") as SubmissionAsset["ResourceType"],
+  OriginalFileName: asset.originalFileName || asset.OriginalFileName || "",
+  Format: asset.format || asset.Format || "",
+  ContentType: asset.contentType || asset.ContentType || "",
+  FileSize: asset.fileSize || asset.FileSize || 0,
+  DurationSeconds: asset.durationSeconds ?? asset.DurationSeconds ?? null,
+  UploadStatus: (asset.uploadStatus ||
+    asset.UploadStatus ||
+    "Pending") as SubmissionAsset["UploadStatus"],
+  CreatedAt: asset.createdAt || asset.CreatedAt || "",
+  UploadedAt: asset.uploadedAt ?? asset.UploadedAt ?? null,
 });
 
-// API calls with live API implementation & mock fallback
+const mapCloudinaryUploadSignature = (
+  signature: BackendCloudinaryUploadSignature,
+): CloudinaryUploadSignature => ({
+  SubmissionAssetId:
+    signature.submissionAssetId || signature.SubmissionAssetId || "",
+  CloudName: signature.cloudName || signature.CloudName || "",
+  ApiKey: signature.apiKey || signature.ApiKey || "",
+  Timestamp: signature.timestamp || signature.Timestamp || 0,
+  Signature: signature.signature || signature.Signature || "",
+  Folder: signature.folder || signature.Folder || "",
+  PublicId: signature.publicId || signature.PublicId || "",
+  ResourceType: (signature.resourceType ||
+    signature.ResourceType ||
+    "raw") as CloudinaryUploadSignature["ResourceType"],
+  UploadUrl: signature.uploadUrl || signature.UploadUrl || "",
+  AllowedFormats: signature.allowedFormats || signature.AllowedFormats || [],
+  MaxFileSize: signature.maxFileSize || signature.MaxFileSize || 0,
+});
+
+const mapScore = (score: BackendScore): Score => ({
+  ScoreID: score.scoreId || score.ScoreId || score.ScoreID || "",
+  SubmissionID:
+    score.submissionId || score.SubmissionId || score.SubmissionID || "",
+  AssignmentId: score.assignmentId || score.AssignmentId || "",
+  CriteriaID: score.criteriaId || score.CriteriaId || score.CriteriaID || "",
+  ScoreValue: score.scoreValue || score.ScoreValue || 0,
+  Comment: score.comment || score.Comment || "",
+  ScoredAt: score.scoredAt || score.ScoredAt || "",
+});
+
+const mapAdvancementRule = (rule: BackendAdvancementRule): AdvancementRule => ({
+  RuleId: rule.ruleId || rule.RuleId || "",
+  RoundId: rule.roundId || rule.RoundId || "",
+  CategoryId: rule.categoryId || rule.CategoryId || "",
+  TopN: rule.topN || rule.TopN || 0,
+});
+
+const mapJudgeAssignment = (a: BackendJudgeAssignment): JudgeAssignment => ({
+  AssignmentId: a.assignmentId || a.AssignmentId || "",
+  UserId: a.userId || a.UserId || "",
+  UserFullName:
+    a.userFullName ||
+    a.UserFullName ||
+    a.user?.fullName ||
+    a.user?.FullName ||
+    "",
+  UserEmail: a.userEmail || a.UserEmail || a.user?.email || a.user?.Email || "",
+  RoundId: a.roundId || a.RoundId || "",
+  User: a.user ? mapUser(a.user) : undefined,
+  Round: a.round ? mapRound(a.round) : undefined,
+});
+
+const mapRanking = (ranking: BackendRanking): Ranking => ({
+  RankingId: ranking.rankingId || ranking.RankingId || "",
+  TeamId: ranking.teamId || ranking.TeamId || "",
+  RoundId: ranking.roundId || ranking.RoundId || "",
+  RankPosition: ranking.rankPosition || ranking.RankPosition || 0,
+  TotalScore: ranking.totalScore || ranking.TotalScore || 0,
+});
+
+const mapEventCriteria = (criteria: BackendEventCriteria): Criteria => ({
+  CriteriaID: criteria.criteriaId || criteria.CriteriaId || "",
+  TemplateID: criteria.eventCriteriaId || criteria.EventCriteriaId || "",
+  CriteriaName: criteria.criteriaName || criteria.CriteriaName || "",
+  Weight: criteria.weight || criteria.Weight || 0,
+});
+
+// ============================================================================
+// CALIBRATION MAPPING FUNCTIONS
+// ============================================================================
+
+const mapCalibrationSubmission = (
+  data: BackendCalibrationSubmission,
+): CalibrationSubmission => ({
+  CalibrationId: data.submissionId || data.SubmissionId || data.calibrationId || data.CalibrationId || "",
+  EventId: data.eventId || data.EventId || "",
+  EventName: data.eventName || data.EventName || "",
+  RoundId: data.roundId || data.RoundId || "",
+  RoundName: data.roundName || data.RoundName || "",
+  CalibrationTitle: data.calibrationTitle || data.CalibrationTitle || "",
+  RepositoryURL: data.repositoryURL || data.RepositoryURL || "",
+  DemoURL: data.demoURL || data.DemoURL || "",
+  SlideURL: data.slideURL || data.SlideURL || "",
+  SubmittedAt: data.submittedAt || data.SubmittedAt || "",
+  Status: (data.status ||
+    data.Status ||
+    "Pending") as CalibrationSubmission["Status"],
+  JudgeCount: data.judgeCount || data.JudgeCount || 0,
+  TotalJudges: data.totalJudges || data.TotalJudges || 0,
+});
+
+const mapCalibrationScore = (
+  score: BackendCalibrationScore,
+): CalibrationScoreOutput => ({
+  CalibrationScoreId:
+    score.calibrationScoreId || score.CalibrationScoreId || "",
+  CalibrationId: score.calibrationId || score.CalibrationId || "",
+  JudgeId: score.judgeId || score.JudgeId || "",
+  JudgeCode: score.judgeCode || score.JudgeCode || "",
+  CriteriaId: score.criteriaId || score.CriteriaId || "",
+  CriteriaName: score.criteriaName || score.CriteriaName || "",
+  ScoreValue: score.scoreValue || score.ScoreValue || 0,
+  Comment: score.comment || score.Comment || "",
+  ScoredAt: score.scoredAt || score.ScoredAt || "",
+});
+
+const mapCriteriaVariance = (
+  data: BackendCriteriaVariance,
+): CriteriaVariance => ({
+  CriteriaId: data.criteriaId || data.CriteriaId || "",
+  CriteriaName: data.criteriaName || data.CriteriaName || "",
+  MeanScore: data.meanScore || data.MeanScore || 0,
+  Variance: data.variance || data.Variance || 0,
+  StandardDeviation: data.standardDeviation || data.StandardDeviation || 0,
+  MinScore: data.minScore || data.MinScore || 0,
+  MaxScore: data.maxScore || data.MaxScore || 0,
+  ScoreRange: data.scoreRange || data.ScoreRange || 0,
+});
+
+const mapJudgeSummary = (data: BackendJudgeSummary): JudgeSummary => ({
+  JudgeId: data.judgeId || data.JudgeId || "",
+  JudgeCode: data.judgeCode || data.JudgeCode || "",
+  AverageScore: data.averageScore || data.AverageScore || 0,
+  DeviationFromGroupMean:
+    data.deviationFromGroupMean || data.DeviationFromGroupMean || 0,
+  ConsistencyLabel: (data.consistencyLabel ||
+    data.ConsistencyLabel ||
+    "Neutral") as JudgeSummary["ConsistencyLabel"],
+});
+
+const mapCalibrationAnalysis = (
+  data: BackendCalibrationAnalysis,
+): CalibrationAnalysis => ({
+  SubmissionId: data.submissionId || data.SubmissionId || "",
+  CalibrationTitle: data.calibrationTitle || data.CalibrationTitle || "",
+  JudgeCount: data.judgeCount || data.JudgeCount || 0,
+  CriteriaCount: data.criteriaCount || data.CriteriaCount || 0,
+  OverallMean: data.overallMean || data.OverallMean || 0,
+  CriteriaVariance: (data.criteriaVariance || data.CriteriaVariance || []).map(
+    mapCriteriaVariance,
+  ),
+  JudgeSummaries: (data.judgeSummaries || data.JudgeSummaries || []).map(
+    mapJudgeSummary,
+  ),
+  InconsistencyFlags: data.inconsistencyFlags || data.InconsistencyFlags || [],
+});
+
+const normalizeDate = (value: string): Date | null => {
+  if (!value) return null;
+  const parsed = new Date(value);
+  return Number.isNaN(parsed.getTime()) ? null : parsed;
+};
+
+const formatDateForDisplay = (value: string): string => {
+  const date = normalizeDate(value);
+  if (!date) return "";
+  return date.toLocaleDateString("vi-VN");
+};
+
+const calculateDaysLeft = (deadlineValue: string): number => {
+  const deadline = normalizeDate(deadlineValue);
+  if (!deadline) return 0;
+
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  deadline.setHours(0, 0, 0, 0);
+  return Math.max(
+    0,
+    Math.ceil((deadline.getTime() - today.getTime()) / 86400000),
+  );
+};
+
+const getCompetitionStatus = (
+  event: BackendEvent,
+): DetailedCompetition["Status"] => {
+  const startDate = normalizeDate(event.startDate || event.StartDate || "");
+  const endDate = normalizeDate(event.endDate || event.EndDate || "");
+  const now = new Date();
+
+  if (endDate && now > endDate) return "closed";
+  if (startDate && now < startDate) return "upcoming";
+  return "open";
+};
+
+const mapPublishedEventToDetailedCompetition = (
+  event: BackendEvent,
+): DetailedCompetition => {
+  const format = (event.format ||
+    event.Format ||
+    "Online") as DetailedCompetition["Format"];
+
+  return {
+    ID: event.eventId || event.EventId || event.EventID || "",
+    Name: event.eventName || event.EventName || "",
+    Description: event.description || event.Description || "",
+    Category: "Technology",
+    CategoryLabel: "",
+    Status: getCompetitionStatus(event),
+    Deadline: formatDateForDisplay(event.startDate || event.StartDate || ''),
+    Format: ['Online', 'Offline', 'Hybrid'].includes(format) ? format : 'Online',
+    Audience: 'Sinh vien',
+    Organizer: event.organizer || event.Organizer || '',
+    Prize: event.prize || event.Prize || '',
+    BannerUrl: event.bannerUrl || event.BannerUrl || '/images/hackathon_banner.png',
+    DaysLeft: calculateDaysLeft(event.startDate || event.StartDate || ''),
+    IsFeatured: event.isFeatured ?? event.IsFeatured ?? false,
+  };
+};
+
 export async function getEvents(): Promise<Event[]> {
-  await delay(200);
-  if (useLiveApi) {
-    try {
-      const res = await apiClient.get<BackendEvent[]>('/Event/all');
-      return res.data.map(mapEvent);
-    } catch (e: unknown) {
-      console.warn('Live API error for getEvents, falling back to mock:', e);
-    }
+  if (!useLiveApi) return [];
+  try {
+    const response = await apiClient.get<BackendEvent[]>("/Event/all");
+    return response.data.map(mapEvent);
+  } catch (error: unknown) {
+    logApiError("getEvents", error);
+    return [];
   }
-  return mockEvents;
 }
 
 export async function getRounds(eventId?: string): Promise<Round[]> {
-  await delay(200);
-  if (useLiveApi) {
-    try {
-      if (eventId) {
-        const res = await apiClient.get<BackendRound[]>(`/Round/events/${eventId}`);
-        return res.data.map(mapRound);
-      } else {
-        const res = await apiClient.get<BackendEvent[]>('/Event/all');
-        return res.data.flatMap((e: BackendEvent) => (e.rounds || []).map(mapRound));
-      }
-    } catch (e: unknown) {
-      console.warn('Live API error for getRounds, falling back to mock:', e);
+  if (!useLiveApi) return [];
+  try {
+    if (eventId) {
+      const response = await apiClient.get<BackendRound[]>(
+        `/Round/events/${eventId}`,
+      );
+      return response.data.map(mapRound);
     }
+
+    const response = await apiClient.get<BackendEvent[]>("/Event/all");
+    return response.data.flatMap((event) =>
+      (event.rounds || event.Rounds || []).map(mapRound),
+    );
+  } catch (error: unknown) {
+    logApiError("getRounds", error);
+    return [];
   }
-  return eventId ? mockRounds.filter(r => r.EventID === eventId) : mockRounds;
 }
 
 export async function getCategories(eventId?: string): Promise<Category[]> {
-  await delay(200);
-  if (useLiveApi) {
-    try {
-      const res = await apiClient.get<BackendCategory[]>('/Category');
-      const list = res.data.map(mapCategory);
-      return eventId ? list.filter((c: Category) => c.EventID === eventId) : list;
-    } catch (e: unknown) {
-      console.warn('Live API error for getCategories, falling back to mock:', e);
-    }
+  if (!useLiveApi) return [];
+  try {
+    const response = await apiClient.get<BackendCategory[]>("/Category");
+    const categories = response.data.map(mapCategory);
+    return eventId
+      ? categories.filter((category) => category.EventID === eventId)
+      : categories;
+  } catch (error: unknown) {
+    logApiError("getCategories", error);
+    return [];
   }
-  return eventId ? mockCategories.filter(c => c.EventID === eventId) : mockCategories;
 }
 
 export async function getTeams(): Promise<Team[]> {
-  await delay(200);
-  if (useLiveApi) {
-    try {
-      const res = await apiClient.get<BackendTeam[]>('/Teams');
-      return res.data.map(mapTeam);
-    } catch (e: unknown) {
-      console.warn('Live API error for getTeams, falling back to mock:', e);
-    }
+  if (!useLiveApi) return [];
+  try {
+    const response = await apiClient.get<BackendTeam[]>("/Teams");
+    return response.data.map(mapTeam);
+  } catch (error: unknown) {
+    logApiError("getTeams", error);
+    return [];
   }
-  return mockTeams;
 }
 
-export async function getTeamMembers(teamId: string): Promise<(TeamMember & { User: User; StudentProfile?: StudentProfile })[]> {
-  await delay(200);
-  // Backend doesn't have an endpoint for get team members, so we fall back to mock members.
-  const members = mockTeamMembers.filter(m => m.TeamID === teamId);
-  return members.map(m => {
-    const user = mockUsers.find(u => u.UserID === m.UserId)!;
-    const profile = mockStudentProfiles.find(p => p.UserID === m.UserId);
-    return {
-      ...m,
-      User: user,
-      StudentProfile: profile
-    };
-  });
+export interface BackendTeamMemberDetail {
+  teamMemberId?: string;
+  teamId?: string;
+  userId?: string;
+  joinDate?: string;
+  user?: {
+    userId?: string;
+    email?: string;
+    fullName?: string;
+    phone?: string;
+    shortId?: string;
+    role?: string;
+    accountStatus?: string;
+  };
+  studentProfile?: {
+    profileId?: string;
+    userId?: string;
+    studentType?: string;
+    studentCode?: string;
+    universityName?: string;
+  };
 }
 
-export async function getSubmissions(roundId?: string): Promise<(Submission & { Team: Team })[]> {
-  await delay(200);
-  if (useLiveApi) {
-    try {
-      const res = await apiClient.get<BackendSubmission[]>('/Submissions');
-      const teams = await getTeams();
-      const subs = res.data.map((s: BackendSubmission) => {
-        const mappedSub = mapSubmission(s);
-        const team = teams.find(t => t.TeamID === mappedSub.TeamID) || mockTeams[0];
-        return { ...mappedSub, Team: team };
-      });
-      return roundId ? subs.filter((s: Submission & { Team: Team }) => s.RoundID === roundId) : subs;
-    } catch (e: unknown) {
-      console.warn('Live API error for getSubmissions, falling back to mock:', e);
-    }
+export async function getTeamMembers(
+  teamId: string,
+): Promise<(TeamMember & { User: User; StudentProfile?: StudentProfile })[]> {
+  if (!useLiveApi || !teamId) return [];
+  try {
+    const response = await apiClient.get<BackendTeamMemberDetail[]>(
+      `/Teams/${teamId}/members`,
+    );
+    return response.data.map((member) => ({
+      TeamMemberId: member.teamMemberId || "",
+      TeamID: member.teamId || "",
+      UserId: member.userId || "",
+      JoinDate: member.joinDate || "",
+      User: {
+        UserID: member.user?.userId || "",
+        Email: member.user?.email || "",
+        FullName: member.user?.fullName || "",
+        Phone: member.user?.phone || "",
+        ShortId: member.user?.shortId || "",
+        Role: (member.user?.role || "Member") as User["Role"],
+        AccountStatus: member.user?.accountStatus || "",
+      },
+      StudentProfile: member.studentProfile
+        ? {
+            ProfileID: member.studentProfile.profileId || "",
+            UserID: member.studentProfile.userId || "",
+            StudentType: (member.studentProfile.studentType ||
+              "External") as StudentProfile["StudentType"],
+            StudentCode: member.studentProfile.studentCode || "",
+            UniversityName: member.studentProfile.universityName || "",
+          }
+        : undefined,
+    }));
+  } catch (error: unknown) {
+    logApiError("getTeamMembers", error);
+    return [];
   }
-  const subs = roundId ? mockSubmissions.filter(s => s.RoundID === roundId) : mockSubmissions;
-  return subs.map(s => ({
-    ...s,
-    Team: mockTeams.find(t => t.TeamID === s.TeamID)!
-  }));
 }
 
-export async function getScores(submissionId: string): Promise<(Score & { Judge: User; Criteria: Criteria })[]> {
-  await delay(200);
-  if (useLiveApi) {
-    try {
-      const res = await apiClient.get<BackendSubmissionWithScores[]>('/Scores/assigned-submissions');
-      const targetSub = res.data.find((s: BackendSubmissionWithScores) => (s.submissionId || s.SubmissionId) === submissionId);
-      if (targetSub && targetSub.scores) {
-        return targetSub.scores.map((sc: BackendScore) => {
-          const criteria = mockCriteria.find(c => c.CriteriaID === (sc.criteriaId || sc.CriteriaId)) || {
-            CriteriaID: sc.criteriaId || sc.CriteriaId || '',
-            TemplateID: '',
-            CriteriaName: sc.criteriaName || sc.CriteriaName || 'Tiêu chí',
-            Weight: sc.weight || sc.Weight || 1
-          };
-          const judge = mockUsers.find(u => u.Role === 'Judge')!; // Fallback
-          return {
-            ...mapScore(sc),
-            Judge: judge,
-            Criteria: criteria
-          };
-        });
-      }
-    } catch (e: unknown) {
-      console.warn('Live API error for getScores, falling back to mock:', e);
-    }
+function buildAddTeamMemberPayload(userLookup: string) {
+  const value = userLookup.trim();
+  const guidPattern =
+    /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+  if (guidPattern.test(value)) {
+    return { UserId: value };
   }
-  const scores = mockScores.filter(s => s.SubmissionID === submissionId);
-  return scores.map(s => {
-    const criteria = mockCriteria.find(c => c.CriteriaID === s.CriteriaID)!;
-    const isJudge2 = s.ScoreID.includes('-j2') || s.AssignmentId.includes('0002') || s.AssignmentId.includes('0004') || s.AssignmentId.includes('0008');
-    const judge = isJudge2 
-      ? mockUsers.find(u => u.Email.includes('judge.internal2'))!
-      : mockUsers.find(u => u.Email.includes('judge.internal1'))!;
-    
-    return {
-      ...s,
-      Judge: judge,
-      Criteria: criteria
-    };
-  });
-}
 
-export async function getCalibrationScores(): Promise<(CalibrationScore & { Judge: User; Criteria: Criteria; Submission: Submission; Team: Team })[]> {
-  await delay(200);
-  // Backend has no calibration endpoint, fallback to mock
-  return mockCalibrationScores.map(c => {
-    const judge = c.JudgeID.includes('11')
-      ? mockUsers.find(u => u.Email.includes('judge.internal1'))!
-      : mockUsers.find(u => u.Email.includes('judge.internal2'))!;
-    const criteria = mockCriteria.find(cr => cr.CriteriaID === c.CriteriaID)!;
-    const submission = mockSubmissions.find(s => s.SubmissionID === c.SubmissionID)!;
-    const team = mockTeams.find(t => t.TeamID === submission.TeamID)!;
-    return {
-      ...c,
-      Judge: judge,
-      Criteria: criteria,
-      Submission: submission,
-      Team: team
-    };
-  });
-}
-
-export async function getAdvancementRules(roundId?: string): Promise<AdvancementRule[]> {
-  await delay(200);
-  if (useLiveApi) {
-    try {
-      const res = await apiClient.get<BackendAdvancementRule[]>('/AdvancementRule');
-      const list = res.data.map(mapAdvancementRule);
-      return roundId ? list.filter((r: AdvancementRule) => r.RoundId === roundId) : list;
-    } catch (e: unknown) {
-      console.warn('Live API error for getAdvancementRules, falling back to mock:', e);
-    }
+  if (value.includes("@")) {
+    return { Email: value };
   }
-  return roundId ? mockAdvancementRules.filter(r => r.RoundId === roundId) : mockAdvancementRules;
+
+  return { ShortId: value, StudentCode: value };
 }
 
-export async function getEliminations(): Promise<(Elimination & { Submission: Submission; Team: Team; Coordinator: User })[]> {
-  await delay(200);
-  // Backend has no direct elimination endpoint, fallback to mock
-  return mockEliminations.map(e => {
-    const submission = mockSubmissions.find(s => s.SubmissionID === e.SubmissionId)!;
-    const team = mockTeams.find(t => t.TeamID === submission.TeamID)!;
-    const coordinator = mockUsers.find(u => u.UserID === e.UserId)!;
+export async function addTeamMember(
+  teamId: string,
+  userLookup: string,
+): Promise<Team | null> {
+  if (!useLiveApi || !teamId || !userLookup.trim()) return null;
+  try {
+    const response = await apiClient.post<BackendTeam>(
+      `/Teams/${teamId}/members`,
+      buildAddTeamMemberPayload(userLookup),
+    );
+    return mapTeam(response.data);
+  } catch (error: unknown) {
+    logApiError("addTeamMember", error);
+    throw error;
+  }
+}
+
+export async function createTeam(teamName: string): Promise<Team | null> {
+  if (!useLiveApi || !teamName.trim()) return null;
+  try {
+    const response = await apiClient.post<BackendTeam>("/Teams", {
+      TeamName: teamName.trim(),
+      TeamStatus: "Active",
+    });
+    return mapTeam(response.data);
+  } catch (error: unknown) {
+    logApiError("createTeam", error);
+    throw error;
+  }
+}
+
+export async function setTeamCategory(
+  teamId: string,
+  categoryId: string,
+  eventId: string,
+): Promise<Team | null> {
+  if (!useLiveApi || !teamId || !categoryId || !eventId) return null;
+  try {
+    const response = await apiClient.put<BackendTeam>(
+      `/Teams/${teamId}/category`,
+      {
+        CategoryId: categoryId,
+        EventId: eventId,
+      },
+    );
+    return mapTeam(response.data);
+  } catch (error: unknown) {
+    logApiError("setTeamCategory", error);
+    throw error;
+  }
+}
+
+export async function getSubmissions(
+  roundId?: string,
+): Promise<(Submission & { Team: Team })[]> {
+  if (!useLiveApi) return [];
+  try {
+    const response = await apiClient.get<BackendSubmission[]>("/Submissions");
+    const teams = await getTeams();
+    const submissions = response.data.map((submission) => {
+      const mappedSubmission = mapSubmission(submission);
+      const team = teams.find(
+        (item) => item.TeamID === mappedSubmission.TeamID,
+      ) || {
+        TeamID: mappedSubmission.TeamID,
+        TeamName: "",
+        TeamLeaderId: "",
+        EventID: "",
+        CategoryID: "",
+        TeamStatus: "Pending" as const,
+      };
+
+      return { ...mappedSubmission, Team: team };
+    });
+
+    return roundId
+      ? submissions.filter((submission) => submission.RoundID === roundId)
+      : submissions;
+  } catch (error: unknown) {
+    logApiError("getSubmissions", error);
+    return [];
+  }
+}
+
+const emptyTeamForSubmission = (submission: Submission): Team => ({
+  TeamID: submission.TeamID,
+  TeamName: "",
+  TeamLeaderId: "",
+  EventID: "",
+  CategoryID: "",
+  TeamStatus: "Pending",
+});
+
+export async function getTeamSubmissions(
+  teamId: string,
+): Promise<(Submission & { Team: Team })[]> {
+  if (!useLiveApi || !teamId) return [];
+  try {
+    const response = await apiClient.get<BackendSubmission[]>(
+      `/Submissions/team/${teamId}`,
+    );
+    const teams = await getTeams();
+    const team = teams.find((item) => item.TeamID === teamId);
+
+    return response.data.map((submission) => {
+      const mappedSubmission = mapSubmission(submission);
+      return {
+        ...mappedSubmission,
+        Team: team || emptyTeamForSubmission(mappedSubmission),
+      };
+    });
+  } catch (error: unknown) {
+    logApiError("getTeamSubmissions", error);
+    return [];
+  }
+}
+
+export async function getTeamSubmissionByRound(
+  teamId: string,
+  roundId: string,
+): Promise<(Submission & { Team: Team }) | null> {
+  if (!useLiveApi || !teamId || !roundId) return null;
+  try {
+    const response = await apiClient.get<BackendSubmission>(
+      `/Submissions/team/${teamId}/round/${roundId}`,
+    );
+    const mappedSubmission = mapSubmission(response.data);
+    const teams = await getTeams();
+    const team = teams.find((item) => item.TeamID === mappedSubmission.TeamID);
+
     return {
-      ...e,
-      Submission: submission,
-      Team: team,
-      Coordinator: coordinator
+      ...mappedSubmission,
+      Team: team || emptyTeamForSubmission(mappedSubmission),
     };
+  } catch (error: unknown) {
+    const status =
+      typeof error === "object" && error !== null && "response" in error
+        ? (error as { response?: { status?: number } }).response?.status
+        : undefined;
+    if (status !== 404) logApiError("getTeamSubmissionByRound", error);
+    return null;
+  }
+}
+
+export async function getSubmissionAssets(
+  submissionId: string,
+): Promise<SubmissionAsset[]> {
+  if (!useLiveApi || !submissionId) return [];
+  try {
+    const response = await apiClient.get<BackendSubmissionAsset[]>(
+      `/SubmissionAssets/submission/${submissionId}`,
+    );
+    return response.data.map(mapSubmissionAsset);
+  } catch (error: unknown) {
+    logApiError("getSubmissionAssets", error);
+    return [];
+  }
+}
+
+export async function getSubmissionAssetsByTeamRound(
+  teamId: string,
+  roundId: string,
+): Promise<SubmissionAsset[]> {
+  if (!useLiveApi || !teamId || !roundId) return [];
+  try {
+    const response = await apiClient.get<BackendSubmissionAsset[]>(
+      `/SubmissionAssets/team/${teamId}/round/${roundId}`,
+    );
+    return response.data.map(mapSubmissionAsset);
+  } catch (error: unknown) {
+    logApiError("getSubmissionAssetsByTeamRound", error);
+    return [];
+  }
+}
+
+export async function signSubmissionAssetUpload(
+  teamId: string,
+  roundId: string,
+  assetType: SubmissionAssetType,
+  file: File,
+): Promise<CloudinaryUploadSignature | null> {
+  if (!useLiveApi || !teamId || !roundId || !file) return null;
+  try {
+    const response = await apiClient.post<BackendCloudinaryUploadSignature>(
+      "/SubmissionAssets/sign-upload",
+      {
+        TeamId: teamId,
+        RoundId: roundId,
+        AssetType: assetType,
+        FileName: file.name,
+        ContentType: file.type,
+        FileSize: file.size,
+      },
+    );
+    return mapCloudinaryUploadSignature(response.data);
+  } catch (error: unknown) {
+    logApiError("signSubmissionAssetUpload", error);
+    throw error;
+  }
+}
+
+export async function uploadFileToCloudinary(
+  signature: CloudinaryUploadSignature,
+  file: File,
+): Promise<CloudinaryUploadResponse> {
+  const formData = new FormData();
+  formData.append("file", file);
+  formData.append("api_key", signature.ApiKey);
+  formData.append("timestamp", String(signature.Timestamp));
+  formData.append("signature", signature.Signature);
+  formData.append("folder", signature.Folder);
+  formData.append("public_id", signature.PublicId);
+
+  const response = await fetch(signature.UploadUrl, {
+    method: "POST",
+    body: formData,
   });
+
+  if (!response.ok) {
+    const message = await response.text();
+    throw new Error(message || "Cloudinary upload failed.");
+  }
+
+  return (await response.json()) as CloudinaryUploadResponse;
+}
+
+export async function completeSubmissionAssetUpload(
+  submissionAssetId: string,
+  uploadResult: CloudinaryUploadResponse,
+): Promise<SubmissionAsset | null> {
+  if (!useLiveApi || !submissionAssetId) return null;
+  try {
+    const response = await apiClient.post<BackendSubmissionAsset>(
+      "/SubmissionAssets/complete",
+      {
+        SubmissionAssetId: submissionAssetId,
+        CloudinaryAssetId: uploadResult.asset_id || "",
+        PublicId: uploadResult.public_id || "",
+        SecureUrl: uploadResult.secure_url || "",
+        ResourceType: uploadResult.resource_type || "",
+        Format: uploadResult.format || "",
+        FileSize: uploadResult.bytes || 0,
+        DurationSeconds: uploadResult.duration ?? null,
+      },
+    );
+    return mapSubmissionAsset(response.data);
+  } catch (error: unknown) {
+    logApiError("completeSubmissionAssetUpload", error);
+    throw error;
+  }
+}
+
+export async function uploadSubmissionAsset(
+  teamId: string,
+  roundId: string,
+  assetType: SubmissionAssetType,
+  file: File,
+): Promise<SubmissionAsset | null> {
+  const signature = await signSubmissionAssetUpload(
+    teamId,
+    roundId,
+    assetType,
+    file,
+  );
+  if (!signature) return null;
+  const uploadResult = await uploadFileToCloudinary(signature, file);
+  return completeSubmissionAssetUpload(
+    signature.SubmissionAssetId,
+    uploadResult,
+  );
+}
+
+export async function createSubmissionLinks(
+  teamId: string,
+  roundId: string,
+  links: Pick<Submission, "RepositoryURL" | "DemoURL" | "SlideURL"> & {
+    VideoAssetId?: string;
+    SlideAssetId?: string;
+  },
+): Promise<Submission | null> {
+  if (!useLiveApi || !teamId || !roundId) return null;
+  try {
+    const response = await apiClient.post<BackendSubmission>("/Submissions", {
+      TeamId: teamId,
+      RoundId: roundId,
+      RepositoryURL: links.RepositoryURL,
+      DemoURL: links.DemoURL,
+      SlideURL: links.SlideURL,
+      VideoAssetId: links.VideoAssetId || null,
+      SlideAssetId: links.SlideAssetId || null,
+    });
+
+    return mapSubmission(response.data);
+  } catch (error: unknown) {
+    logApiError("createSubmissionLinks", error);
+    throw error;
+  }
+}
+
+export async function updateSubmissionLinks(
+  submissionId: string,
+  links: Pick<Submission, "RepositoryURL" | "DemoURL" | "SlideURL"> & {
+    VideoAssetId?: string;
+    SlideAssetId?: string;
+  },
+): Promise<Submission | null> {
+  if (!useLiveApi || !submissionId) return null;
+  try {
+    const response = await apiClient.put<BackendSubmission>("/Submissions", {
+      SubmissionId: submissionId,
+      RepositoryURL: links.RepositoryURL,
+      DemoURL: links.DemoURL,
+      SlideURL: links.SlideURL,
+      VideoAssetId: links.VideoAssetId || null,
+      SlideAssetId: links.SlideAssetId || null,
+    });
+
+    return mapSubmission(response.data);
+  } catch (error: unknown) {
+    logApiError("updateSubmissionLinks", error);
+    throw error;
+  }
+}
+
+export async function getScores(
+  submissionId: string,
+): Promise<(Score & { Judge: User; Criteria: Criteria })[]> {
+  if (!useLiveApi) return [];
+  try {
+    const response = await apiClient.get<BackendSubmissionWithScores[]>(
+      "/Scores/assigned-submissions",
+    );
+    const targetSubmission = response.data.find(
+      (submission) =>
+        (submission.submissionId ||
+          submission.SubmissionId ||
+          submission.SubmissionID) === submissionId,
+    );
+    const scores = targetSubmission?.scores || targetSubmission?.Scores || [];
+
+    return scores.map((score) => ({
+      ...mapScore(score),
+      Judge: emptyUser(),
+      Criteria: {
+        CriteriaID:
+          score.criteriaId || score.CriteriaId || score.CriteriaID || "",
+        TemplateID: "",
+        CriteriaName: score.criteriaName || score.CriteriaName || "",
+        Weight: score.weight || score.Weight || 0,
+      },
+    }));
+  } catch (error: unknown) {
+    logApiError("getScores", error);
+    return [];
+  }
+}
+
+export async function getEventCriteria(eventId: string): Promise<Criteria[]> {
+  if (!useLiveApi || !eventId) return [];
+  try {
+    const response = await apiClient.get<BackendEventCriteria[]>(
+      `/events/${eventId}/criteria`,
+    );
+    return response.data.map(mapEventCriteria);
+  } catch (error: unknown) {
+    logApiError("getEventCriteria", error);
+    return [];
+  }
+}
+
+export async function submitScores(
+  submissionId: string,
+  scores: { CriteriaId: string; ScoreValue: number; Comment: string }[],
+): Promise<Score[]> {
+  const response = await apiClient.post<BackendScore[]>(
+    `/Scores/submissions/${submissionId}`,
+    {
+      Scores: scores,
+    },
+  );
+  return response.data.map(mapScore);
+}
+
+export async function updateScores(
+  submissionId: string,
+  scores: { CriteriaId: string; ScoreValue: number; Comment: string }[],
+): Promise<Score[]> {
+  const response = await apiClient.put<BackendScore[]>(
+    `/Scores/submissions/${submissionId}`,
+    {
+      Scores: scores,
+    },
+  );
+  return response.data.map(mapScore);
+}
+
+export async function getAssignedSubmissions(): Promise<
+  JudgeAssignedSubmission[]
+> {
+  if (!useLiveApi) return [];
+  try {
+    const response = await apiClient.get<JudgeAssignedSubmission[]>(
+      "/Scores/assigned-submissions",
+    );
+    return response.data;
+  } catch (error: unknown) {
+    logApiError("getAssignedSubmissions", error);
+    return [];
+  }
+}
+
+// ============================================================================
+// CALIBRATION API FUNCTIONS
+// ============================================================================
+
+export async function getCalibrationSubmissions(filters?: {
+  roundId?: string;
+  eventId?: string;
+  status?: string;
+}): Promise<CalibrationSubmission[]> {
+  if (!useLiveApi) return [];
+  try {
+    const response = await apiClient.get<BackendCalibrationSubmission[]>(
+      "/Calibration/submissions",
+      { params: filters },
+    );
+    return response.data.map(mapCalibrationSubmission);
+  } catch (error: unknown) {
+    logApiError("getCalibrationSubmissions", error);
+    return [];
+  }
+}
+
+export async function getCalibrationSubmission(
+  id: string,
+): Promise<CalibrationSubmission | null> {
+  if (!useLiveApi || !id) return null;
+  try {
+    const response = await apiClient.get<BackendCalibrationSubmission>(
+      `/Calibration/submissions/${id}`,
+    );
+    return mapCalibrationSubmission(response.data);
+  } catch (error: unknown) {
+    logApiError("getCalibrationSubmission", error);
+    return null;
+  }
+}
+
+export async function createCalibrationSubmission(data: {
+  roundId: string;
+  calibrationTitle: string;
+  repositoryURL?: string;
+  demoURL?: string;
+  slideURL?: string;
+}): Promise<CalibrationSubmission | null> {
+  if (!useLiveApi) return null;
+  try {
+    const response = await apiClient.post<BackendCalibrationSubmission>(
+      "/Calibration/submissions",
+      {
+        roundId: data.roundId,
+        calibrationTitle: data.calibrationTitle,
+        repositoryURL: data.repositoryURL,
+        demoURL: data.demoURL,
+        slideURL: data.slideURL,
+      },
+    );
+    return mapCalibrationSubmission(response.data);
+  } catch (error: unknown) {
+    logApiError("createCalibrationSubmission", error);
+    throw error;
+  }
+}
+
+export async function getCalibrationScores(
+  calibrationId: string,
+): Promise<CalibrationScoreWithMyScore> {
+  if (!useLiveApi || !calibrationId) {
+    return { scores: [], myScore: [], hasScored: false };
+  }
+  try {
+    const response = await apiClient.get<{
+      scores: BackendCalibrationScore[];
+      myScore?: BackendCalibrationScore[];
+    }>(`/Calibration/submissions/${calibrationId}/scores`);
+
+    const scores = (response.data.scores || []).map(mapCalibrationScore);
+    const myScore = (response.data.myScore || []).map(mapCalibrationScore);
+
+    return {
+      scores,
+      myScore,
+      hasScored: myScore.length > 0,
+    };
+  } catch (error: unknown) {
+    logApiError("getCalibrationScores", error);
+    return { scores: [], myScore: [], hasScored: false };
+  }
+}
+
+export async function getMyCalibrationScore(
+  calibrationId: string,
+): Promise<{ hasScored: boolean; scores: CalibrationScoreOutput[] }> {
+  if (!useLiveApi || !calibrationId) {
+    return { hasScored: false, scores: [] };
+  }
+  try {
+    const response = await apiClient.get<{
+      hasScored: boolean;
+      scores: BackendCalibrationScore[];
+    }>(`/Calibration/submissions/${calibrationId}/my-score`);
+
+    return {
+      hasScored: response.data.hasScored || false,
+      scores: (response.data.scores || []).map(mapCalibrationScore),
+    };
+  } catch (error: unknown) {
+    logApiError("getMyCalibrationScore", error);
+    return { hasScored: false, scores: [] };
+  }
+}
+
+export async function submitCalibrationScore(
+  calibrationId: string,
+  scores: CalibrationScoreInput[],
+): Promise<CalibrationScoreOutput[]> {
+  const response = await apiClient.post<BackendCalibrationScore[]>(
+    `/Calibration/submissions/${calibrationId}/scores`,
+    { scores },
+  );
+  return response.data.map(mapCalibrationScore);
+}
+
+export async function updateCalibrationScore(
+  calibrationId: string,
+  scores: CalibrationScoreInput[],
+): Promise<CalibrationScoreOutput[]> {
+  const response = await apiClient.put<BackendCalibrationScore[]>(
+    `/Calibration/submissions/${calibrationId}/scores`,
+    { scores },
+  );
+  return response.data.map(mapCalibrationScore);
+}
+
+export async function getCalibrationAnalysis(
+  calibrationId: string,
+): Promise<CalibrationAnalysis | null> {
+  if (!useLiveApi || !calibrationId) return null;
+  try {
+    const response = await apiClient.get<BackendCalibrationAnalysis>(
+      `/Calibration/submissions/${calibrationId}/analysis`,
+    );
+    return mapCalibrationAnalysis(response.data);
+  } catch (error: unknown) {
+    logApiError("getCalibrationAnalysis", error);
+    return null;
+  }
+}
+
+export async function exportCalibrationCSV(
+  calibrationId: string,
+): Promise<Blob | null> {
+  if (!useLiveApi || !calibrationId) return null;
+  try {
+    const response = await apiClient.get(
+      `/Calibration/submissions/${calibrationId}/export`,
+      { responseType: "blob" },
+    );
+    return response.data as Blob;
+  } catch (error: unknown) {
+    logApiError("exportCalibrationCSV", error);
+    throw error;
+  }
+}
+
+export async function deleteCalibrationSubmission(id: string): Promise<void> {
+  await apiClient.delete(`/Calibration/submissions/${id}`);
+}
+
+export async function getAdvancementRules(
+  roundId?: string,
+): Promise<AdvancementRule[]> {
+  if (!useLiveApi) return [];
+  try {
+    const response =
+      await apiClient.get<BackendAdvancementRule[]>("/AdvancementRule");
+    const rules = response.data.map(mapAdvancementRule);
+    return roundId ? rules.filter((rule) => rule.RoundId === roundId) : rules;
+  } catch (error: unknown) {
+    logApiError("getAdvancementRules", error);
+    return [];
+  }
+}
+
+export async function setEventCriteria(
+  eventId: string,
+  criteria: { criteriaId: string; weight: number }[],
+): Promise<Criteria[]> {
+  const response = await apiClient.post<BackendEventCriteria[]>(
+    `/events/${eventId}/criteria`,
+    {
+      criteria,
+    },
+  );
+  return response.data.map(mapEventCriteria);
+}
+
+export async function createAdvancementRule(
+  roundId: string,
+  categoryId: string,
+  topN: number,
+): Promise<AdvancementRule> {
+  const response = await apiClient.post<BackendAdvancementRule>(
+    "/AdvancementRule",
+    {
+      roundId,
+      categoryId,
+      topN,
+    },
+  );
+  return mapAdvancementRule(response.data);
+}
+
+export async function deleteAdvancementRule(ruleId: string): Promise<void> {
+  await apiClient.delete(`/AdvancementRule/${ruleId}`);
+}
+
+export async function getJudgeAssignments(
+  roundId?: string,
+): Promise<JudgeAssignment[]> {
+  if (!useLiveApi) return [];
+  try {
+    const response =
+      await apiClient.get<BackendJudgeAssignment[]>("/JudgeAssignment");
+    const assignments = response.data.map(mapJudgeAssignment);
+    return roundId
+      ? assignments.filter((a) => a.RoundId === roundId)
+      : assignments;
+  } catch (error: unknown) {
+    logApiError("getJudgeAssignments", error);
+    return [];
+  }
+}
+
+export async function assignJudge(
+  userId: string,
+  roundId: string,
+): Promise<JudgeAssignment> {
+  const response = await apiClient.post<BackendJudgeAssignment>(
+    "/JudgeAssignment",
+    {
+      userId,
+      roundId,
+    },
+  );
+  return mapJudgeAssignment(response.data);
+}
+
+export async function removeJudgeAssignment(
+  assignmentId: string,
+): Promise<void> {
+  await apiClient.delete(`/JudgeAssignment/${assignmentId}`);
+}
+
+export async function getAllJudges(): Promise<User[]> {
+  if (!useLiveApi) return [];
+  try {
+    const response = await apiClient.get<BackendUser[]>("/users");
+    return response.data
+      .filter((u) => u.role === "Judge" || u.role === "Coordinator")
+      .map(mapUser);
+  } catch (error: unknown) {
+    logApiError("getAllJudges", error);
+    return [];
+  }
+}
+
+export async function getUsersByRole(role: string): Promise<User[]> {
+  if (!useLiveApi) return [];
+  try {
+    const response = await apiClient.get<BackendUser[]>(`/users/role/${role}`);
+    return response.data.map(mapUser);
+  } catch (error: unknown) {
+    logApiError("getUsersByRole", error);
+    return [];
+  }
+}
+
+export async function getEliminations(): Promise<
+  (Elimination & { Submission: Submission; Team: Team; Coordinator: User })[]
+> {
+  return [];
 }
 
 export async function getAuditLogs(): Promise<(AuditLog & { User: User })[]> {
-  await delay(200);
-  // Backend has no direct audit logs endpoint, fallback to mock
-  return mockAuditLogs.map(l => {
-    const user = mockUsers.find(u => u.UserID === l.UserID)!;
-    return {
-      ...l,
-      User: user
-    };
-  });
+  return [];
 }
 
-export async function getRankings(roundId?: string): Promise<(Ranking & { Team: Team })[]> {
-  await delay(200);
-  if (useLiveApi && roundId) {
-    try {
-      const res = await apiClient.get<BackendRanking[]>('/Rankings', { params: { roundId } });
-      const teams = await getTeams();
-      return res.data.map((r: BackendRanking) => ({
-        ...mapRanking(r),
-        Team: teams.find(t => t.TeamID === r.teamId) || mockTeams[0]
-      }));
-    } catch (e: unknown) {
-      console.warn('Live API error for getRankings, falling back to mock:', e);
-    }
+export async function getRankings(
+  roundId?: string,
+): Promise<(Ranking & { Team: Team })[]> {
+  if (!useLiveApi || !roundId) return [];
+  try {
+    const response = await apiClient.get<BackendRanking[]>("/Rankings", {
+      params: { roundId },
+    });
+    const teams = await getTeams();
+    return response.data.map((ranking) => {
+      const mappedRanking = mapRanking(ranking);
+      return {
+        ...mappedRanking,
+        Team: teams.find((team) => team.TeamID === mappedRanking.TeamId) || {
+          TeamID: mappedRanking.TeamId,
+          TeamName: "",
+          TeamLeaderId: "",
+          EventID: "",
+          CategoryID: "",
+          TeamStatus: "Pending" as const,
+        },
+      };
+    });
+  } catch (error: unknown) {
+    logApiError("getRankings", error);
+    return [];
   }
-  const ranks = roundId ? mockRankings.filter(r => r.RoundId === roundId) : mockRankings;
-  return ranks.map(r => ({
-    ...r,
-    Team: mockTeams.find(t => t.TeamID === r.TeamId)!
-  }));
 }
 
-export async function getAnnouncements(eventId?: string): Promise<Announcement[]> {
-  await delay(200);
-  // Backend has no announcements table/controller, fallback to mock
-  return eventId ? mockAnnouncements.filter(a => a.EventID === eventId) : mockAnnouncements;
+export async function getAnnouncements(
+  _eventId?: string,
+): Promise<Announcement[]> {
+  void _eventId;
+  return [];
 }
 
-export async function getDetailedCompetitions(): Promise<DetailedCompetition[]> {
-  await delay(200);
-  return mockDetailedCompetitions;
+export async function getDetailedCompetitions(): Promise<
+  DetailedCompetition[]
+> {
+  if (!useLiveApi) return [];
+  try {
+    const response = await apiClient.get<BackendEvent[]>("/Event/published");
+    return response.data.map(mapPublishedEventToDetailedCompetition);
+  } catch (error: unknown) {
+    logApiError("getDetailedCompetitions", error);
+    return [];
+  }
 }
+
+// User Skills, Team Recruitment & Team Application Re-exports
+export * from "../services/types/skill";
+export * from "../services/types/recruitment";
+export * from "../services/types/application";
+export * from "../services/api/skill";
+export * from "../services/api/recruitment";
+export * from "../services/api/application";
 

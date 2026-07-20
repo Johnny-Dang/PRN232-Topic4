@@ -1,12 +1,12 @@
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
 using BusinessLogicLayer.DTOs.Requests;
 using BusinessLogicLayer.DTOs.Responses;
 using BusinessLogicLayer.Services.Interfaces;
 using DataAccessLayer.Database.Entities;
 using DataAccessLayer.Repositories.Interfaces;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
 
 namespace BusinessLogicLayer.Services.Implements
 {
@@ -18,7 +18,10 @@ namespace BusinessLogicLayer.Services.Implements
         private readonly INotificationService _notificationService;
         private readonly IUnitOfWork _unitOfWork;
 
-        public CategoryMentorService(IUnitOfWork unitOfWork, INotificationService notificationService)
+        public CategoryMentorService(
+            IUnitOfWork unitOfWork,
+            INotificationService notificationService
+        )
         {
             _unitOfWork = unitOfWork;
             _categoryMentorRepository = _unitOfWork.GetRepository<CategoryMentors>();
@@ -27,16 +30,30 @@ namespace BusinessLogicLayer.Services.Implements
             _notificationService = notificationService;
         }
 
-        public async Task<CategoryMentorDto> CreateAsync(AddCategoryMentorRequest request, Guid userId)
+        public async Task<CategoryMentorDto> CreateAsync(
+            AddCategoryMentorRequest request,
+            Guid userId
+        )
         {
             await ValidateForeignKeysAsync(request.CategoryId, request.UserId);
+
+            var existingAssignments = await _categoryMentorRepository.FindAsync(assignment =>
+                assignment.CategoryId == request.CategoryId
+                && assignment.UserId == request.UserId
+                && (assignment.Status == "Pending" || assignment.Status == "Approved")
+            );
+
+            if (existingAssignments.Any())
+                throw new Exception(
+                    "This Mentor already has an active assignment for the selected Category."
+                );
 
             var categoryMentor = new CategoryMentors
             {
                 CategoryMentorId = Guid.NewGuid(),
                 CategoryId = request.CategoryId,
                 UserId = request.UserId,
-                Status = "Pending"
+                Status = "Pending",
             };
 
             var created = await _categoryMentorRepository.AddAsync(categoryMentor);
@@ -46,7 +63,8 @@ namespace BusinessLogicLayer.Services.Implements
             var coordinator = await _userRepository.GetByIdAsync(userId);
             var mentor = await _userRepository.GetByIdAsync(request.UserId);
 
-            string notificationMessage = $"[NOTIFICATION] Coordinator {coordinator?.FullName ?? "Unknown"} proposed Mentor {mentor?.FullName ?? "Unknown"} for Category {category?.CategoryName ?? "Unknown"}. Status is Pending.";
+            string notificationMessage =
+                $"[NOTIFICATION] Coordinator {coordinator?.FullName ?? "Unknown"} proposed Mentor {mentor?.FullName ?? "Unknown"} for Category {category?.CategoryName ?? "Unknown"}. Status is Pending.";
             Console.WriteLine(notificationMessage);
 
             // Save notification to DB for the Mentor
@@ -58,14 +76,16 @@ namespace BusinessLogicLayer.Services.Implements
                 UserId = userId,
                 ActionType = "CATEGORY_ASSIGN_MENTOR",
                 OldValue = null,
-                NewValue = System.Text.Json.JsonSerializer.Serialize(new
-                {
-                    created.CategoryMentorId,
-                    created.CategoryId,
-                    created.UserId,
-                    created.Status
-                }),
-                CreatedAt = DateTime.UtcNow
+                NewValue = System.Text.Json.JsonSerializer.Serialize(
+                    new
+                    {
+                        created.CategoryMentorId,
+                        created.CategoryId,
+                        created.UserId,
+                        created.Status,
+                    }
+                ),
+                CreatedAt = DateTime.UtcNow,
             };
             await _unitOfWork.GetRepository<AuditLogs>().AddAsync(auditLog);
 
@@ -77,7 +97,8 @@ namespace BusinessLogicLayer.Services.Implements
         public async Task<CategoryMentorDto?> GetByIdAsync(Guid categoryMentorId)
         {
             var categoryMentor = await _categoryMentorRepository.GetByIdAsync(categoryMentorId);
-            if (categoryMentor == null) return null;
+            if (categoryMentor == null)
+                return null;
             return MapToDto(categoryMentor);
         }
 
@@ -87,9 +108,48 @@ namespace BusinessLogicLayer.Services.Implements
             return categoryMentors.Select(MapToDto).ToList();
         }
 
+        public async Task<List<CategoryMentorDto>> GetByMentorUserIdAsync(Guid mentorUserId)
+        {
+            var categoryMentors = await _categoryMentorRepository.FindAsync(assignment =>
+                assignment.UserId == mentorUserId
+            );
+            return categoryMentors.Select(MapToDto).ToList();
+        }
+
+        public async Task<List<CategoryMentorDetailDto>> GetByCategoryIdAsync(Guid categoryId)
+        {
+            var category = await _categoryRepository.GetByIdAsync(categoryId);
+            if (category == null)
+                throw new Exception($"Category with id {categoryId} not found");
+
+            var categoryMentors = await _categoryMentorRepository.FindAsync(assignment =>
+                assignment.CategoryId == categoryId
+            );
+            var result = new List<CategoryMentorDetailDto>();
+
+            foreach (var assignment in categoryMentors)
+            {
+                var mentor = await _userRepository.GetByIdAsync(assignment.UserId);
+                result.Add(new CategoryMentorDetailDto
+                {
+                    CategoryMentorId = assignment.CategoryMentorId,
+                    CategoryId = assignment.CategoryId,
+                    CategoryName = category.CategoryName,
+                    UserId = assignment.UserId,
+                    MentorFullName = mentor?.FullName ?? string.Empty,
+                    MentorEmail = mentor?.Email ?? string.Empty,
+                    Status = assignment.Status
+                });
+            }
+
+            return result;
+        }
+
         public async Task<CategoryMentorDto> UpdateAsync(UpdateCategoryMentorRequest request)
         {
-            var categoryMentor = await _categoryMentorRepository.GetByIdAsync(request.CategoryMentorId);
+            var categoryMentor = await _categoryMentorRepository.GetByIdAsync(
+                request.CategoryMentorId
+            );
             if (categoryMentor == null)
                 throw new Exception($"CategoryMentor with id {request.CategoryMentorId} not found");
 
@@ -118,13 +178,17 @@ namespace BusinessLogicLayer.Services.Implements
         {
             var categoryMentor = await _categoryMentorRepository.GetByIdAsync(categoryMentorId);
             if (categoryMentor == null)
-                throw new Exception($"CategoryMentor assignment with id {categoryMentorId} not found");
+                throw new Exception(
+                    $"CategoryMentor assignment with id {categoryMentorId} not found"
+                );
 
             if (categoryMentor.UserId != mentorUserId)
                 throw new Exception("You are not authorized to approve this mentor assignment.");
 
             if (categoryMentor.Status != "Pending")
-                throw new Exception($"Assignment status is '{categoryMentor.Status}', but only 'Pending' assignments can be approved.");
+                throw new Exception(
+                    $"Assignment status is '{categoryMentor.Status}', but only 'Pending' assignments can be approved."
+                );
 
             categoryMentor.Status = "Approved";
             _categoryMentorRepository.Update(categoryMentor);
@@ -133,17 +197,25 @@ namespace BusinessLogicLayer.Services.Implements
             var category = await _categoryRepository.GetByIdAsync(categoryMentor.CategoryId);
             var mentor = await _userRepository.GetByIdAsync(mentorUserId);
 
-            string notificationMessage = $"[NOTIFICATION] Mentor {mentor?.FullName ?? "Unknown"} has Approved the assignment for Category {category?.CategoryName ?? "Unknown"}.";
+            string notificationMessage =
+                $"[NOTIFICATION] Mentor {mentor?.FullName ?? "Unknown"} has Approved the assignment for Category {category?.CategoryName ?? "Unknown"}.";
             Console.WriteLine(notificationMessage);
 
             // Find the Coordinator who made the proposal to notify them
-            var auditLogs = await _unitOfWork.GetRepository<AuditLogs>()
-                .FindAsync(a => a.ActionType == "CATEGORY_ASSIGN_MENTOR" && a.NewValue.Contains(categoryMentorId.ToString()));
+            var auditLogs = await _unitOfWork
+                .GetRepository<AuditLogs>()
+                .FindAsync(a =>
+                    a.ActionType == "CATEGORY_ASSIGN_MENTOR"
+                    && a.NewValue.Contains(categoryMentorId.ToString())
+                );
             var coordinatorId = auditLogs.FirstOrDefault()?.UserId;
 
             if (coordinatorId.HasValue)
             {
-                await _notificationService.CreateNotificationAsync(coordinatorId.Value, notificationMessage);
+                await _notificationService.CreateNotificationAsync(
+                    coordinatorId.Value,
+                    notificationMessage
+                );
             }
 
             var auditLog = new AuditLogs
@@ -153,7 +225,7 @@ namespace BusinessLogicLayer.Services.Implements
                 ActionType = "CATEGORY_MENTOR_APPROVED",
                 OldValue = "Pending",
                 NewValue = "Approved",
-                CreatedAt = DateTime.UtcNow
+                CreatedAt = DateTime.UtcNow,
             };
             await _unitOfWork.GetRepository<AuditLogs>().AddAsync(auditLog);
 
@@ -166,13 +238,17 @@ namespace BusinessLogicLayer.Services.Implements
         {
             var categoryMentor = await _categoryMentorRepository.GetByIdAsync(categoryMentorId);
             if (categoryMentor == null)
-                throw new Exception($"CategoryMentor assignment with id {categoryMentorId} not found");
+                throw new Exception(
+                    $"CategoryMentor assignment with id {categoryMentorId} not found"
+                );
 
             if (categoryMentor.UserId != mentorUserId)
                 throw new Exception("You are not authorized to reject this mentor assignment.");
 
             if (categoryMentor.Status != "Pending")
-                throw new Exception($"Assignment status is '{categoryMentor.Status}', but only 'Pending' assignments can be rejected.");
+                throw new Exception(
+                    $"Assignment status is '{categoryMentor.Status}', but only 'Pending' assignments can be rejected."
+                );
 
             categoryMentor.Status = "Rejected";
             _categoryMentorRepository.Update(categoryMentor);
@@ -181,17 +257,25 @@ namespace BusinessLogicLayer.Services.Implements
             var category = await _categoryRepository.GetByIdAsync(categoryMentor.CategoryId);
             var mentor = await _userRepository.GetByIdAsync(mentorUserId);
 
-            string notificationMessage = $"[NOTIFICATION] Mentor {mentor?.FullName ?? "Unknown"} has Rejected the assignment for Category {category?.CategoryName ?? "Unknown"}.";
+            string notificationMessage =
+                $"[NOTIFICATION] Mentor {mentor?.FullName ?? "Unknown"} has Rejected the assignment for Category {category?.CategoryName ?? "Unknown"}.";
             Console.WriteLine(notificationMessage);
 
             // Find the Coordinator who made the proposal to notify them
-            var auditLogs = await _unitOfWork.GetRepository<AuditLogs>()
-                .FindAsync(a => a.ActionType == "CATEGORY_ASSIGN_MENTOR" && a.NewValue.Contains(categoryMentorId.ToString()));
+            var auditLogs = await _unitOfWork
+                .GetRepository<AuditLogs>()
+                .FindAsync(a =>
+                    a.ActionType == "CATEGORY_ASSIGN_MENTOR"
+                    && a.NewValue.Contains(categoryMentorId.ToString())
+                );
             var coordinatorId = auditLogs.FirstOrDefault()?.UserId;
 
             if (coordinatorId.HasValue)
             {
-                await _notificationService.CreateNotificationAsync(coordinatorId.Value, notificationMessage);
+                await _notificationService.CreateNotificationAsync(
+                    coordinatorId.Value,
+                    notificationMessage
+                );
             }
 
             var auditLog = new AuditLogs
@@ -201,7 +285,7 @@ namespace BusinessLogicLayer.Services.Implements
                 ActionType = "CATEGORY_MENTOR_REJECTED",
                 OldValue = "Pending",
                 NewValue = "Rejected",
-                CreatedAt = DateTime.UtcNow
+                CreatedAt = DateTime.UtcNow,
             };
             await _unitOfWork.GetRepository<AuditLogs>().AddAsync(auditLog);
 
@@ -221,7 +305,9 @@ namespace BusinessLogicLayer.Services.Implements
                 throw new Exception($"User with id {userId} not found");
 
             if (user.Role != "Mentor")
-                throw new Exception($"User with id {userId} is not a Mentor. Only users with Mentor role can be assigned.");
+                throw new Exception(
+                    $"User with id {userId} is not a Mentor. Only users with Mentor role can be assigned."
+                );
         }
 
         private static CategoryMentorDto MapToDto(CategoryMentors categoryMentor)
@@ -231,7 +317,7 @@ namespace BusinessLogicLayer.Services.Implements
                 CategoryMentorId = categoryMentor.CategoryMentorId,
                 CategoryId = categoryMentor.CategoryId,
                 UserId = categoryMentor.UserId,
-                Status = categoryMentor.Status
+                Status = categoryMentor.Status,
             };
         }
     }

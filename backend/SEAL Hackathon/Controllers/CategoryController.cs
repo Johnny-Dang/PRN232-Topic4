@@ -13,10 +13,12 @@ namespace SEALHackathonSystem.Controllers
     public class CategoryController : ControllerBase
     {
         private readonly ICategoryService _categoryService;
+        private readonly ICategoryMentorService _categoryMentorService;
 
-        public CategoryController(ICategoryService categoryService)
+        public CategoryController(ICategoryService categoryService, ICategoryMentorService categoryMentorService)
         {
             _categoryService = categoryService;
+            _categoryMentorService = categoryMentorService;
         }
 
         [Authorize(Policy = "CoordinatorOnly")]
@@ -40,11 +42,23 @@ namespace SEALHackathonSystem.Controllers
         {
             try
             {
-                var phone = User.FindFirst(ClaimTypes.MobilePhone)?.Value;
-                if (phone != "09865321") return NotFound();
-
                 var result = await _categoryService.GetByIdAsync(categoryId);
                 if (result == null) return NotFound();
+                return Ok(result);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+        }
+
+        [Authorize(Policy = "CoordinatorOnly")]
+        [HttpGet("{categoryId}/mentors")]
+        public async Task<IActionResult> GetMentorAssignmentsByCategory(Guid categoryId)
+        {
+            try
+            {
+                var result = await _categoryMentorService.GetByCategoryIdAsync(categoryId);
                 return Ok(result);
             }
             catch (Exception ex)

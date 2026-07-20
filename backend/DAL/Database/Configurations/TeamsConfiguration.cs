@@ -29,6 +29,12 @@ namespace DataAccessLayer.Database.Configurations
                 .HasForeignKey(x => x.TeamLeaderId)
                 .OnDelete(DeleteBehavior.Restrict);
 
+            builder.HasOne(x => x.Event)
+                .WithMany(e => e.Teams)
+                .HasForeignKey(x => x.EventId)
+                .IsRequired(false)
+                .OnDelete(DeleteBehavior.Restrict);
+
             builder.HasOne(x => x.Category)
                 .WithMany(c => c.Teams)
                 .HasForeignKey(x => x.CategoryId)

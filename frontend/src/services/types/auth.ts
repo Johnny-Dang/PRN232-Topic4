@@ -1,5 +1,7 @@
 import { z } from 'zod';
 
+const idSchema = z.string().min(1);
+
 const roleSchema = z.enum([
   'Leader',
   'Member',
@@ -12,10 +14,11 @@ const roleSchema = z.enum([
 ]);
 
 const normalizedUserSchema = z.object({
-  UserId: z.string().uuid(),
+  UserId: idSchema,
   Email: z.string().email(),
   FullName: z.string(),
   Phone: z.string(),
+  ShortId: z.string(),
   Role: roleSchema,
   AccountStatus: z.string(),
   CreatedAt: z.string(),
@@ -23,15 +26,17 @@ const normalizedUserSchema = z.object({
 
 export const userSchema = z
   .object({
-    UserId: z.string().uuid().optional(),
-    userId: z.string().uuid().optional(),
-    UserID: z.string().uuid().optional(),
+    UserId: idSchema.optional(),
+    userId: idSchema.optional(),
+    UserID: idSchema.optional(),
     Email: z.string().email().optional(),
     email: z.string().email().optional(),
     FullName: z.string().optional(),
     fullName: z.string().optional(),
     Phone: z.string().optional(),
     phone: z.string().optional(),
+    ShortId: z.string().optional(),
+    shortId: z.string().optional(),
     Role: roleSchema.optional(),
     role: roleSchema.optional(),
     AccountStatus: z.string().optional(),
@@ -45,6 +50,7 @@ export const userSchema = z
     Email: user.Email ?? user.email ?? '',
     FullName: user.FullName ?? user.fullName ?? '',
     Phone: user.Phone ?? user.phone ?? '',
+    ShortId: user.ShortId ?? user.shortId ?? '',
     Role: user.Role ?? user.role ?? '',
     AccountStatus: user.AccountStatus ?? user.accountStatus ?? '',
     CreatedAt: user.CreatedAt ?? user.createdAt ?? '',

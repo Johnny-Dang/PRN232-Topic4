@@ -1,9 +1,9 @@
+using System;
+using System.Security.Claims;
 using BusinessLogicLayer.DTOs.Requests;
 using BusinessLogicLayer.Services.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using System;
-using System.Security.Claims;
 
 namespace SEALHackathonSystem.Controllers
 {
@@ -40,7 +40,8 @@ namespace SEALHackathonSystem.Controllers
             try
             {
                 var result = await _teamService.GetByIdAsync(teamId);
-                if (result == null) return NotFound();
+                if (result == null)
+                    return NotFound();
                 return Ok(result);
             }
             catch (Exception ex)
@@ -79,7 +80,10 @@ namespace SEALHackathonSystem.Controllers
         }
 
         [HttpPut("{teamId}/category")]
-        public async Task<IActionResult> SetCategory(Guid teamId, [FromBody] SetTeamCategoryRequest request)
+        public async Task<IActionResult> SetCategory(
+            Guid teamId,
+            [FromBody] SetTeamCategoryRequest request
+        )
         {
             try
             {
@@ -108,7 +112,10 @@ namespace SEALHackathonSystem.Controllers
         }
 
         [HttpPost("{teamId}/members")]
-        public async Task<IActionResult> AddMember(Guid teamId, [FromBody] AddTeamMemberRequest request)
+        public async Task<IActionResult> AddMember(
+            Guid teamId,
+            [FromBody] AddTeamMemberRequest request
+        )
         {
             try
             {
@@ -122,10 +129,27 @@ namespace SEALHackathonSystem.Controllers
             }
         }
 
+        [HttpGet("{teamId}/members")]
+        public async Task<IActionResult> GetMembers(Guid teamId)
+        {
+            try
+            {
+                var result = await _teamService.GetMembersAsync(teamId);
+                return Ok(result);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+        }
+
         private Guid GetCurrentUserId()
         {
             var userIdClaim = User.FindFirstValue(ClaimTypes.NameIdentifier);
-            if (string.IsNullOrWhiteSpace(userIdClaim) || !Guid.TryParse(userIdClaim, out var userId))
+            if (
+                string.IsNullOrWhiteSpace(userIdClaim)
+                || !Guid.TryParse(userIdClaim, out var userId)
+            )
                 throw new Exception("Invalid user token");
 
             return userId;

@@ -86,6 +86,19 @@ namespace BusinessLogicLayer.Services.Implements
             if (round == null)
                 throw new Exception($"Round with id {roundId} not found");
 
+            var eventEntity = await _eventRepository.GetByIdAsync(round.EventId);
+            if (eventEntity == null)
+                throw new Exception($"Event with id {round.EventId} not found");
+
+            if (request.StartDate < eventEntity.StartDate || request.EndDate > eventEntity.EndDate)
+                throw new Exception("Thời gian vòng thi phải nằm trong thời gian diễn ra event.");
+
+            var hasDuplicateRoundOrder = eventEntity.Rounds.Any(item =>
+                item.RoundId != roundId && item.RoundOrder == request.RoundOrder
+            );
+            if (hasDuplicateRoundOrder)
+                throw new Exception("Thứ tự vòng thi này đã tồn tại trong event.");
+
             round.RoundName = request.RoundName;
             round.RoundOrder = request.RoundOrder;
             round.SubmissionDeadline = request.SubmissionDeadline;

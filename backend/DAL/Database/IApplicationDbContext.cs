@@ -17,6 +17,7 @@ namespace DataAccessLayer.Database
         public DbSet<Criteria> Criterias { get; set; }
         public DbSet<Eliminations> Eliminations { get; set; }
         public DbSet<EventCriteria> EventCriteria { get; set; }
+        public DbSet<EventParticipants> EventParticipants { get; set; }
         public DbSet<Events> Events { get; set; }
         public DbSet<JudgeAssignments> JudgeAssignments { get; set; }
         public DbSet<Rankings> Rankings { get; set; }
@@ -24,11 +25,18 @@ namespace DataAccessLayer.Database
         public DbSet<Scores> Scores { get; set; }
         public DbSet<StudentProfiles> StudentProfiles { get; set; }
         public DbSet<Submissions> Submissions { get; set; }
+        public DbSet<SubmissionAssets> SubmissionAssets { get; set; }
         public DbSet<SubmissionTemplates> SubmissionTemplates { get; set; }
         public DbSet<TeamMembers> TeamMembers { get; set; }
         public DbSet<Teams> Teams { get; set; }
         public DbSet<Users> Users { get; set; }
         public DbSet<Notifications> Notifications { get; set; }
+        public DbSet<UserSkills> UserSkills { get; set; }
+        public DbSet<TeamRecruitments> TeamRecruitments { get; set; }
+        public DbSet<TeamApplications> TeamApplications { get; set; }
+        public DbSet<MentorSchedules> MentorSchedules { get; set; }
+        public DbSet<MentorBookings> MentorBookings { get; set; }
+        public DbSet<MentoringFeedbacks> MentoringFeedbacks { get; set; }
 
         DbSet<T> Set<T>()
             where T : class;

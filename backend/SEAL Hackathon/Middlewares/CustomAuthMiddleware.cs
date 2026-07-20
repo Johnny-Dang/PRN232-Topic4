@@ -21,7 +21,10 @@ namespace SEAL_Hackathon.Middlewares
             string? token = null;
             var authHeader = context.Request.Headers.Authorization.FirstOrDefault();
 
-            if (!string.IsNullOrWhiteSpace(authHeader) && authHeader.StartsWith("Bearer ", StringComparison.OrdinalIgnoreCase))
+            if (
+                !string.IsNullOrWhiteSpace(authHeader)
+                && authHeader.StartsWith("Bearer ", StringComparison.OrdinalIgnoreCase)
+            )
             {
                 token = authHeader["Bearer ".Length..].Trim();
             }
@@ -32,13 +35,18 @@ namespace SEAL_Hackathon.Middlewares
 
             if (!string.IsNullOrWhiteSpace(token))
             {
-
                 try
                 {
                     var jwt = _configuration.GetSection("Jwt");
-                    var secret = jwt.GetValue<string>("Secret") ?? throw new InvalidOperationException("JWT Secret is not configured.");
-                    var issuer = jwt.GetValue<string>("Issuer") ?? throw new InvalidOperationException("JWT Issuer is not configured.");
-                    var audience = jwt.GetValue<string>("Audience") ?? throw new InvalidOperationException("JWT Audience is not configured.");
+                    var secret =
+                        jwt.GetValue<string>("Secret")
+                        ?? throw new InvalidOperationException("JWT Secret is not configured.");
+                    var issuer =
+                        jwt.GetValue<string>("Issuer")
+                        ?? throw new InvalidOperationException("JWT Issuer is not configured.");
+                    var audience =
+                        jwt.GetValue<string>("Audience")
+                        ?? throw new InvalidOperationException("JWT Audience is not configured.");
 
                     var tokenHandler = new JwtSecurityTokenHandler();
                     var validationParameters = new TokenValidationParameters
@@ -52,7 +60,7 @@ namespace SEAL_Hackathon.Middlewares
                         ValidateLifetime = true,
                         ClockSkew = TimeSpan.Zero,
                         NameClaimType = ClaimTypes.Name,
-                        RoleClaimType = ClaimTypes.Role
+                        RoleClaimType = ClaimTypes.Role,
                     };
 
                     var principal = tokenHandler.ValidateToken(token, validationParameters, out _);

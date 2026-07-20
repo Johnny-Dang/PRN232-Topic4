@@ -15,6 +15,7 @@ namespace BusinessLogicLayer.Services.Implements
         private readonly IGenericRepository<JudgeAssignments> _assignmentRepository;
         private readonly IGenericRepository<Users> _userRepository;
         private readonly IGenericRepository<Rounds> _roundRepository;
+        private readonly IGenericRepository<Scores> _scoreRepository;
         private readonly INotificationService _notificationService;
         private readonly IUnitOfWork _unitOfWork;
 
@@ -25,6 +26,7 @@ namespace BusinessLogicLayer.Services.Implements
             _assignmentRepository = _unitOfWork.GetRepository<JudgeAssignments>();
             _userRepository = _unitOfWork.GetRepository<Users>();
             _roundRepository = _unitOfWork.GetRepository<Rounds>();
+            _scoreRepository = _unitOfWork.GetRepository<Scores>();
         }
 
         public async Task<JudgeAssignmentDto> CreateAsync(AddJudgeAssignmentRequest request)
@@ -56,28 +58,34 @@ namespace BusinessLogicLayer.Services.Implements
             var created = await _assignmentRepository.AddAsync(assignment);
             await _unitOfWork.SaveChangesAsync();
 
+            // Fetch with User included
+            var assignmentWithUser = await _assignmentRepository.FirstOrDefaultWithIncludeAsync(
+                x => x.AssignmentId == created.AssignmentId, x => x.User);
+
             var message = $"[NOTIFICATION] Bạn đã được phân công chấm bài thi cho vòng {round.RoundName}.";
             await _notificationService.CreateNotificationAsync(request.UserId, message);
 
-            return MapToDto(created);
+            return MapToDto(assignmentWithUser!);
         }
 
         public async Task<JudgeAssignmentDto?> GetByIdAsync(Guid assignmentId)
         {
-            var assignment = await _assignmentRepository.GetByIdAsync(assignmentId);
+            var assignment = await _assignmentRepository.FirstOrDefaultWithIncludeAsync(
+                x => x.AssignmentId == assignmentId, x => x.User);
             if (assignment == null) return null;
             return MapToDto(assignment);
         }
 
         public async Task<IEnumerable<JudgeAssignmentDto>> GetAllAsync()
         {
-            var assignments = await _assignmentRepository.GetAllAsync();
+            var assignments = await _assignmentRepository.GetAllWithIncludeAsync(x => x.User);
             return assignments.Select(MapToDto);
         }
 
         public async Task<JudgeAssignmentDto> UpdateAsync(UpdateJudgeAssignmentRequest request)
         {
-            var assignment = await _assignmentRepository.GetByIdAsync(request.AssignmentId);
+            var assignment = await _assignmentRepository.FirstOrDefaultWithIncludeAsync(
+                x => x.AssignmentId == request.AssignmentId, x => x.User);
             if (assignment == null)
                 throw new Exception($"Judge Assignment with id {request.AssignmentId} not found");
 
@@ -109,14 +117,27 @@ namespace BusinessLogicLayer.Services.Implements
             var message = $"[NOTIFICATION] Bạn đã được phân công chấm bài thi cho vòng {round.RoundName}.";
             await _notificationService.CreateNotificationAsync(request.UserId, message);
 
-            return MapToDto(assignment);
+            // Fetch with updated User
+            var assignmentWithUser = await _assignmentRepository.FirstOrDefaultWithIncludeAsync(
+                x => x.AssignmentId == assignment.AssignmentId, x => x.User);
+
+            return MapToDto(assignmentWithUser!);
         }
 
         public async Task DeleteAsync(Guid assignmentId)
         {
-            var assignment = await _assignmentRepository.GetByIdAsync(assignmentId);
+            var assignment = await _assignmentRepository.FirstOrDefaultWithIncludeAsync(
+                x => x.AssignmentId == assignmentId, x => x.User);
             if (assignment == null)
                 throw new Exception($"Judge Assignment with id {assignmentId} not found");
+
+            // Delete related Scores first
+            var relatedScores = await _scoreRepository.GetAllAsync();
+            var scoresToDelete = relatedScores.Where(s => s.AssignmentId == assignmentId).ToList();
+            foreach (var score in scoresToDelete)
+            {
+                _scoreRepository.Delete(score);
+            }
 
             _assignmentRepository.Delete(assignment);
             await _unitOfWork.SaveChangesAsync();
@@ -128,6 +149,8 @@ namespace BusinessLogicLayer.Services.Implements
             {
                 AssignmentId = assignment.AssignmentId,
                 UserId = assignment.UserId,
+                UserFullName = assignment.User?.FullName ?? string.Empty,
+                UserEmail = assignment.User?.Email ?? string.Empty,
                 RoundId = assignment.RoundId
             };
         }

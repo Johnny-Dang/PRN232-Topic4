@@ -64,6 +64,35 @@ namespace SEALHackathonSystem.Controllers
             }
         }
 
+        [HttpGet("team/{teamId}")]
+        public async Task<IActionResult> GetByTeamId(Guid teamId)
+        {
+            try
+            {
+                var result = await _submissionService.GetByTeamIdAsync(teamId);
+                return Ok(result);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+        }
+
+        [HttpGet("team/{teamId}/round/{roundId}")]
+        public async Task<IActionResult> GetByTeamAndRound(Guid teamId, Guid roundId)
+        {
+            try
+            {
+                var result = await _submissionService.GetByTeamAndRoundAsync(teamId, roundId);
+                if (result == null) return NotFound();
+                return Ok(result);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+        }
+
         [HttpPut]
         public async Task<IActionResult> Update([FromBody] UpdateSubmissionRequest request)
         {

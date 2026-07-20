@@ -10,7 +10,7 @@ interface CallToActionProps {
 
 export default function CallToAction({ handleAction }: CallToActionProps) {
   return (
-    <section className="bg-gradient-to-br from-indigo-650 to-purple-800 rounded-3xl p-8 md:p-12 text-white relative overflow-hidden shadow-xl">
+    <section className="bg-gradient-to-br from-indigo-600 to-purple-800 rounded-3xl p-8 md:p-12 text-white relative overflow-hidden shadow-xl">
       {/* Visual background lights */}
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,_var(--tw-gradient-stops))] from-white/10 via-transparent to-transparent z-0" />
       <div className="absolute -bottom-12 -right-12 w-64 h-64 bg-white/5 rounded-full blur-3xl z-0" />

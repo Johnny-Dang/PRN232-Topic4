@@ -1,32 +1,32 @@
 import { z } from 'zod';
 
 export const advancementRuleSchema = z.object({
-  RuleId: z.string().uuid(),
-  RoundId: z.string().uuid(),
-  CategoryId: z.string().uuid(),
+  RuleId: z.string(),
+  RoundId: z.string(),
+  CategoryId: z.string(),
   TopN: z.number(),
 });
 
 export const eliminationSchema = z.object({
-  EliminationId: z.string().uuid(),
-  SubmissionId: z.string().uuid(),
-  UserId: z.string().uuid(),
+  EliminationId: z.string(),
+  SubmissionId: z.string(),
+  UserId: z.string(),
   Reason: z.string(),
   EliminatedAt: z.string(),
 });
 
 export const auditLogSchema = z.object({
-  LogId: z.string().uuid(),
-  UserId: z.string().uuid(),
+  LogId: z.string(),
+  UserId: z.string(),
   ActionType: z.string(),
   OldValue: z.string().nullable().optional(),
-  NewValue: z.string(),
+  NewValue: z.string().nullable().optional(),
   CreatedAt: z.string(),
 });
 
 export const notificationSchema = z.object({
-  NotificationId: z.string().uuid(),
-  UserId: z.string().uuid(),
+  NotificationId: z.string(),
+  UserId: z.string(),
   Message: z.string(),
   IsRead: z.boolean(),
   CreatedAt: z.string(),

@@ -1,80 +1,94 @@
 'use client';
 
-import React, { useState, useEffect, useMemo } from 'react';
-import { RefreshCw, Send, Video, FileCode2, FileText, Award } from 'lucide-react';
-import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
+import { useEffect, useState } from 'react';
+import { ClientOnly } from '@/components/ClientOnly';
+import { Award, BarChart3, ClipboardList, Edit2, FileCode2, FileText, RefreshCw, Save, Send, Target, Video } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
 import { Skeleton } from '@/components/ui/skeleton';
-
+import { useToast } from '@/components/Toast';
+import { parseApiError } from '@/lib/errorHandler';
 import {
-  getSubmissions,
-  getCategories,
-  getRounds,
-  mockCriteria,
-  Team,
-  Submission,
   Category,
+  Criteria,
+  Ranking,
   Round,
-  Criteria
+  Score,
+  Team,
+  getCategories,
+  getEventCriteria,
+  getRounds,
+  getAssignedSubmissions,
+  getScores,
+  getRankings,
+  submitScores,
+  updateScores,
+  JudgeAssignedSubmission,
 } from '@/lib/api';
+import { JudgeCalibrationList } from './components';
+
+type TabType = 'scoring' | 'ranking' | 'calibration';
 
 export default function JudgePage() {
-  const [loading, setLoading] = useState<boolean>(true);
-  const [submitting, setSubmitting] = useState<boolean>(false);
-  const [successMessage, setSuccessMessage] = useState<string>('');
+  return (
+    <ClientOnly>
+      <JudgePageContent />
+    </ClientOnly>
+  );
+}
 
-  // Selection states
-  const [selectedSubId, setSelectedSubId] = useState<string>('');
-  
-  // Score form states
-  const [scores, setScores] = useState<{ [criteriaId: string]: number }>({});
-  const [comments, setComments] = useState<{ [criteriaId: string]: string }>({});
-
-  // Loaded states
-  const [submissions, setSubmissions] = useState<(Submission & { Team: Team })[]>([]);
+function JudgePageContent() {
+  const { showToast } = useToast();
+  const [activeTab, setActiveTab] = useState<TabType>('scoring');
+  const [loading, setLoading] = useState(true);
+  const [submitting, setSubmitting] = useState(false);
+  const [message, setMessage] = useState('');
+  const [selectedSubId, setSelectedSubId] = useState('');
+  const [scores, setScores] = useState<Record<string, number>>({});
+  const [comments, setComments] = useState<Record<string, string>>({});
+  const [submissions, setSubmissions] = useState<JudgeAssignedSubmission[]>([]);
   const [rounds, setRounds] = useState<Round[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
+  const [criteria, setCriteria] = useState<Criteria[]>([]);
+  const [existingScores, setExistingScores] = useState<Score[]>([]);
+  const [loadingScores, setLoadingScores] = useState(false);
+  const [rankings, setRankings] = useState<(Ranking & { Team: Team })[]>([]);
+  const [loadingRankings, setLoadingRankings] = useState(false);
+  const [selectedRoundId, setSelectedRoundId] = useState<string>('');
 
-  // Derived states
-  const activeSubmission = submissions.find(s => s.SubmissionID === selectedSubId);
-  const activeRound = activeSubmission ? rounds.find(r => r.RoundID === activeSubmission.RoundID) : null;
-  const activeCategory = activeSubmission ? categories.find(c => c.CategoryID === activeSubmission.Team.CategoryID) : null;
+  const activeSubmission = submissions.find((submission) => submission.submissionId === selectedSubId);
+  const activeRound = activeSubmission ? rounds.find((round) => round.RoundID === activeSubmission.roundId) : null;
+  const activeCategory = activeSubmission?.categoryId
+    ? categories.find((category) => category.CategoryID === activeSubmission.categoryId)
+    : null;
 
-  // Filter criteria for active category
-  // If AI Solution -> AI Accuracy, Model Performance, Business Impact
-  // If Web Application -> Innovation, Technical Complexity, UI/UX
-  const activeCriteria = useMemo<Criteria[]>(() => {
-    if (!activeCategory) return [];
-    if (activeCategory.CategoryName.includes('AI') || activeCategory.CategoryName.includes('ML')) {
-      return mockCriteria.filter(c => c.TemplateID === 'F0000000-0000-0000-0000-000000000002');
-    } else if (activeCategory.CategoryName.includes('Mobile')) {
-      return mockCriteria.filter(c => c.TemplateID === 'F0000000-0000-0000-0000-000000000003');
-    }
-    // Default general template
-    return mockCriteria.filter(c => c.TemplateID === 'F0000000-0000-0000-0000-000000000001');
-  }, [activeCategory]);
+  const hasExistingScores = existingScores.length > 0;
 
   const loadData = async () => {
     setLoading(true);
+    setMessage('');
+
     try {
-      const fetchedRounds = await getRounds();
+      const [fetchedRounds, fetchedCategories, fetchedSubmissions] = await Promise.all([
+        getRounds(),
+        getCategories(),
+        getAssignedSubmissions(),
+      ]);
+
       setRounds(fetchedRounds);
-
-      const fetchedCategories = await getCategories();
       setCategories(fetchedCategories);
+      setSubmissions(fetchedSubmissions);
+      setSelectedSubId(fetchedSubmissions[0]?.submissionId || '');
 
-      const fetchedSubs = await getSubmissions();
-      // Filter submissions for Preliminary & Semi final rounds
-      const activeSubs = fetchedSubs.filter(s => s.Status !== 'Disqualified');
-      setSubmissions(activeSubs);
-
-      if (activeSubs.length > 0) {
-        setSelectedSubId(activeSubs[0].SubmissionID);
+      if (fetchedRounds.length > 0 && !selectedRoundId) {
+        setSelectedRoundId(fetchedRounds[0].RoundID);
       }
-    } catch (e) {
-      console.error(e);
+    } catch (error) {
+      console.error(error);
+      const { message, type } = parseApiError(error);
+      showToast(message, type);
     } finally {
       setLoading(false);
     }
@@ -84,263 +98,479 @@ export default function JudgePage() {
     void Promise.resolve().then(loadData);
   }, []);
 
-  // Initialize form fields when active submission changes
   useEffect(() => {
-    if (activeSubmission) {
-      const initialScores: { [id: string]: number } = {};
-      const initialComments: { [id: string]: string } = {};
-      activeCriteria.forEach(c => {
-        initialScores[c.CriteriaID] = 8.5; // default starting score
-        initialComments[c.CriteriaID] = '';
-      });
-      void Promise.resolve().then(() => {
-        setScores(initialScores);
-        setComments(initialComments);
-        setSuccessMessage('');
-      });
+    const loadExistingScores = async () => {
+      if (!activeSubmission) {
+        setExistingScores([]);
+        return;
+      }
+
+      setLoadingScores(true);
+      try {
+        const existing = await getScores(activeSubmission.submissionId);
+        setExistingScores(existing);
+
+        if (existing.length > 0) {
+          setScores(
+            Object.fromEntries(existing.map((s) => [s.CriteriaID, s.ScoreValue]))
+          );
+          setComments(
+            Object.fromEntries(existing.map((s) => [s.CriteriaID, s.Comment || '']))
+          );
+        }
+      } catch (error) {
+        console.error('Failed to load existing scores:', error);
+        const { message, type } = parseApiError(error);
+        showToast(message, type);
+        setExistingScores([]);
+      } finally {
+        setLoadingScores(false);
+      }
+    };
+
+    void loadExistingScores();
+  }, [selectedSubId, activeSubmission?.submissionId]);
+
+  useEffect(() => {
+    const loadCriteria = async () => {
+      if (!activeRound?.EventID) {
+        setCriteria([]);
+        return;
+      }
+
+      const fetchedCriteria = await getEventCriteria(activeRound.EventID);
+      setCriteria(fetchedCriteria);
+
+      if (existingScores.length === 0) {
+        setScores(Object.fromEntries(fetchedCriteria.map((item) => [item.CriteriaID, 0])));
+        setComments(Object.fromEntries(fetchedCriteria.map((item) => [item.CriteriaID, ''])));
+      }
+      setMessage('');
+    };
+
+    void loadCriteria();
+  }, [activeRound?.EventID, existingScores.length]);
+
+  const loadRankings = async (roundId: string) => {
+    if (!roundId) {
+      setRankings([]);
+      return;
     }
-  }, [activeCriteria, activeSubmission]);
 
-  const handleScoreChange = (criteriaId: string, val: number) => {
-    setScores(prev => ({
-      ...prev,
-      [criteriaId]: Math.min(10, Math.max(0, val))
-    }));
+    setLoadingRankings(true);
+    try {
+      const data = await getRankings(roundId);
+      setRankings(data);
+    } catch (error) {
+      console.error('Failed to load rankings:', error);
+      const { message, type } = parseApiError(error);
+      showToast(message, type);
+      setRankings([]);
+    } finally {
+      setLoadingRankings(false);
+    }
   };
 
-  const handleCommentChange = (criteriaId: string, val: string) => {
-    setComments(prev => ({
-      ...prev,
-      [criteriaId]: val
-    }));
-  };
+  useEffect(() => {
+    if (selectedRoundId) {
+      void loadRankings(selectedRoundId);
+    }
+  }, [selectedRoundId]);
 
   const calculateWeightedTotal = (): number => {
-    return activeCriteria.reduce((total, c) => {
-      const score = scores[c.CriteriaID] || 0;
-      return total + (score * c.Weight);
-    }, 0);
+    return criteria.reduce((total, item) => total + (scores[item.CriteriaID] || 0) * item.Weight, 0);
   };
 
-  const handleSubmitScores = (e: React.FormEvent) => {
-    e.preventDefault();
-    setSubmitting(true);
-    setSuccessMessage('');
+  const handleSubmitScores = async (event: React.FormEvent) => {
+    event.preventDefault();
+    if (!activeSubmission || criteria.length === 0) return;
 
-    setTimeout(() => {
-      setSubmitting(false);
-      setSuccessMessage(`Đã lưu điểm số kỹ thuật số cho đội ${activeSubmission?.Team.TeamName} thành công! Điểm trung bình trọng số: ${calculateWeightedTotal().toFixed(2)}`);
-      
-      // Update local submission status to Graded
-      if (activeSubmission) {
-        activeSubmission.Status = 'Graded';
+    setSubmitting(true);
+    setMessage('');
+
+    const scoreData = criteria.map((item) => ({
+      CriteriaId: item.CriteriaID,
+      ScoreValue: scores[item.CriteriaID] || 0,
+      Comment: comments[item.CriteriaID] || '',
+    }));
+
+    try {
+      if (hasExistingScores) {
+        await updateScores(activeSubmission.submissionId, scoreData);
+        showToast(`Đã cập nhật điểm cho đội ${activeSubmission.teamName}.`, 'success');
+      } else {
+        await submitScores(activeSubmission.submissionId, scoreData);
+        showToast(`Đã lưu điểm cho đội ${activeSubmission.teamName}.`, 'success');
       }
-    }, 1000);
+      void loadData();
+    } catch (error) {
+      console.error(error);
+      const { message, type } = parseApiError(error);
+      showToast(message, type);
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   return (
     <div className="space-y-8">
-      {/* Header section */}
       <div className="flex items-center justify-between border-b border-slate-100 pb-5 dark:border-slate-800">
         <div>
-          <h2 className="text-2xl font-black text-slate-900 tracking-tight dark:text-white">
-            Cổng Chấm Điểm Kỹ Thuật Số (Judge Portal)
-          </h2>
-          <p className="text-slate-500 text-xs mt-1 dark:text-slate-400 font-medium leading-relaxed">
-            Chấm điểm trực tuyến độc lập theo tiêu chí và lưu trữ trực tiếp, loại bỏ file Excel rời rạc.
+          <h2 className="text-2xl font-black tracking-tight text-slate-900 dark:text-white">Judge Portal</h2>
+          <p className="mt-1 text-xs font-medium leading-relaxed text-slate-500 dark:text-slate-400">
+            Chấm điểm nhất quán bằng dữ liệu API backend.
           </p>
         </div>
-        <Button
-          variant="outline"
-          size="sm"
-          className="rounded-xl h-9 border-slate-200 text-xs font-semibold"
-          onClick={loadData}
-          disabled={loading}
-        >
-          <RefreshCw className={`w-3.5 h-3.5 mr-1.5 ${loading ? 'animate-spin' : ''}`} /> Tải lại dữ liệu
-        </Button>
+
+        <div className="flex items-center gap-3">
+          <div className="flex rounded-xl border border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900">
+            <button
+              onClick={() => setActiveTab('scoring')}
+              className={`flex items-center gap-1.5 rounded-l-xl px-3 py-2 text-xs font-semibold transition-colors ${
+                activeTab === 'scoring'
+                  ? 'bg-emerald-600 text-white'
+                  : 'text-slate-600 hover:bg-slate-50 dark:text-slate-400 dark:hover:bg-slate-800'
+              }`}
+            >
+              <ClipboardList className="h-3.5 w-3.5" />
+              Chấm điểm
+            </button>
+            <button
+              onClick={() => setActiveTab('ranking')}
+              className={`flex items-center gap-1.5 rounded-r-xl px-3 py-2 text-xs font-semibold transition-colors ${
+                activeTab === 'ranking'
+                  ? 'bg-emerald-600 text-white'
+                  : 'text-slate-600 hover:bg-slate-50 dark:text-slate-400 dark:hover:bg-slate-800'
+              }`}
+            >
+              <BarChart3 className="h-3.5 w-3.5" />
+              Bảng xếp hạng
+            </button>
+            <button
+              onClick={() => setActiveTab('calibration')}
+              className={`flex items-center gap-1.5 rounded-r-xl px-3 py-2 text-xs font-semibold transition-colors ${
+                activeTab === 'calibration'
+                  ? 'bg-emerald-600 text-white'
+                  : 'text-slate-600 hover:bg-slate-50 dark:text-slate-400 dark:hover:bg-slate-800'
+              }`}
+            >
+              <Target className="h-3.5 w-3.5" />
+              Calibration
+            </button>
+          </div>
+
+          <Button variant="outline" size="sm" className="h-9 rounded-xl border-slate-200 text-xs font-semibold" onClick={loadData} disabled={loading}>
+            <RefreshCw className={`mr-1.5 h-3.5 w-3.5 ${loading ? 'animate-spin' : ''}`} />
+            Tải lại
+          </Button>
+        </div>
       </div>
+
+      {message && (
+        <div className="rounded-xl border border-slate-200 bg-white p-3 text-xs font-medium text-slate-600 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-300">
+          {message}
+        </div>
+      )}
 
       {loading ? (
         <div className="space-y-6">
-          <Skeleton className="h-44 w-full bg-slate-200 dark:bg-slate-800 rounded-2xl" />
-          <Skeleton className="h-56 w-full bg-slate-200 dark:bg-slate-800 rounded-2xl" />
+          <Skeleton className="h-44 w-full rounded-2xl bg-slate-200 dark:bg-slate-800" />
+          <Skeleton className="h-56 w-full rounded-2xl bg-slate-200 dark:bg-slate-800" />
         </div>
-      ) : (
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
-          
-          {/* Left panel: Submissions list */}
-          <div className="lg:col-span-1 space-y-4">
+      ) : activeTab === 'scoring' ? (
+        <div className="grid grid-cols-1 items-start gap-8 lg:grid-cols-3">
+          <div className="space-y-4 lg:col-span-1">
             <h3 className="text-sm font-bold text-slate-800 dark:text-slate-200">
-              Bài nộp cần đánh giá ({submissions.length})
+              Bai nop can danh gia ({submissions.length})
             </h3>
-            
+
             <div className="space-y-3">
-              {submissions.map((sub) => {
-                const isSelected = sub.SubmissionID === selectedSubId;
-                const round = rounds.find(r => r.RoundID === sub.RoundID);
-                return (
-                  <Card
-                    key={sub.SubmissionID}
-                    className={`bg-white border-slate-200 cursor-pointer transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md dark:bg-slate-900 dark:border-slate-800 ${
-                      isSelected ? 'ring-2 ring-emerald-600 dark:ring-emerald-400' : ''
-                    }`}
-                    onClick={() => setSelectedSubId(sub.SubmissionID)}
-                  >
-                    <div className="p-4 flex flex-col gap-2">
-                      <div className="flex justify-between items-center">
-                        <h4 className="text-sm font-bold text-slate-800 dark:text-slate-100">
-                          {sub.Team.TeamName}
-                        </h4>
-                        <Badge className={
-                          sub.Status === 'Graded'
-                            ? 'bg-emerald-50 text-emerald-600 border border-emerald-100 dark:bg-emerald-950/20 dark:text-emerald-400 text-[9px]'
-                            : 'bg-amber-50 text-amber-600 border border-amber-100 dark:bg-amber-950/20 dark:text-amber-400 text-[9px]'
-                        }>
-                          {sub.Status === 'Graded' ? 'Đã chấm' : 'Chưa chấm'}
-                        </Badge>
+              {submissions.length === 0 ? (
+                <Card className="border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900">
+                  <CardContent className="p-4 text-xs text-slate-500">Chưa có bài nộp từ API.</CardContent>
+                </Card>
+              ) : (
+                submissions.map((submission) => {
+                  const isSelected = submission.submissionId === selectedSubId;
+                  const round = rounds.find((item) => item.RoundID === submission.roundId);
+
+                  return (
+                    <Card
+                      key={submission.submissionId}
+                      className={`cursor-pointer border-slate-200 bg-white transition-all hover:-translate-y-0.5 hover:shadow-md dark:border-slate-800 dark:bg-slate-900 ${
+                        isSelected ? 'ring-2 ring-emerald-600 dark:ring-emerald-400' : ''
+                      }`}
+                      onClick={() => setSelectedSubId(submission.submissionId)}
+                    >
+                      <div className="flex flex-col gap-2 p-4">
+                        <div className="flex items-center justify-between">
+                          <h4 className="text-sm font-bold text-slate-800 dark:text-slate-100">
+                            {submission.teamName || 'Chưa có thông tin đội'}
+                          </h4>
+                          <Badge className={`border text-[9px] font-semibold ${
+                            submission.status === 'Submitted' 
+                              ? 'border-green-200 bg-green-50 text-green-700 dark:bg-green-950/30 dark:border-green-800 dark:text-green-400' 
+                              : 'border-slate-200 bg-slate-50 text-slate-600 dark:bg-slate-800 dark:text-slate-400'
+                          }`}>
+                            {submission.status === 'Submitted' ? 'Submitted' : 'Pending'}
+                          </Badge>
+                        </div>
+                        <p className="text-[10px] font-semibold uppercase text-slate-400">{round?.RoundName}</p>
                       </div>
-                      <p className="text-[10px] text-slate-400 font-semibold uppercase">
-                        {round?.RoundName}
-                      </p>
-                    </div>
-                  </Card>
-                );
-              })}
+                    </Card>
+                  );
+                })
+              )}
             </div>
           </div>
 
-          {/* Right panel: Active Scorecard */}
-          <div className="lg:col-span-2 space-y-6">
+          <div className="space-y-6 lg:col-span-2">
             {activeSubmission ? (
               <form onSubmit={handleSubmitScores} className="space-y-6">
-                
-                {/* Project Links & Details */}
-                <Card className="bg-white border-slate-200 dark:bg-slate-900 dark:border-slate-800 shadow-sm">
+                <Card className="border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900">
                   <CardHeader>
                     <CardTitle className="text-base font-bold">
-                      Chi tiết bài nộp: {activeSubmission.Team.TeamName}
+                      Bài nộp: {activeSubmission.teamName}
                     </CardTitle>
-                    <CardDescription className="text-xs text-slate-400 font-medium">
-                      Hạng mục: {activeCategory?.CategoryName} | Vòng thi: {activeRound?.RoundName}
+                    <CardDescription className="text-xs font-medium text-slate-400">
+                      Hạng mục: {activeCategory?.CategoryName || 'Chưa có category'} | Vòng thi: {activeRound?.RoundName || 'Chưa có round'}
                     </CardDescription>
                   </CardHeader>
-                  <CardContent className="p-6 pt-0 flex flex-wrap gap-4 border-b border-slate-100 dark:border-slate-800">
-                    {activeSubmission.RepositoryURL && (
-                      <a href={activeSubmission.RepositoryURL} target="_blank" rel="noopener noreferrer" className="h-9 px-3 border border-slate-200 rounded-xl text-xs font-semibold flex items-center gap-1.5 hover:bg-slate-50 dark:border-slate-700">
-                        <FileCode2 className="w-4 h-4 text-slate-500" /> Xem mã nguồn GitHub
+                  <CardContent className="flex flex-wrap gap-4 border-b border-slate-100 p-6 pt-0 dark:border-slate-800">
+                    {activeSubmission.repositoryURL && (
+                      <a href={activeSubmission.repositoryURL} target="_blank" rel="noopener noreferrer" className="flex h-9 items-center gap-1.5 rounded-xl border border-slate-200 px-3 text-xs font-semibold hover:bg-slate-50 dark:border-slate-700">
+                        <FileCode2 className="h-4 w-4 text-slate-500" />
+                        Source
                       </a>
                     )}
-                    {activeSubmission.DemoURL && (
-                      <a href={activeSubmission.DemoURL} target="_blank" rel="noopener noreferrer" className="h-9 px-3 border border-slate-200 rounded-xl text-xs font-semibold flex items-center gap-1.5 hover:bg-slate-50 text-rose-600 dark:border-slate-700">
-                        <Video className="w-4 h-4" /> Xem Video Demo
+                    {activeSubmission.demoURL && (
+                      <a href={activeSubmission.demoURL} target="_blank" rel="noopener noreferrer" className="flex h-9 items-center gap-1.5 rounded-xl border border-slate-200 px-3 text-xs font-semibold text-rose-600 hover:bg-slate-50 dark:border-slate-700">
+                        <Video className="h-4 w-4" />
+                        Demo
                       </a>
                     )}
-                    {activeSubmission.SlideURL && (
-                      <a href={activeSubmission.SlideURL} target="_blank" rel="noopener noreferrer" className="h-9 px-3 border border-slate-200 rounded-xl text-xs font-semibold flex items-center gap-1.5 hover:bg-slate-50 dark:border-slate-700">
-                        <FileText className="w-4 h-4 text-indigo-500" /> Báo cáo & Slides
+                    {activeSubmission.slideURL && (
+                      <a href={activeSubmission.slideURL} target="_blank" rel="noopener noreferrer" className="flex h-9 items-center gap-1.5 rounded-xl border border-slate-200 px-3 text-xs font-semibold hover:bg-slate-50 dark:border-slate-700">
+                        <FileText className="h-4 w-4 text-indigo-500" />
+                        Slides
                       </a>
                     )}
                   </CardContent>
                 </Card>
 
-                {/* Criteria Score Forms */}
                 <div className="space-y-4">
-                  <h3 className="text-sm font-bold text-slate-800 dark:text-slate-200">
-                    Tiêu chí đánh giá & Điểm số
-                  </h3>
-                  
-                  {activeCriteria.map(crit => (
-                    <Card key={crit.CriteriaID} className="bg-white border-slate-200 dark:bg-slate-900 dark:border-slate-800 shadow-sm">
-                      <CardContent className="p-6">
-                        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                          <div className="space-y-1 flex-1">
-                            <div className="flex items-center gap-2">
-                              <h4 className="font-bold text-slate-800 dark:text-slate-100 text-sm">{crit.CriteriaName}</h4>
-                              <Badge className="bg-indigo-50 text-indigo-600 border border-indigo-100 text-[9px] font-bold dark:bg-indigo-950/20 dark:text-indigo-400">
-                                Trọng số: {crit.Weight * 100}%
-                              </Badge>
-                            </div>
-                            <p className="text-[11px] text-slate-400 font-medium leading-relaxed">
-                              Đánh giá mức độ sáng tạo, độ phức tạp công nghệ và giao diện UX/UI của sản phẩm.
-                            </p>
-                          </div>
+                  <h3 className="text-sm font-bold text-slate-800 dark:text-slate-200">Criteria & Scores</h3>
 
-                          <div className="flex items-center gap-4 shrink-0">
-                            {/* Number Input */}
+                  {criteria.length === 0 ? (
+                    <Card className="border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900">
+                      <CardContent className="p-6 text-xs text-slate-500">
+                        Chưa có criteria được cấu hình cho Event của bài nộp này.
+                      </CardContent>
+                    </Card>
+                  ) : (
+                    criteria.map((item) => (
+                      <Card key={item.CriteriaID} className="border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900">
+                        <CardContent className="p-6">
+                          <div className="flex flex-col justify-between gap-4 md:flex-row md:items-center">
+                            <div className="flex-1 space-y-1">
+                              <div className="flex items-center gap-2">
+                                <h4 className="text-sm font-bold text-slate-800 dark:text-slate-100">{item.CriteriaName}</h4>
+                                <Badge className="border border-indigo-100 bg-indigo-50 text-[9px] font-bold text-indigo-600 dark:bg-indigo-950/20 dark:text-indigo-400">
+                                  Weight: {item.Weight}
+                                </Badge>
+                              </div>
+                            </div>
+
                             <div className="flex items-center gap-2">
                               <Input
                                 type="number"
                                 min={0}
-                                max={10}
+                                max={100}
                                 step={0.1}
-                                className="w-20 text-center font-bold text-slate-800 h-10 rounded-xl border-slate-200 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-100"
-                                value={scores[crit.CriteriaID] || ''}
-                                onChange={(e) => handleScoreChange(crit.CriteriaID, parseFloat(e.target.value) || 0)}
+                                className="h-10 w-24 rounded-xl border-slate-200 text-center font-bold text-slate-800 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
+                                value={scores[item.CriteriaID] ?? 0}
+                                onChange={(event) =>
+                                  setScores((current) => ({
+                                    ...current,
+                                    [item.CriteriaID]: Math.min(100, Math.max(0, parseFloat(event.target.value) || 0)),
+                                  }))
+                                }
                                 required
                               />
-                              <span className="text-xs text-slate-400 font-bold">/ 10</span>
+                              <span className="text-xs font-bold text-slate-400">/ 100</span>
                             </div>
                           </div>
-                        </div>
 
-                        {/* Comment box per criteria */}
-                        <div className="mt-4 pt-4 border-t border-slate-100 dark:border-slate-800 space-y-1.5">
-                          <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Ý kiến nhận xét cho tiêu chí này</label>
-                          <textarea
-                            className="w-full p-2.5 rounded-xl border border-slate-200 bg-slate-50 text-xs font-medium focus:outline-none dark:bg-slate-800 dark:border-slate-700"
-                            placeholder="Nhập nhận xét cụ thể để làm cơ sở cho điểm số..."
-                            value={comments[crit.CriteriaID] || ''}
-                            onChange={(e) => handleCommentChange(crit.CriteriaID, e.target.value)}
-                            rows={2}
-                          />
-                        </div>
-                      </CardContent>
-                    </Card>
-                  ))}
+                          <div className="mt-4 space-y-1.5 border-t border-slate-100 pt-4 dark:border-slate-800">
+                            <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                              Comment
+                            </label>
+                            <textarea
+                              className="w-full rounded-xl border border-slate-200 bg-slate-50 p-2.5 text-xs font-medium focus:outline-none dark:border-slate-700 dark:bg-slate-800"
+                              value={comments[item.CriteriaID] || ''}
+                              onChange={(event) =>
+                                setComments((current) => ({
+                                  ...current,
+                                  [item.CriteriaID]: event.target.value,
+                                }))
+                              }
+                              rows={2}
+                            />
+                          </div>
+                        </CardContent>
+                      </Card>
+                    ))
+                  )}
                 </div>
 
-                {/* Weighted Total display & Submit */}
-                <Card className="bg-slate-900 text-white dark:bg-slate-900 border-none shadow-md rounded-2xl overflow-hidden">
-                  <CardContent className="p-6 flex flex-col md:flex-row justify-between items-center gap-4">
+                <Card className="overflow-hidden rounded-2xl border-none bg-slate-900 text-white shadow-md">
+                  <CardContent className="flex flex-col items-center justify-between gap-4 p-6 md:flex-row">
                     <div className="flex items-center gap-4">
-                      <div className="w-12 h-12 bg-emerald-600 rounded-xl flex items-center justify-center text-white shrink-0">
-                        <Award className="w-6 h-6" />
+                      <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-emerald-600 text-white">
+                        <Award className="h-6 w-6" />
                       </div>
                       <div>
-                        <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Tổng điểm trọng số</span>
-                        <p className="text-2xl font-black text-white">{calculateWeightedTotal().toFixed(2)} <span className="text-xs text-slate-400 font-normal">/ 10.0</span></p>
+                        <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                          Điểm của tôi
+                        </span>
+                        <p className="text-2xl font-black text-white">{calculateWeightedTotal().toFixed(2)}</p>
                       </div>
                     </div>
 
-                    <div className="flex flex-col items-end gap-2 w-full md:w-auto">
-                      {successMessage && (
-                        <div className="p-2 bg-emerald-950/40 border border-emerald-900 text-emerald-400 rounded-xl text-xs font-semibold text-right">
-                          {successMessage}
-                        </div>
+                    {activeRound && rankings.find(r => r.Team?.TeamID === activeSubmission?.teamId) && (
+                      <div className="flex items-center gap-2 rounded-lg bg-blue-500/20 px-3 py-1.5">
+                        <BarChart3 className="h-3.5 w-3.5 text-blue-400" />
+                        <span className="text-xs font-medium text-blue-400">
+                          TB tất cả: {rankings.find(r => r.Team?.TeamID === activeSubmission?.teamId)?.TotalScore?.toFixed(2)}
+                        </span>
+                      </div>
+                    )}
+
+                    {hasExistingScores && (
+                      <div className="flex items-center gap-2 rounded-lg bg-amber-500/20 px-3 py-1.5">
+                        <Edit2 className="h-3.5 w-3.5 text-amber-400" />
+                        <span className="text-xs font-semibold text-amber-400">Sẽ cập nhật</span>
+                      </div>
+                    )}
+
+                    <Button
+                      type="submit"
+                      className={`h-11 w-full rounded-xl px-6 text-xs font-bold text-white transition-colors md:w-auto ${
+                        hasExistingScores
+                          ? 'bg-amber-600 hover:bg-amber-700'
+                          : 'bg-emerald-600 hover:bg-emerald-700'
+                      }`}
+                      disabled={submitting || criteria.length === 0 || loadingScores}
+                    >
+                      {loadingScores ? (
+                        'Đang tải...'
+                      ) : hasExistingScores ? (
+                        <>
+                          <Save className="mr-2 h-3.5 w-3.5" />
+                          Cập nhật điểm
+                        </>
+                      ) : (
+                        <>
+                          <Send className="mr-2 h-3.5 w-3.5" />
+                          Nộp điểm
+                        </>
                       )}
-                      
-                      <Button
-                        type="submit"
-                        className="bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl h-11 font-bold px-6 text-xs transition-colors w-full md:w-auto"
-                        disabled={submitting}
-                      >
-                        <Send className="w-3.5 h-3.5 mr-2" /> {submitting ? 'Đang gửi...' : 'Nộp điểm số kỹ thuật số'}
-                      </Button>
-                    </div>
+                    </Button>
                   </CardContent>
                 </Card>
-
               </form>
             ) : (
-              <Card className="bg-white border-slate-200 p-8 text-center text-slate-400 dark:bg-slate-900 dark:border-slate-800">
-                Vui lòng chọn bài nộp ở cột bên trái để hiển thị phiếu chấm điểm.
+              <Card className="border-slate-200 bg-white p-8 text-center text-slate-400 dark:border-slate-800 dark:bg-slate-900">
+                Vui lòng chọn bài nộp để hiển thị phiếu chấm điểm.
               </Card>
             )}
           </div>
-
         </div>
-      )}
+      ) : activeTab === 'ranking' ? (
+        <div className="space-y-6">
+          <div className="flex items-center gap-4">
+            <label className="text-sm font-semibold text-slate-700 dark:text-slate-300">Chọn vòng thi:</label>
+            <select
+              value={selectedRoundId}
+              onChange={(e) => setSelectedRoundId(e.target.value)}
+              className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-medium dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200"
+            >
+              <option value="">-- Chọn vòng --</option>
+              {rounds.map((round) => (
+                <option key={round.RoundID} value={round.RoundID}>
+                  {round.RoundName}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {loadingRankings ? (
+            <Skeleton className="h-64 w-full rounded-2xl bg-slate-200 dark:bg-slate-800" />
+          ) : rankings.length === 0 ? (
+            <Card className="border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900">
+              <CardContent className="p-8 text-center text-xs text-slate-500">
+                {selectedRoundId ? 'Chưa có dữ liệu xếp hạng cho vòng này.' : 'Vui lòng chọn vòng thi để xem bảng xếp hạng.'}
+              </CardContent>
+            </Card>
+          ) : (
+            <Card className="border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900">
+              <CardHeader>
+                <CardTitle className="text-base font-bold">Bảng xếp hạng - {rounds.find((r) => r.RoundID === selectedRoundId)?.RoundName}</CardTitle>
+                <CardDescription className="text-xs font-medium text-slate-400">
+                  Cập nhật theo thời gian thực khi có điểm mới
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="overflow-x-auto">
+                  <table className="w-full">
+                    <thead>
+                      <tr className="border-b border-slate-100 dark:border-slate-800">
+                        <th className="px-4 py-3 text-left text-xs font-bold uppercase tracking-wider text-slate-500">Hạng</th>
+                        <th className="px-4 py-3 text-left text-xs font-bold uppercase tracking-wider text-slate-500">Đội</th>
+                        <th className="px-4 py-3 text-right text-xs font-bold uppercase tracking-wider text-slate-500">Điểm tổng</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {rankings.map((ranking, index) => (
+                        <tr
+                          key={ranking.RankingId}
+                          className={`border-b border-slate-50 dark:border-slate-800/50 ${
+                            index < 3 ? 'bg-amber-50/50 dark:bg-amber-950/20' : ''
+                          }`}
+                        >
+                          <td className="px-4 py-3">
+                            {index === 0 ? (
+                              <span className="flex h-7 w-7 items-center justify-center rounded-full bg-amber-400 text-xs font-black text-white">1</span>
+                            ) : index === 1 ? (
+                              <span className="flex h-7 w-7 items-center justify-center rounded-full bg-slate-300 text-xs font-black text-slate-700">2</span>
+                            ) : index === 2 ? (
+                              <span className="flex h-7 w-7 items-center justify-center rounded-full bg-amber-600 text-xs font-black text-white">3</span>
+                            ) : (
+                              <span className="flex h-7 w-7 items-center justify-center rounded-full bg-slate-100 text-xs font-bold text-slate-500 dark:bg-slate-800">
+                                {ranking.RankPosition || index + 1}
+                              </span>
+                            )}
+                          </td>
+                          <td className="px-4 py-3 text-sm font-semibold text-slate-800 dark:text-slate-200">
+                            {ranking.Team?.TeamName || ranking.Team?.TeamID || 'Unknown'}
+                          </td>
+                          <td className="px-4 py-3 text-right font-bold text-emerald-600 dark:text-emerald-400">
+                            {ranking.TotalScore.toFixed(2)}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+        </div>
+      ) : activeTab === 'calibration' ? (
+        <div className="space-y-6">
+          <JudgeCalibrationList />
+        </div>
+      ) : null}
     </div>
   );
 }

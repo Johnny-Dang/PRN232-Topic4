@@ -1,5 +1,6 @@
 ﻿using System;
 using System.ComponentModel.DataAnnotations;
+using Microsoft.AspNetCore.Http;
 
 namespace BusinessLogicLayer.DTOs.Requests
 {
@@ -25,6 +26,20 @@ namespace BusinessLogicLayer.DTOs.Requests
         [Required]
         public DateTime EndDate { get; set; }
 
+        public IFormFile? BannerImage { get; set; }
+
+        [StringLength(255)]
+        public string Organizer { get; set; } = string.Empty;
+
+        [StringLength(50)]
+        public string Format { get; set; } = "Online";
+
+        [StringLength(100)]
+        public string Audience { get; set; } = "Students";
+
+        [StringLength(255)]
+        public string Prize { get; set; } = string.Empty;
+
         public IEnumerable<ValidationResult> Validate(ValidationContext validationContext)
         {
             if (StartDate >= EndDate)
@@ -36,6 +51,18 @@ namespace BusinessLogicLayer.DTOs.Requests
             {
                 yield return new ValidationResult("Year must match the year of StartDate.", new[] { nameof(Year), nameof(StartDate) });
             }
+
+            if (!IsValidFormat(Format))
+            {
+                yield return new ValidationResult("Format must be Online, Offline, or Hybrid.", new[] { nameof(Format) });
+            }
+        }
+
+        private static bool IsValidFormat(string format)
+        {
+            return string.Equals(format, "Online", StringComparison.OrdinalIgnoreCase)
+                || string.Equals(format, "Offline", StringComparison.OrdinalIgnoreCase)
+                || string.Equals(format, "Hybrid", StringComparison.OrdinalIgnoreCase);
         }
     }
 }

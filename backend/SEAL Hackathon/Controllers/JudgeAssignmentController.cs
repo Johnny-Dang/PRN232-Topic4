@@ -1,9 +1,9 @@
+using System;
+using System.Threading.Tasks;
 using BusinessLogicLayer.DTOs.Requests;
 using BusinessLogicLayer.Services.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using System;
-using System.Threading.Tasks;
 
 namespace SEALHackathonSystem.Controllers
 {
@@ -39,7 +39,8 @@ namespace SEALHackathonSystem.Controllers
             try
             {
                 var result = await _judgeAssignmentService.GetByIdAsync(assignmentId);
-                if (result == null) return NotFound();
+                if (result == null)
+                    return NotFound();
                 return Ok(result);
             }
             catch (Exception ex)
