@@ -49,8 +49,6 @@ type PendingRegistrationTeam = {
   isLeader: boolean;
 };
 
-const MAX_EVENT_PARTICIPATIONS = 3;
-
 const getStringProperty = (value: unknown, keys: string[]): string | null => {
   if (typeof value !== "object" || value === null) return null;
 
@@ -135,6 +133,7 @@ export default function MyEventsPage() {
   const [selectedCategoryId, setSelectedCategoryId] = useState("");
   const [registering, setRegistering] = useState(false);
   const [registrationMessage, setRegistrationMessage] = useState("");
+  const [showTeamChoice, setShowTeamChoice] = useState(() => Boolean(requestedEventId));
 
   const loadData = useCallback(async () => {
     setLoading(true);
@@ -255,13 +254,14 @@ export default function MyEventsPage() {
           </p>
         </div>
         <div className="flex shrink-0 items-center gap-2">
-          <Link
-            href="/member"
-            className="inline-flex h-9 items-center rounded-xl bg-indigo-600 px-3 text-xs font-bold text-white hover:bg-indigo-700"
+          <Button
+            type="button"
+            onClick={() => setShowTeamChoice(true)}
+            className="h-9 rounded-xl bg-indigo-600 px-3 text-xs font-bold text-white hover:bg-indigo-700"
           >
             <Plus className="mr-2 h-3.5 w-3.5" />
             Tham gia sự kiện mới
-          </Link>
+          </Button>
           <Button
             onClick={() => void loadData()}
             variant="outline"
@@ -273,6 +273,44 @@ export default function MyEventsPage() {
         </div>
       </div>
 
+      {showTeamChoice && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/45 p-4">
+          <Card className="w-full max-w-md border-0 bg-white shadow-2xl dark:bg-slate-900">
+            <CardHeader>
+              <CardTitle className="text-lg font-black text-slate-900 dark:text-white">Chọn team để tham gia Event</CardTitle>
+              <CardDescription className="text-xs font-medium">
+                Bạn muốn tạo team mới cho Event này hay tiếp tục đăng ký bằng team cũ?
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              <Link
+                href={`/member?newTeam=1${requestedEventId ? `&eventId=${encodeURIComponent(requestedEventId)}` : ''}`}
+                className="flex rounded-xl bg-indigo-600 px-4 py-3 text-sm font-bold text-white hover:bg-indigo-700"
+              >
+                Tạo team mới
+              </Link>
+              {pendingRegistrationTeam ? (
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setShowTeamChoice(false)}
+                  className="h-11 w-full rounded-xl text-sm font-bold"
+                >
+                  Tiếp tục với team cũ
+                </Button>
+              ) : !loading && (
+                <p className="rounded-xl bg-amber-50 px-3 py-2 text-xs font-medium text-amber-700 dark:bg-amber-950/30 dark:text-amber-300">
+                  Bạn chưa có team cũ nào đang chờ đăng ký Event. Hãy tạo team mới để tiếp tục.
+                </p>
+              )}
+              <Button type="button" variant="ghost" onClick={() => setShowTeamChoice(false)} className="h-8 w-full text-xs font-semibold text-slate-500">
+                Hủy
+              </Button>
+            </CardContent>
+          </Card>
+        </div>
+      )}
+
       {loading ? (
         <div className="grid gap-4 lg:grid-cols-2">
           <Skeleton className="h-44 rounded-2xl bg-slate-200 dark:bg-slate-800" />
@@ -280,28 +318,6 @@ export default function MyEventsPage() {
         </div>
       ) : (
         <>
-          <Card className="border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900">
-            <CardContent className="flex flex-col gap-4 p-5 sm:flex-row sm:items-center sm:justify-between">
-              <div>
-                <p className="text-sm font-black text-slate-900 dark:text-white">
-                  Bạn đang tham gia: {activeRows.length}/
-                  {MAX_EVENT_PARTICIPATIONS} sự kiện
-                </p>
-                <p className="mt-1 text-xs font-medium text-slate-500 dark:text-slate-400">
-                  Bao gồm các sự kiện đang diễn ra hoặc đã đăng ký nhưng chưa
-                  kết thúc.
-                </p>
-              </div>
-              <Link
-                href="/member"
-                className="inline-flex h-9 items-center rounded-xl bg-indigo-600 px-3 text-xs font-bold text-white hover:bg-indigo-700"
-              >
-                <Plus className="mr-2 h-3.5 w-3.5" />
-                Tham gia sự kiện mới
-              </Link>
-            </CardContent>
-          </Card>
-
           {pendingRegistrationTeam && (
             <Card className="border-indigo-100 bg-indigo-50/30 shadow-sm dark:border-indigo-900/50 dark:bg-indigo-950/10">
               <CardHeader>

@@ -16,6 +16,8 @@ import {
   UserPlus,
   PlusCircle,
   Briefcase,
+  Trash2,
+  Pencil,
 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -25,6 +27,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import {
   createSubmissionLinks,
+  deleteSubmission,
   getCategories,
   getEvents,
   getRounds,
@@ -79,6 +82,7 @@ const getStoredUserId = (): string | null => {
 };
 
 const getApiErrorMessage = (error: unknown, fallback: string): string => {
+  if (error instanceof Error) return error.message;
   if (typeof error !== 'object' || error === null || !('response' in error)) return fallback;
 
   const response = (error as { response?: { data?: { message?: string } } }).response;
@@ -268,6 +272,29 @@ export default function LeaderPage() {
     [applySubmissionToForm, submissions]
   );
 
+  const handleDeleteClick = useCallback(
+    async (submissionId: string) => {
+      if (!window.confirm('Bạn có chắc chắn muốn xóa bài nộp này không?')) return;
+      try {
+        await deleteSubmission(submissionId);
+        setSubmissions((prev) => prev.filter((s) => s.SubmissionID !== submissionId));
+        if (currentSubmission?.SubmissionID === submissionId) {
+          setCurrentSubmission(null);
+          setRepoUrl('');
+          setDemoUrl('');
+          setSlideUrl('');
+          setVideoAsset(null);
+          setSlideAsset(null);
+        }
+        setSuccessMessage('Xóa bài nộp thành công.');
+      } catch (err: unknown) {
+        console.error(err);
+        setErrorMessage(getApiErrorMessage(err, 'Không thể xóa bài nộp.'));
+      }
+    },
+    [currentSubmission]
+  );
+
   useEffect(() => {
     let cancelled = false;
     const loadScores = async () => {
@@ -364,7 +391,7 @@ export default function LeaderPage() {
     }
 
     if (!selectedRound) {
-      setErrorMessage('Chưa có vòng thi từ API để tạo bài nộp mới.');
+      setErrorMessage('Chưa có vòng thi từ API để nộp bài mới.');
       return;
     }
 
@@ -400,7 +427,7 @@ export default function LeaderPage() {
             current.map((item) => (item.SubmissionID === updatedSubmission.SubmissionID ? submissionWithTeam : item))
           );
         }
-        setSuccessMessage('Cập nhật đường dẫn bài nộp dự án thành công.');
+        setSuccessMessage('Nộp bài dự án thành công.');
       } else {
         const createdSubmission = await createSubmissionLinks(team.TeamID, selectedRound.RoundID, links);
         if (createdSubmission) {
@@ -412,7 +439,7 @@ export default function LeaderPage() {
             )
           );
         }
-        setSuccessMessage('Tạo bài nộp dự án thành công.');
+        setSuccessMessage('Nộp bài dự án thành công.');
       }
     } catch (error: unknown) {
       console.error(error);
@@ -568,16 +595,32 @@ export default function LeaderPage() {
                           </p>
                         </div>
                         {videoAsset?.SecureUrl ? (
-                          <a
-                            href={videoAsset.SecureUrl}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            aria-label="Mở video demo đã upload"
-                            title="Mở video demo đã upload"
-                            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-slate-200 hover:bg-slate-50 dark:border-slate-700"
-                          >
-                            <ExternalLink className="h-4 w-4 text-slate-500" />
-                          </a>
+                          <div className="flex gap-1.5">
+                            <a
+                              href={videoAsset.SecureUrl}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              aria-label="Mở video demo đã upload"
+                              title="Mở video demo đã upload"
+                              className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-slate-200 hover:bg-slate-50 dark:border-slate-700"
+                            >
+                              <ExternalLink className="h-4 w-4 text-slate-500" />
+                            </a>
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => {
+                                setVideoAsset(null);
+                                const input = document.getElementById('leader-demo-file') as HTMLInputElement;
+                                if (input) input.value = '';
+                              }}
+                              className="h-8 w-8 text-rose-500 hover:bg-rose-50 hover:text-rose-700 dark:hover:bg-rose-950/30"
+                              title="Xóa video demo"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </div>
                         ) : (
                           <Upload className="h-4 w-4 shrink-0 text-slate-400" />
                         )}
@@ -615,16 +658,32 @@ export default function LeaderPage() {
                           </p>
                         </div>
                         {slideAsset?.SecureUrl ? (
-                          <a
-                            href={slideAsset.SecureUrl}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            aria-label="Mở slide hoặc tài liệu đã upload"
-                            title="Mở slide hoặc tài liệu đã upload"
-                            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-slate-200 hover:bg-slate-50 dark:border-slate-700"
-                          >
-                            <ExternalLink className="h-4 w-4 text-slate-500" />
-                          </a>
+                          <div className="flex gap-1.5">
+                            <a
+                              href={slideAsset.SecureUrl}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              aria-label="Mở slide hoặc tài liệu đã upload"
+                              title="Mở slide hoặc tài liệu đã upload"
+                              className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-slate-200 hover:bg-slate-50 dark:border-slate-700"
+                            >
+                              <ExternalLink className="h-4 w-4 text-slate-500" />
+                            </a>
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => {
+                                setSlideAsset(null);
+                                const input = document.getElementById('leader-slide-file') as HTMLInputElement;
+                                if (input) input.value = '';
+                              }}
+                              className="h-8 w-8 text-rose-500 hover:bg-rose-50 hover:text-rose-700 dark:hover:bg-rose-950/30"
+                              title="Xóa slide/tài liệu"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </div>
                         ) : (
                           <Upload className="h-4 w-4 shrink-0 text-slate-400" />
                         )}
@@ -651,7 +710,7 @@ export default function LeaderPage() {
                       disabled={updating || uploadingAssetType !== null || !team || !selectedRound || deadlinePassed}
                     >
                       <Send className="mr-2 h-3.5 w-3.5" />
-                      {updating ? 'Đang gửi...' : currentSubmission ? 'Cập nhật bài nộp' : 'Tạo bài nộp'}
+                      {updating ? 'Đang gửi...' : 'Nộp bài'}
                     </Button>
                   </div>
                 </form>
@@ -680,6 +739,9 @@ export default function LeaderPage() {
                           <TableHead className="text-xs font-bold uppercase text-slate-700">Liên kết</TableHead>
                           <TableHead className="text-right text-xs font-bold uppercase text-slate-700">
                             Trạng thái
+                          </TableHead>
+                          <TableHead className="text-right text-xs font-bold uppercase text-slate-700">
+                            Thao tác
                           </TableHead>
                         </TableRow>
                       </TableHeader>
@@ -750,6 +812,30 @@ export default function LeaderPage() {
                                 <Badge className="border border-blue-100 bg-blue-50 text-[10px] text-blue-600">
                                   {getSubmissionStatusLabel(submission.Status)}
                                 </Badge>
+                              </TableCell>
+                              <TableCell className="text-right">
+                                <div className="flex justify-end gap-1">
+                                  <Button
+                                    type="button"
+                                    variant="ghost"
+                                    size="icon"
+                                    onClick={() => handleRoundChange(submission.RoundID)}
+                                    className="h-7 w-7 text-indigo-600 hover:bg-indigo-50 dark:hover:bg-indigo-950/30"
+                                    title="Chỉnh sửa bài nộp"
+                                  >
+                                    <Pencil className="h-3.5 w-3.5" />
+                                  </Button>
+                                  <Button
+                                    type="button"
+                                    variant="ghost"
+                                    size="icon"
+                                    onClick={() => void handleDeleteClick(submission.SubmissionID)}
+                                    className="h-7 w-7 text-rose-600 hover:bg-rose-50 hover:text-rose-700 dark:hover:bg-rose-950/30"
+                                    title="Xóa bài nộp"
+                                  >
+                                    <Trash2 className="h-3.5 w-3.5" />
+                                  </Button>
+                                </div>
                               </TableCell>
                             </TableRow>
                           );

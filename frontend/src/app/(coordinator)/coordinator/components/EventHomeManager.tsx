@@ -71,6 +71,16 @@ const createRoundFormFromRound = (round: CoordinatorEvent['Rounds'][number]) => 
   SubmissionDeadline: toDateInputValue(new Date(round.SubmissionDeadline)),
 });
 
+const DEFAULT_CATEGORIES = [
+  { name: 'Software Development', description: 'Developing software applications' },
+  { name: 'Artificial Intelligence', description: 'AI and Machine Learning projects' },
+  { name: 'Internet of Things', description: 'IoT and Hardware projects' },
+  { name: 'Game Development', description: 'Game development and design projects' },
+  { name: 'Cyber Security', description: 'Security and vulnerability assessments' },
+  { name: 'Cloud Computing', description: 'Cloud infrastructure and solutions' },
+  { name: 'Blockchain', description: 'Decentralized and Web3 projects' }
+];
+
 const createInitialCategoryForm = (eventId: string) => ({
   EventId: eventId,
   CategoryName: '',
@@ -78,6 +88,7 @@ const createInitialCategoryForm = (eventId: string) => ({
 });
 
 const EVENTS_PER_PAGE = 2;
+type EventContentSection = 'details' | 'categories' | 'rounds' | '';
 
 export default function EventHomeManager({
   events,
@@ -90,6 +101,7 @@ export default function EventHomeManager({
   const [eventActionId, setEventActionId] = useState<string>('');
   const [roundEventId, setRoundEventId] = useState<string>('');
   const [expandedEventId, setExpandedEventId] = useState<string>('');
+  const [expandedSection, setExpandedSection] = useState<EventContentSection>('');
   const [roundForm, setRoundForm] = useState<ReturnType<typeof createInitialRoundForm> | null>(null);
   const [creatingRound, setCreatingRound] = useState(false);
   const [editingRoundId, setEditingRoundId] = useState<string>('');
@@ -128,6 +140,25 @@ export default function EventHomeManager({
   const eventTotalPages = Math.max(1, Math.ceil(filteredEvents.length / EVENTS_PER_PAGE));
   const safeEventPage = Math.min(eventPage, eventTotalPages);
   const pagedEvents = filteredEvents.slice((safeEventPage - 1) * EVENTS_PER_PAGE, safeEventPage * EVENTS_PER_PAGE);
+
+  const uniqueCategories = useMemo(() => {
+    const seen = new Set<string>();
+    const list: { name: string; description: string }[] = [];
+    categories.forEach((c) => {
+      const normalized = c.CategoryName.trim();
+      if (normalized && !seen.has(normalized.toLowerCase())) {
+        seen.add(normalized.toLowerCase());
+        list.push({ name: normalized, description: c.Description });
+      }
+    });
+
+    if (list.length === 0) {
+      DEFAULT_CATEGORIES.forEach((dc) => {
+        list.push(dc);
+      });
+    }
+    return list;
+  }, [categories]);
 
   const updateForm = (field: keyof typeof form, value: string | number | File | null) => {
     setForm((current) => ({
@@ -239,16 +270,56 @@ export default function EventHomeManager({
     }
   };
 
+  const toggleEventDetails = (eventId: string) => {
+    if (expandedEventId === eventId && expandedSection === 'details') {
+      setExpandedEventId('');
+      setExpandedSection('');
+      return;
+    }
+
+    setExpandedEventId(eventId);
+    setExpandedSection('details');
+    setCategoryEventId('');
+    setCategoryForm(null);
+    setEditingCategoryId('');
+    setRoundEventId('');
+    setRoundForm(null);
+    setEditingRoundId('');
+  };
+
+  const toggleEventSection = (eventId: string, section: Exclude<EventContentSection, '' | 'details'>) => {
+    if (expandedEventId === eventId && expandedSection === section) {
+      setExpandedEventId('');
+      setExpandedSection('');
+      return;
+    }
+
+    setExpandedEventId(eventId);
+    setExpandedSection(section);
+    setCategoryEventId('');
+    setCategoryForm(null);
+    setEditingCategoryId('');
+    setRoundEventId('');
+    setRoundForm(null);
+    setEditingRoundId('');
+  };
+
   const toggleCategoryForm = (event: CoordinatorEvent) => {
-    if (categoryEventId === event.EventId) {
+    if (categoryEventId === event.EventId && expandedSection === 'categories') {
       setCategoryEventId('');
       setCategoryForm(null);
       setEditingCategoryId('');
       setCategoryError('');
+      setExpandedEventId('');
+      setExpandedSection('');
       return;
     }
 
     setExpandedEventId(event.EventId);
+    setExpandedSection('categories');
+    setRoundEventId('');
+    setRoundForm(null);
+    setEditingRoundId('');
     setCategoryEventId(event.EventId);
     setCategoryForm(createInitialCategoryForm(event.EventId));
     setEditingCategoryId('');
@@ -256,6 +327,8 @@ export default function EventHomeManager({
   };
 
   const handleEditCategory = (category: Category) => {
+    setExpandedEventId(category.EventId);
+    setExpandedSection('categories');
     setCategoryEventId(category.EventId);
     setCategoryForm({
       EventId: category.EventId,
@@ -317,14 +390,20 @@ export default function EventHomeManager({
   };
 
   const toggleRoundForm = (event: CoordinatorEvent) => {
-    if (roundEventId === event.EventId) {
+    if (roundEventId === event.EventId && expandedSection === 'rounds') {
       setRoundEventId('');
       setRoundForm(null);
       setEditingRoundId('');
+      setExpandedEventId('');
+      setExpandedSection('');
       return;
     }
 
     setExpandedEventId(event.EventId);
+    setExpandedSection('rounds');
+    setCategoryEventId('');
+    setCategoryForm(null);
+    setEditingCategoryId('');
     setRoundEventId(event.EventId);
     setRoundForm(createInitialRoundForm(event));
     setEditingRoundId('');
@@ -338,6 +417,8 @@ export default function EventHomeManager({
   };
 
   const handleEditRound = (event: CoordinatorEvent, round: CoordinatorEvent['Rounds'][number]) => {
+    setExpandedEventId(event.EventId);
+    setExpandedSection('rounds');
     setRoundEventId(event.EventId);
     setRoundForm(createRoundFormFromRound(round));
     setEditingRoundId(round.RoundId);
@@ -440,7 +521,7 @@ export default function EventHomeManager({
   };
 
   return (
-    <Card className="bg-white border-slate-200 dark:bg-slate-900 dark:border-slate-800 shadow-sm">
+    <Card className="border-0 bg-white shadow-none dark:bg-slate-900">
       <CardHeader>
         <CardTitle className="text-base font-bold flex items-center gap-2 text-indigo-600 dark:text-indigo-400">
           <Globe2 className="w-5 h-5" /> Event & Home page
@@ -675,7 +756,7 @@ export default function EventHomeManager({
             </div>
           ) : (
             pagedEvents.map((event) => (
-              <div key={event.EventId} className="p-3 rounded-xl border border-slate-100 bg-slate-50/70 dark:border-slate-800 dark:bg-slate-950/40 space-y-3">
+              <div key={event.EventId} className="space-y-3 rounded-2xl bg-slate-50/80 p-4 shadow-sm dark:bg-slate-950/40">
                 <div className="flex items-start justify-between gap-2">
                   <div className="min-w-0">
                     <div className="text-xs font-bold text-slate-800 dark:text-slate-200 truncate">
@@ -701,39 +782,39 @@ export default function EventHomeManager({
                   <Button
                     type="button"
                     variant="outline"
-                    className="h-8 rounded-lg text-[10px] font-bold"
-                    onClick={() => setExpandedEventId((current) => current === event.EventId ? '' : event.EventId)}
+                    className="h-8 rounded-lg border-0 bg-white/70 text-[10px] font-bold shadow-none hover:bg-white dark:bg-slate-900/70"
+                    onClick={() => toggleEventDetails(event.EventId)}
                   >
                     Chi tiết
-                    {expandedEventId === event.EventId ? <ChevronUp className="ml-1 h-3 w-3" /> : <ChevronDown className="ml-1 h-3 w-3" />}
+                    {expandedEventId === event.EventId && expandedSection === 'details' ? <ChevronUp className="ml-1 h-3 w-3" /> : <ChevronDown className="ml-1 h-3 w-3" />}
                   </Button>
                   <Button
                     type="button"
                     variant="outline"
-                    className="h-8 rounded-lg text-[10px] font-bold"
+                    className="h-8 rounded-lg border-0 bg-white/70 text-[10px] font-bold shadow-none hover:bg-white dark:bg-slate-900/70"
                     disabled={creatingRound && roundEventId === event.EventId}
-                    onClick={() => toggleRoundForm(event)}
+                    onClick={() => toggleEventSection(event.EventId, 'rounds')}
                   >
                     <CirclePlus className="w-3.5 h-3.5 mr-1" />
                     Vòng thi
-                    {roundEventId === event.EventId ? <ChevronUp className="w-3 h-3 ml-1" /> : <ChevronDown className="w-3 h-3 ml-1" />}
+                    {expandedEventId === event.EventId && expandedSection === 'rounds' ? <ChevronUp className="w-3 h-3 ml-1" /> : <ChevronDown className="w-3 h-3 ml-1" />}
                   </Button>
                   <Button
                     type="button"
                     variant="outline"
-                    className="h-8 rounded-lg text-[10px] font-bold"
+                    className="h-8 rounded-lg border-0 bg-white/70 text-[10px] font-bold shadow-none hover:bg-white dark:bg-slate-900/70"
                     disabled={savingCategory && categoryEventId === event.EventId}
-                    onClick={() => toggleCategoryForm(event)}
+                    onClick={() => toggleEventSection(event.EventId, 'categories')}
                   >
                     <CirclePlus className="mr-1 h-3.5 w-3.5" />
                     Category
-                    {categoryEventId === event.EventId ? <ChevronUp className="ml-1 h-3 w-3" /> : <ChevronDown className="ml-1 h-3 w-3" />}
+                    {expandedEventId === event.EventId && expandedSection === 'categories' ? <ChevronUp className="ml-1 h-3 w-3" /> : <ChevronDown className="ml-1 h-3 w-3" />}
                   </Button>
                   {event.IsPublished ? (
                     <Button
                       type="button"
                       variant="outline"
-                      className="h-8 rounded-lg text-[10px] font-bold"
+                      className="h-8 rounded-lg border-0 bg-white/70 text-[10px] font-bold shadow-none hover:bg-white dark:bg-slate-900/70"
                       disabled={eventActionId === event.EventId}
                       onClick={() => void handleEventHomeAction(event.EventId, 'unpublish')}
                     >
@@ -753,7 +834,7 @@ export default function EventHomeManager({
                   <Button
                     type="button"
                     variant="outline"
-                    className="h-8 rounded-lg text-[10px] font-bold"
+                    className="h-8 rounded-lg border-0 bg-white/70 text-[10px] font-bold shadow-none hover:bg-white dark:bg-slate-900/70"
                     disabled={eventActionId === event.EventId || !event.IsPublished}
                     onClick={() => void handleEventHomeAction(event.EventId, event.IsFeatured ? 'unfeature' : 'feature')}
                   >
@@ -763,7 +844,7 @@ export default function EventHomeManager({
                   <Button
                     type="button"
                     variant="outline"
-                    className="h-8 rounded-lg text-[10px] font-bold border-rose-200 hover:bg-rose-50 text-rose-600 dark:border-rose-900/50 dark:hover:bg-rose-950/20 dark:text-rose-400 flex items-center justify-center gap-1 cursor-pointer"
+                    className="h-8 rounded-lg border-0 bg-rose-50 text-[10px] font-bold text-rose-600 shadow-none hover:bg-rose-100 dark:bg-rose-950/20 dark:text-rose-400 flex items-center justify-center gap-1 cursor-pointer"
                     disabled={eventActionId === event.EventId}
                     onClick={() => void handleDeleteEvent(event.EventId)}
                   >
@@ -773,7 +854,8 @@ export default function EventHomeManager({
                 </div>
 
                 {expandedEventId === event.EventId && (
-                  <div className="space-y-3 rounded-xl border border-slate-200 bg-slate-50/40 p-3 dark:border-slate-800 dark:bg-slate-950/30">
+                  <div className="space-y-3 rounded-xl bg-slate-100/70 p-4 dark:bg-slate-950/30">
+                    {expandedSection === 'details' && (
                     <div className="grid gap-2 text-[10px] text-slate-500 sm:grid-cols-2 lg:grid-cols-4">
                       <span><strong className="text-slate-700 dark:text-slate-200">Mùa/Năm:</strong> {event.Season} {event.Year}</span>
                       <span><strong className="text-slate-700 dark:text-slate-200">Hình thức:</strong> {event.Format}</span>
@@ -782,14 +864,19 @@ export default function EventHomeManager({
                       <span className="sm:col-span-2"><strong className="text-slate-700 dark:text-slate-200">Đơn vị tổ chức:</strong> {event.Organizer || 'Chưa cập nhật'}</span>
                       <span className="sm:col-span-2"><strong className="text-slate-700 dark:text-slate-200">Mô tả:</strong> {event.Description || 'Chưa cập nhật'}</span>
                     </div>
-                <div className="space-y-2 rounded-xl border border-slate-200 bg-white p-3 dark:border-slate-700 dark:bg-slate-900">
-                  <div className="text-[10px] font-bold text-slate-500">Category thi đấu</div>
+                    )}
+                {(expandedSection === 'details' || expandedSection === 'categories') && (
+                <div className="space-y-2 rounded-xl bg-white/80 p-3 shadow-sm dark:bg-slate-900/70">
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="text-[10px] font-bold text-slate-500">Category thi đấu</div>
+                    {expandedSection === 'categories' && <Button type="button" variant="outline" className="h-7 rounded-md px-2 text-[10px]" onClick={() => toggleCategoryForm(event)}><CirclePlus className="mr-1 h-3 w-3" />Thêm Category</Button>}
+                  </div>
                   {categories.filter((category) => category.EventId === event.EventId).length === 0 ? (
                     <p className="text-[10px] text-slate-400">Chưa có Category. Thêm ít nhất một Category để đội có thể đăng ký Event.</p>
                   ) : (
                     <div className="space-y-2">
                       {categories.filter((category) => category.EventId === event.EventId).map((category) => (
-                        <div key={category.CategoryId} className="flex items-start justify-between gap-3 rounded-lg border border-slate-100 bg-slate-50 p-2 dark:border-slate-800 dark:bg-slate-950/50">
+                        <div key={category.CategoryId} className="flex items-start justify-between gap-3 rounded-lg bg-slate-50 p-2.5 dark:bg-slate-950/50">
                           <div className="min-w-0">
                             <div className="text-[10px] font-bold text-slate-700 dark:text-slate-200">{category.CategoryName}</div>
                             {category.Description && <p className="mt-1 text-[10px] text-slate-500 dark:text-slate-400">{category.Description}</p>}
@@ -807,17 +894,46 @@ export default function EventHomeManager({
                     </div>
                   )}
                 </div>
+                )}
 
-                {categoryEventId === event.EventId && categoryForm && (
+                {expandedSection === 'categories' && categoryEventId === event.EventId && categoryForm && (
                   <form onSubmit={(submitEvent) => void handleSaveCategory(submitEvent)} className="space-y-3 rounded-xl border border-indigo-100 bg-indigo-50/50 p-3 dark:border-indigo-900/50 dark:bg-indigo-950/20">
                     <div className="text-[10px] font-black uppercase tracking-widest text-indigo-600 dark:text-indigo-400">
                       {editingCategoryId ? 'Chỉnh sửa Category của' : 'Thêm Category cho'} {event.EventName}
                     </div>
                     {categoryError && <div role="alert" className="rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-xs font-medium text-rose-700 dark:border-rose-900/60 dark:bg-rose-950/30 dark:text-rose-300">{categoryError}</div>}
-                    <div className="space-y-1.5">
-                      <label htmlFor={`category-name-${event.EventId}`} className="block text-[10px] font-bold uppercase tracking-wide text-slate-500">Tên Category</label>
-                      <Input id={`category-name-${event.EventId}`} required minLength={2} maxLength={150} value={categoryForm.CategoryName} onChange={(inputEvent) => setCategoryForm((current) => current ? { ...current, CategoryName: inputEvent.target.value } : current)} placeholder="Ví dụ: Web Application" className="h-9 rounded-lg text-xs" />
-                    </div>
+                    {!editingCategoryId ? (
+                      <div className="space-y-1.5">
+                        <label htmlFor={`category-select-${event.EventId}`} className="block text-[10px] font-bold uppercase tracking-wide text-slate-500">Tên Category (Hệ thống)</label>
+                        <select
+                          id={`category-select-${event.EventId}`}
+                          required
+                          value={categoryForm.CategoryName}
+                          className="w-full h-9 px-3 rounded-lg border border-slate-200 bg-white text-xs font-semibold focus:outline-none dark:bg-slate-900 dark:border-slate-700 dark:text-slate-200"
+                          onChange={(e) => {
+                            const val = e.target.value;
+                            const found = uniqueCategories.find((uc) => uc.name === val);
+                            if (found) {
+                              setCategoryForm((current) => current ? { ...current, CategoryName: found.name, Description: found.description } : current);
+                            } else {
+                              setCategoryForm((current) => current ? { ...current, CategoryName: '', Description: '' } : current);
+                            }
+                          }}
+                        >
+                          <option value="">-- Chọn Category từ hệ thống --</option>
+                          {uniqueCategories.map((uc) => (
+                            <option key={uc.name} value={uc.name}>{uc.name}</option>
+                          ))}
+                        </select>
+                      </div>
+                    ) : (
+                      <div className="space-y-1.5">
+                        <span className="block text-[10px] font-bold uppercase tracking-wide text-slate-500">Tên Category</span>
+                        <div className="h-9 px-3 flex items-center rounded-lg border border-slate-200 bg-slate-100 text-xs font-semibold text-slate-700 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-350">
+                          {categoryForm.CategoryName}
+                        </div>
+                      </div>
+                    )}
                     <div className="space-y-1.5">
                       <label htmlFor={`category-description-${event.EventId}`} className="block text-[10px] font-bold uppercase tracking-wide text-slate-500">Mô tả</label>
                       <textarea id={`category-description-${event.EventId}`} rows={2} maxLength={2000} value={categoryForm.Description} onChange={(inputEvent) => setCategoryForm((current) => current ? { ...current, Description: inputEvent.target.value } : current)} placeholder="Mô tả ngắn về hạng mục thi đấu." className="w-full rounded-lg border border-slate-200 bg-white p-2 text-xs font-medium focus:outline-none dark:border-slate-700 dark:bg-slate-900" />
@@ -829,11 +945,14 @@ export default function EventHomeManager({
                   </form>
                 )}
 
-                {event.Rounds.length > 0 && (
+                {(expandedSection === 'details' || expandedSection === 'rounds') && event.Rounds.length > 0 && (
                   <div className="space-y-2">
-                    <div className="text-[10px] font-bold text-slate-500">Các vòng thi đã tạo</div>
+                    <div className="flex items-center justify-between gap-2">
+                      <div className="text-[10px] font-bold text-slate-500">Các vòng thi đã tạo</div>
+                      {expandedSection === 'rounds' && <Button type="button" variant="outline" className="h-7 rounded-md px-2 text-[10px]" onClick={() => toggleRoundForm(event)}><CirclePlus className="mr-1 h-3 w-3" />Thêm vòng thi</Button>}
+                    </div>
                     {[...event.Rounds].sort((a, b) => a.RoundOrder - b.RoundOrder).map((round) => (
-                      <div key={round.RoundId} className="rounded-xl border border-slate-200 bg-white p-3 text-[10px] shadow-sm dark:border-slate-700 dark:bg-slate-900">
+                      <div key={round.RoundId} className="rounded-xl bg-white p-3.5 text-[10px] shadow-sm dark:bg-slate-900">
                         <div className="flex items-start justify-between gap-3">
                           <div className="min-w-0">
                             <div className="font-bold text-slate-800 dark:text-slate-100">Vòng {round.RoundOrder}: {round.RoundName}</div>
@@ -854,7 +973,16 @@ export default function EventHomeManager({
                   </div>
                 )}
 
-                {event.Rounds.length > 0 && false && (
+                {expandedSection === 'rounds' && event.Rounds.length === 0 && (
+                  <div className="space-y-2 rounded-xl bg-white p-3 dark:bg-slate-900">
+                    <div className="flex items-center justify-between gap-2">
+                      <p className="text-[10px] text-slate-400">Event chưa có vòng thi.</p>
+                      <Button type="button" variant="outline" className="h-7 rounded-md px-2 text-[10px]" onClick={() => toggleRoundForm(event)}><CirclePlus className="mr-1 h-3 w-3" />Thêm vòng thi</Button>
+                    </div>
+                  </div>
+                )}
+
+                {expandedSection === 'details' && event.Rounds.length > 0 && false && (
                   <div className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-[10px] dark:border-slate-700 dark:bg-slate-900">
                     <div className="mb-1 font-bold text-slate-500">Vòng thi đã tạo</div>
                     <div className="space-y-1">
@@ -868,7 +996,7 @@ export default function EventHomeManager({
                   </div>
                 )}
 
-                {roundEventId === event.EventId && roundForm && (
+                {expandedSection === 'rounds' && roundEventId === event.EventId && roundForm && (
                   <form onSubmit={(submitEvent) => void handleCreateRound(submitEvent, event)} className="rounded-xl border border-indigo-100 bg-indigo-50/50 p-3 space-y-3 dark:border-indigo-900/50 dark:bg-indigo-950/20">
                     <div className="text-[10px] font-black uppercase tracking-widest text-indigo-600 dark:text-indigo-400">
                       {editingRoundId ? 'Chỉnh sửa vòng thi của' : 'Thêm vòng thi cho'} {event.EventName}
@@ -929,7 +1057,7 @@ export default function EventHomeManager({
             ))
           )}
           {filteredEvents.length > 0 && (
-            <div className="flex items-center justify-between border-t border-slate-100 pt-3 text-[10px] text-slate-500 dark:border-slate-800">
+            <div className="flex items-center justify-between pt-3 text-[10px] text-slate-500">
               <span>Trang {safeEventPage}/{eventTotalPages} · {filteredEvents.length} Event</span>
               <div className="flex gap-2">
                 <Button type="button" variant="outline" className="h-7 rounded-lg px-2 text-[10px]" disabled={safeEventPage === 1} onClick={() => setEventPage((current) => Math.max(1, current - 1))}>Trước</Button>

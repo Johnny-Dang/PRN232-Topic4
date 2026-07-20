@@ -198,6 +198,5 @@ export const addRoundRequestSchema = z
 export type Round = z.infer<typeof roundSchema>;
 export type Event = z.infer<typeof eventSchema>;
 export type Category = z.infer<typeof categorySchema>;
-export type CreateEventRequest = z.infer<typeof createEventRequestSchema>;
 export type CategoryRequest = z.infer<typeof categoryRequestSchema>;
 export type AddRoundRequest = z.infer<typeof addRoundRequestSchema>;

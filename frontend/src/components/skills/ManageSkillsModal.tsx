@@ -187,7 +187,7 @@ export default function ManageSkillsModal({
                     <Select
                       value={skill.ExperienceLevel ?? 'Junior'}
                       onValueChange={(val) =>
-                        handleChangeSkill(idx, 'ExperienceLevel', val)
+                        handleChangeSkill(idx, 'ExperienceLevel', val ?? 'Junior')
                       }
                     >
                       <SelectTrigger className="bg-white dark:bg-slate-900">

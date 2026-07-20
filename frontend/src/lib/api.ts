@@ -1474,9 +1474,9 @@ export async function createSubmissionLinks(
     const response = await apiClient.post<BackendSubmission>("/Submissions", {
       TeamId: teamId,
       RoundId: roundId,
-      RepositoryURL: links.RepositoryURL,
-      DemoURL: links.DemoURL,
-      SlideURL: links.SlideURL,
+      RepositoryURL: links.RepositoryURL || null,
+      DemoURL: links.DemoURL || null,
+      SlideURL: links.SlideURL || null,
       VideoAssetId: links.VideoAssetId || null,
       SlideAssetId: links.SlideAssetId || null,
     });
@@ -1499,9 +1499,9 @@ export async function updateSubmissionLinks(
   try {
     const response = await apiClient.put<BackendSubmission>("/Submissions", {
       SubmissionId: submissionId,
-      RepositoryURL: links.RepositoryURL,
-      DemoURL: links.DemoURL,
-      SlideURL: links.SlideURL,
+      RepositoryURL: links.RepositoryURL || null,
+      DemoURL: links.DemoURL || null,
+      SlideURL: links.SlideURL || null,
       VideoAssetId: links.VideoAssetId || null,
       SlideAssetId: links.SlideAssetId || null,
     });
@@ -1509,6 +1509,17 @@ export async function updateSubmissionLinks(
     return mapSubmission(response.data);
   } catch (error: unknown) {
     logApiError("updateSubmissionLinks", error);
+    throw error;
+  }
+}
+
+export async function deleteSubmission(submissionId: string): Promise<boolean> {
+  if (!useLiveApi || !submissionId) return false;
+  try {
+    await apiClient.delete(`/Submissions/${submissionId}`);
+    return true;
+  } catch (error: unknown) {
+    logApiError("deleteSubmission", error);
     throw error;
   }
 }

@@ -102,14 +102,17 @@ export default function CompetitionDetailPage({ params }: PageProps) {
   }, [id]);
 
   useEffect(() => {
-    const refreshRounds = () => {
-      void getRounds(id).then((eventRounds) => {
+    const refreshCompetition = () => {
+      void Promise.all([getDetailedCompetitions(), getRounds(id)]).then(([competitions, eventRounds]) => {
+        setCompetition(competitions.find((item) => item.ID === id) ?? null);
         setRounds(eventRounds.sort((first, second) => first.RoundOrder - second.RoundOrder));
+      }).catch((error: unknown) => {
+        console.error('Không thể cập nhật Event từ realtime:', error);
       });
     };
 
-    window.addEventListener('seal:notification', refreshRounds);
-    return () => window.removeEventListener('seal:notification', refreshRounds);
+    window.addEventListener('seal:notification', refreshCompetition);
+    return () => window.removeEventListener('seal:notification', refreshCompetition);
   }, [id]);
 
   // Determine active dashboard route based on user role
@@ -273,8 +276,33 @@ export default function CompetitionDetailPage({ params }: PageProps) {
   return (
     <div className="min-h-screen flex flex-col bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 font-sans antialiased selection:bg-indigo-600 selection:text-white transition-colors duration-200 pb-20 md:pb-0">
       {registrationNotice && (
-        <div role="alert" className="fixed left-1/2 top-5 z-50 w-[calc(100%-2rem)] max-w-md -translate-x-1/2 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-center text-xs font-semibold text-amber-800 shadow-lg dark:border-amber-900/60 dark:bg-amber-950 dark:text-amber-200">
-          {registrationNotice}
+        <div role="alert" className="fixed bottom-6 right-6 z-55 w-[calc(100%-3rem)] max-w-sm rounded-2xl border border-amber-250 bg-amber-50/95 p-4 shadow-xl backdrop-blur-sm dark:border-amber-900/50 dark:bg-amber-950/95">
+          <div className="flex flex-col gap-2.5">
+            <p className="text-xs font-bold text-amber-900 dark:text-amber-250 leading-relaxed text-left">
+              {registrationNotice}
+            </p>
+            <div className="flex justify-end gap-2">
+              <button
+                type="button"
+                onClick={() => setRegistrationNotice('')}
+                className="h-8 rounded-lg px-3 text-[10px] font-semibold text-slate-500 hover:bg-slate-100 bg-transparent border-none cursor-pointer outline-none"
+              >
+                Đóng
+              </button>
+              {registrationNotice.includes('nhóm') && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setRegistrationNotice('');
+                    router.push(`/member?eventId=${encodeURIComponent(id)}`);
+                  }}
+                  className="h-8 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white px-3 text-[10px] font-extrabold border-none cursor-pointer outline-none"
+                >
+                  Tới trang Quản lý Nhóm
+                </button>
+              )}
+            </div>
+          </div>
         </div>
       )}
       
