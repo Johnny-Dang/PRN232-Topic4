@@ -173,6 +173,22 @@ function CoordinatorDashboardContent() {
     void Promise.resolve().then(loadData);
   }, [loadData]);
 
+  useEffect(() => {
+    let refreshTimer: number | undefined;
+    const refreshDashboard = () => {
+      window.clearTimeout(refreshTimer);
+      refreshTimer = window.setTimeout(() => {
+        void loadData();
+      }, 300);
+    };
+
+    window.addEventListener('seal:notification', refreshDashboard);
+    return () => {
+      window.removeEventListener('seal:notification', refreshDashboard);
+      window.clearTimeout(refreshTimer);
+    };
+  }, [loadData]);
+
   const handleSelectedCategoryChange = (categoryId: string) => {
     setSelectedCategoryId(categoryId);
     void loadAssignmentsByCategory(categoryId);

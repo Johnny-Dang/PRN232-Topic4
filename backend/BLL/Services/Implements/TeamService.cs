@@ -13,6 +13,7 @@ namespace BusinessLogicLayer.Services.Implements
 {
     public class TeamService : ITeamService
     {
+        private const int MaxConcurrentEventsPerUser = 3;
         private readonly IGenericRepository<Teams> _teamRepository;
         private readonly IGenericRepository<TeamMembers> _teamMemberRepository;
         private readonly IGenericRepository<EventParticipants> _eventParticipantRepository;
@@ -332,7 +333,43 @@ namespace BusinessLogicLayer.Services.Implements
             )
                 throw new Exception("The category is not open for team selection.");
 
+            await ValidateTeamMembersConcurrentEventLimitAsync(teamMembers, eventData);
             await ValidateTeamMembersEligibleForEventAsync(team, teamMembers, eventId);
+        }
+
+        private async Task ValidateTeamMembersConcurrentEventLimitAsync(
+            IReadOnlyList<TeamMembers> teamMembers,
+            Events targetEvent
+        )
+        {
+            foreach (var member in teamMembers)
+            {
+                var registrations = await _eventParticipantRepository.FindAsync(participant =>
+                    participant.UserId == member.UserId
+                    && participant.EventId != targetEvent.EventId
+                );
+
+                var concurrentEvents = 0;
+                foreach (var eventId in registrations.Select(item => item.EventId).Distinct())
+                {
+                    var registeredEvent = await _eventRepository.GetByIdAsync(eventId);
+                    if (registeredEvent == null || registeredEvent.EndDate < DateTime.UtcNow)
+                        continue;
+
+                    var overlapsTargetEvent = registeredEvent.StartDate <= targetEvent.EndDate
+                        && registeredEvent.EndDate >= targetEvent.StartDate;
+                    if (overlapsTargetEvent)
+                        concurrentEvents++;
+                }
+
+                if (concurrentEvents >= MaxConcurrentEventsPerUser)
+                {
+                    throw new Exception(
+                        $"A team member is already registered for {MaxConcurrentEventsPerUser} concurrent events. "
+                        + "Each participant can join at most 3 events at the same time."
+                    );
+                }
+            }
         }
 
         private async Task ValidateTeamMembersEligibleForEventAsync(

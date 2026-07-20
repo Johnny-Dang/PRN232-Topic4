@@ -160,21 +160,49 @@ namespace BusinessLogicLayer.Services.Implements
 
         public async Task AttachAssetsToSubmissionAsync(Guid submissionId, Guid teamId, Guid roundId, Guid? videoAssetId, Guid? slideAssetId, Guid userId)
         {
-            if (videoAssetId == null && slideAssetId == null) return;
-
             await GetLeaderTeamAsync(teamId, userId);
             var submission = await _submissionRepository.GetByIdAsync(submissionId);
             if (submission == null)
                 throw new Exception($"Submission with id {submissionId} not found");
 
+            var existingAssets = await _assetRepository.FindAsync(x => x.SubmissionId == submissionId);
+
+            // Process Video Asset
             if (videoAssetId != null)
             {
+                foreach (var oldVideo in existingAssets.Where(x => string.Equals(x.AssetType, VideoAssetType, StringComparison.OrdinalIgnoreCase) && x.SubmissionAssetId != videoAssetId.Value))
+                {
+                    oldVideo.SubmissionId = null;
+                    _assetRepository.Update(oldVideo);
+                }
                 await AttachAssetAsync(videoAssetId.Value, submissionId, teamId, roundId, VideoAssetType);
             }
+            else
+            {
+                foreach (var oldVideo in existingAssets.Where(x => string.Equals(x.AssetType, VideoAssetType, StringComparison.OrdinalIgnoreCase)))
+                {
+                    oldVideo.SubmissionId = null;
+                    _assetRepository.Update(oldVideo);
+                }
+            }
 
+            // Process Slide Asset
             if (slideAssetId != null)
             {
+                foreach (var oldSlide in existingAssets.Where(x => string.Equals(x.AssetType, SlideAssetType, StringComparison.OrdinalIgnoreCase) && x.SubmissionAssetId != slideAssetId.Value))
+                {
+                    oldSlide.SubmissionId = null;
+                    _assetRepository.Update(oldSlide);
+                }
                 await AttachAssetAsync(slideAssetId.Value, submissionId, teamId, roundId, SlideAssetType);
+            }
+            else
+            {
+                foreach (var oldSlide in existingAssets.Where(x => string.Equals(x.AssetType, SlideAssetType, StringComparison.OrdinalIgnoreCase)))
+                {
+                    oldSlide.SubmissionId = null;
+                    _assetRepository.Update(oldSlide);
+                }
             }
 
             await _unitOfWork.SaveChangesAsync();
@@ -234,7 +262,13 @@ namespace BusinessLogicLayer.Services.Implements
 
             if (assetType == VideoAssetType)
             {
-                if (!VideoContentTypes.Contains(request.ContentType))
+                var extension = Path.GetExtension(request.FileName);
+                var isAllowedExt = new[] { ".mp4", ".webm", ".mov" }.Contains(extension, StringComparer.OrdinalIgnoreCase);
+                var isAllowedMime = VideoContentTypes.Contains(request.ContentType) || 
+                                    string.Equals(request.ContentType, "application/octet-stream", StringComparison.OrdinalIgnoreCase) ||
+                                    string.IsNullOrWhiteSpace(request.ContentType);
+
+                if (!isAllowedExt && !isAllowedMime)
                     throw new Exception("Video demo must be mp4, webm, or mov.");
                 return;
             }
@@ -242,7 +276,12 @@ namespace BusinessLogicLayer.Services.Implements
             if (assetType == SlideAssetType)
             {
                 var extension = Path.GetExtension(request.FileName);
-                if (!SlideContentTypes.Contains(request.ContentType) || !SlideExtensions.Contains(extension))
+                var isAllowedExt = SlideExtensions.Contains(extension);
+                var isAllowedMime = SlideContentTypes.Contains(request.ContentType) || 
+                                    string.Equals(request.ContentType, "application/octet-stream", StringComparison.OrdinalIgnoreCase) ||
+                                    string.IsNullOrWhiteSpace(request.ContentType);
+
+                if (!isAllowedExt && !isAllowedMime)
                     throw new Exception("Slide document must be ppt, pptx, doc, or docx.");
                 return;
             }
@@ -255,14 +294,11 @@ namespace BusinessLogicLayer.Services.Implements
             if (!string.Equals(asset.ResourceType, request.ResourceType, StringComparison.OrdinalIgnoreCase))
                 throw new Exception("Cloudinary resource type does not match the signed upload.");
 
-            if (!string.Equals(asset.PublicId, request.PublicId, StringComparison.Ordinal))
+            if (string.IsNullOrWhiteSpace(request.PublicId) || !request.PublicId.StartsWith(asset.PublicId, StringComparison.OrdinalIgnoreCase))
                 throw new Exception("Cloudinary public id does not match the signed upload.");
 
             if (request.FileSize <= 0)
                 throw new Exception("Cloudinary file size is invalid.");
-
-            if (request.FileSize > asset.FileSize)
-                throw new Exception("Cloudinary file size exceeds the signed upload size.");
         }
 
         private string GetRequiredCloudinarySetting(string key)

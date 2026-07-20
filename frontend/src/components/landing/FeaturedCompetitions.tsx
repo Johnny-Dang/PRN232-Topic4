@@ -138,6 +138,7 @@ export default function FeaturedCompetitions({
           {filteredCompetitions.map((comp) => {
             const statusMeta = getStatusBadge(comp.Status);
             const isExpiring = comp.Status === "expiring";
+            const eventCategories = categories.filter((category) => category.EventID === comp.ID);
 
             return (
               <Card
@@ -175,7 +176,13 @@ export default function FeaturedCompetitions({
                 <CardContent className="p-6 flex-1 flex flex-col justify-between space-y-4">
                   <div className="space-y-2">
                     <div className="flex items-center justify-between text-[10px] font-bold text-indigo-600 dark:text-indigo-400 uppercase tracking-widest">
-                      <span>{comp.CategoryLabel || "Chưa phân loại"}</span>
+                      <span className="flex flex-wrap gap-1.5">
+                        {eventCategories.length > 0 ? eventCategories.map((category) => (
+                          <span key={category.CategoryID} className="rounded-full bg-indigo-50 px-2 py-1 dark:bg-indigo-950/40">
+                            {category.CategoryName}
+                          </span>
+                        )) : 'Chưa phân loại'}
+                      </span>
                       <span className="text-slate-400 dark:text-slate-550">
                         Đơn vị: {comp.Organizer}
                       </span>

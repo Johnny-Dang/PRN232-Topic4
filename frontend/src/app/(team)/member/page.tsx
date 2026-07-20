@@ -69,6 +69,7 @@ export default function MemberPage() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const requestedEventId = searchParams.get('eventId') ?? '';
+  const forceNewTeam = searchParams.get('newTeam') === '1';
   const [loading, setLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState('');
   const [team, setTeam] = useState<Team | null>(null);
@@ -300,7 +301,7 @@ export default function MemberPage() {
               </div>
             )}
 
-            {!team ? (
+            {!team || forceNewTeam ? (
               <Card className="border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900">
                 <CardHeader>
                   <div className="flex items-center justify-between">
