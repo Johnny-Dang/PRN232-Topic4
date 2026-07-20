@@ -5,6 +5,7 @@ import {
   HubConnectionBuilder,
   HubConnectionState,
   LogLevel,
+  HubConnection,
 } from "@microsoft/signalr";
 import { Bell, X } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
@@ -12,6 +13,7 @@ import { apiClient } from "@/services/api/apiClient";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "https://localhost:7086/api";
 const HUB_URL = `${API_URL.replace(/\/api\/?$/, "")}/notificationHub`;
+const TOKEN_EXPIRY_BUFFER_MS = 60_000;
 
 type RealtimeNotification = {
   id: number;
@@ -26,47 +28,95 @@ type ApiNotification = {
   createdAt: string;
 };
 
-const getAccessToken = (): string => {
-  const storedUser = localStorage.getItem("seal_user");
-  if (!storedUser) return "";
-
+const getStoredUser = (): Record<string, unknown> | null => {
   try {
-    const session = JSON.parse(storedUser) as Record<string, unknown>;
-    const directToken =
-      session.AccessToken || session.accessToken || session.token;
-    if (typeof directToken === "string") return directToken;
-
-    const auth = session.Auth || session.auth;
-    if (typeof auth === "object" && auth !== null) {
-      const authData = auth as Record<string, unknown>;
-      const nestedToken =
-        authData.AccessToken || authData.accessToken || authData.token;
-      if (typeof nestedToken === "string") return nestedToken;
-    }
+    const raw = localStorage.getItem("seal_user");
+    return raw ? (JSON.parse(raw) as Record<string, unknown>) : null;
   } catch {
-    return "";
+    return null;
+  }
+};
+
+const getAccessToken = (): string => {
+  const session = getStoredUser();
+  if (!session) return "";
+
+  const directToken =
+    session.AccessToken || session.accessToken || session.token;
+  if (typeof directToken === "string") return directToken;
+
+  const auth = session.Auth || session.auth;
+  if (typeof auth === "object" && auth !== null) {
+    const authData = auth as Record<string, unknown>;
+    const nestedToken =
+      authData.AccessToken || authData.accessToken || authData.token;
+    if (typeof nestedToken === "string") return nestedToken;
   }
 
   return "";
 };
 
-const isLoggedIn = (): boolean => {
-  return !!getAccessToken();
+const isTokenExpired = (token: string): boolean => {
+  try {
+    const payload = JSON.parse(
+      atob(token.split(".")[1].replace(/-/g, "+").replace(/_/g, "/")),
+    );
+    if (!payload.exp) return false;
+    return Date.now() >= payload.exp * 1000 - TOKEN_EXPIRY_BUFFER_MS;
+  } catch {
+    return false;
+  }
 };
+
+const isLoggedIn = (): boolean => !!getAccessToken();
+
+async function refreshTokenApi(): Promise<boolean> {
+  const user = getStoredUser();
+  const refreshToken = user?.RefreshToken as string | undefined;
+  if (!refreshToken) return false;
+
+  const response = await fetch(`${API_URL}/Auth/refresh`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ refreshToken }),
+  });
+
+  if (!response.ok) return false;
+
+  const data = (await response.json()) as {
+    accessToken?: string;
+    refreshToken?: string;
+  };
+
+  if (data.accessToken && user) {
+    localStorage.setItem(
+      "seal_user",
+      JSON.stringify({
+        ...user,
+        AccessToken: data.accessToken,
+        RefreshToken: data.refreshToken,
+      }),
+    );
+    return true;
+  }
+
+  return false;
+}
 
 export default function RealtimeProvider() {
   const queryClient = useQueryClient();
   const [notifications, setNotifications] = useState<RealtimeNotification[]>(
     [],
   );
-  const [isConnected, setIsConnected] = useState(false);
-  const nextId = useRef(0);
-  const connectionRef = useRef<
-    import("@microsoft/signalr").HubConnection | null
-  >(null);
+
+  const connectionRef = useRef<HubConnection | null>(null);
+  const isConnectingRef = useRef(false);
+  const isRefreshingTokenRef = useRef(false);
   const reconnectAttemptRef = useRef(0);
+  const isManualStopRef = useRef(false);
+  const nextId = useRef(0);
+
   const maxReconnectAttempts = 5;
-  const lastFetchedCount = useRef(0);
   const displayedIds = useRef(new Set<string>());
 
   const loadUnreadNotifications = useCallback(async () => {
@@ -76,9 +126,8 @@ export default function RealtimeProvider() {
         totalCount: number;
       }>("/Notification?isRead=false&pageSize=10&pageNumber=1");
 
-      const items = response.items || [];
+      const items = response.data?.items || response.data || [];
 
-      // Chỉ hiển thị thông báo chưa từng hiển thị
       const newNotifications: RealtimeNotification[] = [];
 
       for (const item of items) {
@@ -98,9 +147,6 @@ export default function RealtimeProvider() {
         ]);
       }
 
-      lastFetchedCount.current = items.length;
-
-      // Lưu vào localStorage để không hiện lại khi reload
       localStorage.setItem(
         "seal_displayed_notifications",
         JSON.stringify([...displayedIds.current]),
@@ -122,34 +168,72 @@ export default function RealtimeProvider() {
     }
   }, []);
 
-  const startConnection = useCallback(async () => {
-    const accessToken = getAccessToken();
-    if (!accessToken) return;
+  const cleanupConnection = useCallback(async () => {
+    const conn = connectionRef.current;
+    if (!conn) return;
 
-    // Stop existing connection if any
-    if (connectionRef.current) {
-      connectionRef.current.off("ReceiveNotification");
-      if (connectionRef.current.state !== HubConnectionState.Disconnected) {
-        await connectionRef.current.stop();
+    try {
+      conn.off("ReceiveNotification");
+    } catch {
+      // ignore
+    }
+
+    if (conn.state !== HubConnectionState.Disconnected) {
+      try {
+        await conn.stop();
+      } catch {
+        // ignore
       }
     }
 
-    const connection = new HubConnectionBuilder()
+    connectionRef.current = null;
+  }, []);
+
+  // Stable ref that always points to the latest doStartConnection
+  const startFnRef = useRef<(() => Promise<void>) | null>(null);
+
+  const doStartConnection = useCallback(async () => {
+    const token = getAccessToken();
+    if (!token) return;
+
+    if (isConnectingRef.current) return;
+    isConnectingRef.current = true;
+
+    if (isTokenExpired(token) && !isRefreshingTokenRef.current) {
+      isConnectingRef.current = false;
+      isRefreshingTokenRef.current = true;
+
+      try {
+        const ok = await refreshTokenApi();
+        isRefreshingTokenRef.current = false;
+        if (ok && !isManualStopRef.current) {
+          reconnectAttemptRef.current = 0;
+          startFnRef.current?.();
+        }
+      } catch {
+        isRefreshingTokenRef.current = false;
+      }
+
+      return;
+    }
+
+    await cleanupConnection();
+
+    const conn = new HubConnectionBuilder()
       .withUrl(HUB_URL, {
         accessTokenFactory: () => getAccessToken(),
         withCredentials: false,
+        skipNegotiation: false,
       })
-      .withAutomaticReconnect()
       .configureLogging(LogLevel.Warning)
       .build();
 
-    connectionRef.current = connection;
+    connectionRef.current = conn;
 
-    connection.on("ReceiveNotification", (message: string) => {
+    conn.on("ReceiveNotification", (message: string) => {
       const notification = { id: ++nextId.current, message };
       setNotifications((current) => [notification, ...current]);
 
-      // Invalidate specific queries related to scoring and rankings
       void queryClient.invalidateQueries({ queryKey: ["scores"] });
       void queryClient.invalidateQueries({ queryKey: ["rankings"] });
       void queryClient.invalidateQueries({ queryKey: ["notifications"] });
@@ -157,6 +241,7 @@ export default function RealtimeProvider() {
         new CustomEvent("seal:notification", { detail: notification }),
       );
 
+      // Auto-remove after 7 seconds
       window.setTimeout(() => {
         setNotifications((current) =>
           current.filter((item) => item.id !== notification.id),
@@ -165,38 +250,73 @@ export default function RealtimeProvider() {
     });
 
     try {
-      await connection.start();
-      setIsConnected(true);
+      await conn.start();
       reconnectAttemptRef.current = 0;
-      console.log("SignalR connected successfully");
-    } catch (error) {
-      console.warn("Không thể kết nối kênh thông báo realtime.", error);
-      setIsConnected(false);
+      isConnectingRef.current = false;
+      console.log("[SignalR] Connected successfully");
+    } catch (error: unknown) {
+      isConnectingRef.current = false;
 
-      // Retry with exponential backoff
-      if (reconnectAttemptRef.current < maxReconnectAttempts) {
+      const isAuthError =
+        error instanceof Error &&
+        (error.message?.includes("401") ||
+          error.message?.includes("Unauthorized") ||
+          error.message?.includes("Forbidden") ||
+          error.message?.includes("Invalid user token") ||
+          error.message?.includes("negotiation") ||
+          (typeof error === "object" &&
+            error !== null &&
+            "response" in error));
+
+      if (isAuthError && !isRefreshingTokenRef.current) {
+        isRefreshingTokenRef.current = true;
+
+        refreshTokenApi()
+          .then((ok) => {
+            isRefreshingTokenRef.current = false;
+            if (ok && !isManualStopRef.current) {
+              reconnectAttemptRef.current = 0;
+              startFnRef.current?.();
+            }
+          })
+          .catch(() => {
+            isRefreshingTokenRef.current = false;
+          });
+
+        return;
+      }
+
+      if (
+        !isManualStopRef.current &&
+        reconnectAttemptRef.current < maxReconnectAttempts
+      ) {
         reconnectAttemptRef.current++;
         const delay = Math.min(
           1000 * Math.pow(2, reconnectAttemptRef.current),
           30000,
         );
-        setTimeout(() => {
-          void startConnection();
-        }, delay);
+        console.warn(
+          `[SignalR] Retry ${reconnectAttemptRef.current}/${maxReconnectAttempts} in ${delay}ms`,
+        );
+        setTimeout(() => startFnRef.current?.(), delay);
+      } else if (
+        reconnectAttemptRef.current >= maxReconnectAttempts &&
+        !isManualStopRef.current
+      ) {
+        reconnectAttemptRef.current = 0;
       }
     }
-  }, [queryClient]);
+  }, [cleanupConnection, queryClient]);
+
+  // Keep the ref in sync with the latest doStartConnection
+  useEffect(() => {
+    startFnRef.current = doStartConnection;
+  });
 
   const stopConnection = useCallback(async () => {
-    if (connectionRef.current) {
-      connectionRef.current.off("ReceiveNotification");
-      if (connectionRef.current.state !== HubConnectionState.Disconnected) {
-        await connectionRef.current.stop();
-      }
-      connectionRef.current = null;
-      setIsConnected(false);
-    }
-  }, []);
+    isManualStopRef.current = true;
+    await cleanupConnection();
+  }, [cleanupConnection]);
 
   useEffect(() => {
     // Load displayed IDs from localStorage first
@@ -209,50 +329,32 @@ export default function RealtimeProvider() {
 
     // Initial connection if already logged in
     if (isLoggedIn()) {
-      void startConnection();
+      void doStartConnection();
     }
 
-    // Listen for storage changes (login/logout)
     const handleStorageChange = (e: StorageEvent) => {
       if (e.key === "seal_user") {
         if (e.newValue && !e.oldValue) {
-          // User logged in
-          console.log("User logged in, starting SignalR connection...");
-          setTimeout(() => {
-            void loadUnreadNotifications();
-            void startConnection();
-          }, 100);
+          void doStartConnection();
         } else if (!e.newValue && e.oldValue) {
-          // User logged out
-          console.log("User logged out, stopping SignalR connection...");
           void stopConnection();
         }
       }
     };
 
-    // Listen for custom login event (for same-tab navigation)
-    const handleLoginEvent = () => {
-      console.log("Login event detected, starting SignalR connection...");
-      setTimeout(() => {
-        void loadUnreadNotifications();
-        void startConnection();
-      }, 100);
+    const handleLoginSuccess = () => {
+      void doStartConnection();
     };
 
     window.addEventListener("storage", handleStorageChange);
-    window.addEventListener("seal:login-success", handleLoginEvent);
+    window.addEventListener("seal:login-success", handleLoginSuccess);
 
     return () => {
       window.removeEventListener("storage", handleStorageChange);
-      window.removeEventListener("seal:login-success", handleLoginEvent);
+      window.removeEventListener("seal:login-success", handleLoginSuccess);
       void stopConnection();
     };
-  }, [
-    startConnection,
-    stopConnection,
-    loadUnreadNotifications,
-    loadDisplayedIds,
-  ]);
+  }, [doStartConnection, stopConnection, loadUnreadNotifications, loadDisplayedIds]);
 
   return (
     <div
