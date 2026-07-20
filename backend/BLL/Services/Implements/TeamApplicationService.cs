@@ -23,10 +23,12 @@ namespace BusinessLogicLayer.Services.Implements
         private readonly IGenericRepository<UserSkills> _userSkillRepository;
         private readonly IGenericRepository<AuditLogs> _auditLogRepository;
         private readonly IUnitOfWork _unitOfWork;
+        private readonly INotificationService _notificationService;
 
-        public TeamApplicationService(IUnitOfWork unitOfWork)
+        public TeamApplicationService(IUnitOfWork unitOfWork, INotificationService notificationService)
         {
             _unitOfWork = unitOfWork;
+            _notificationService = notificationService;
             _applicationRepository = _unitOfWork.GetRepository<TeamApplications>();
             _recruitmentRepository = _unitOfWork.GetRepository<TeamRecruitments>();
             _teamRepository = _unitOfWork.GetRepository<Teams>();
@@ -93,6 +95,14 @@ namespace BusinessLogicLayer.Services.Implements
             });
 
             await _unitOfWork.SaveChangesAsync();
+
+            // Gửi thông báo cho Team Leader khi có đơn ứng tuyển mới
+            var teamLeader = await _userRepository.GetByIdAsync(recruitment.Team!.TeamLeaderId);
+            if (teamLeader != null)
+            {
+                var notificationMessage = $"[THÔNG BÁO] {candidate.FullName} đã nộp đơn ứng tuyển vào đội {recruitment.Team!.TeamName} cho vai trò {recruitment.RoleNeeded}.";
+                await _notificationService.CreateNotificationAsync(teamLeader.UserId, notificationMessage);
+            }
 
             var skills = await _userSkillRepository.FindAsync(s => s.UserId == candidateUserId);
             return MapToDto(application, recruitment.Team, candidate, skills.ToList());
@@ -195,6 +205,14 @@ namespace BusinessLogicLayer.Services.Implements
                     NewValue = JsonSerializer.Serialize(new { application.ApplicationId, application.UserId, application.TeamId }),
                     CreatedAt = DateTime.UtcNow
                 });
+
+                // Gửi thông báo cho ứng viên khi được chấp nhận
+                var acceptedUser = await _userRepository.GetByIdAsync(application.UserId);
+                if (acceptedUser != null && application.Team != null)
+                {
+                    var acceptMessage = $"[CHẤP NHẬN] Đơn ứng tuyển của bạn vào đội {application.Team.TeamName} đã được chấp nhận! Bạn là thành viên của đội rồi.";
+                    await _notificationService.CreateNotificationAsync(application.UserId, acceptMessage);
+                }
             }
             else
             {
@@ -210,6 +228,14 @@ namespace BusinessLogicLayer.Services.Implements
                     NewValue = JsonSerializer.Serialize(new { application.ApplicationId, application.UserId, application.TeamId }),
                     CreatedAt = DateTime.UtcNow
                 });
+
+                // Gửi thông báo cho ứng viên khi bị từ chối
+                var rejectedUser = await _userRepository.GetByIdAsync(application.UserId);
+                if (rejectedUser != null && application.Team != null)
+                {
+                    var rejectMessage = $"[TỪ CHỐI] Rất tiếc, đơn ứng tuyển của bạn vào đội {application.Team.TeamName} đã bị từ chối.";
+                    await _notificationService.CreateNotificationAsync(application.UserId, rejectMessage);
+                }
             }
 
             _applicationRepository.Update(application);

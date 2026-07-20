@@ -513,8 +513,12 @@ export default function CompetitionDetailPage({ params }: PageProps) {
                       <div className="w-9 h-9 rounded-full bg-amber-500/15 text-amber-500 mx-auto flex items-center justify-center">
                         <Trophy className="w-5 h-5" />
                       </div>
-                      <h5 className="font-black text-slate-800 dark:text-slate-200 text-xs">Giải Quán Quân</h5>
-                      <strong className="block text-amber-600 dark:text-amber-400 text-base">{competition.Prize}</strong>
+                      <h5 className="font-black text-slate-800 dark:text-slate-200 text-xs">Giải Nhất</h5>
+                      <strong className="block text-amber-600 dark:text-amber-400 text-base font-extrabold tabular-nums">
+                        {competition.Prize
+                          ? competition.Prize.replace(/,/g, '').replace(/\B(?=(\d{3})+(?!\d))/g, ',') + ' VND'
+                          : 'Chưa cập nhật'}
+                      </strong>
                       <span className="text-[10px] text-slate-400 block font-bold">Cúp vô địch danh giá + Huy chương Vàng</span>
                     </div>
 
@@ -596,7 +600,11 @@ export default function CompetitionDetailPage({ params }: PageProps) {
                 </div>
                 <div className="min-w-0">
                   <span className="block text-[9px] text-slate-400 dark:text-slate-500 font-bold uppercase tracking-wider">Giải thưởng lớn</span>
-                  <span className="block text-sm font-bold text-amber-600 dark:text-amber-400 truncate">{competition.Prize || 'Không có'}</span>
+                  <span className="block text-sm font-extrabold text-amber-600 dark:text-amber-400 truncate tabular-nums">
+                    {competition.Prize
+                      ? competition.Prize.replace(/,/g, '').replace(/\B(?=(\d{3})+(?!\d))/g, ',') + ' VND'
+                      : 'Chưa cập nhật'}
+                  </span>
                 </div>
               </div>
 
@@ -667,8 +675,12 @@ export default function CompetitionDetailPage({ params }: PageProps) {
       {/* 4. MOBILE STICKY ACTION BOTTOM BAR (Hidden on Desktop) */}
       <div className="md:hidden fixed bottom-0 left-0 right-0 z-30 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border-t border-slate-200 dark:border-slate-800 px-6 py-3 flex items-center justify-between shadow-lg">
         <div className="min-w-0">
-          <span className="block text-[8px] text-slate-400 font-bold uppercase tracking-wider">Giải thưởng Quán quân</span>
-          <span className="block text-xs font-bold text-amber-600 dark:text-amber-400 truncate">{competition.Prize}</span>
+          <span className="block text-[8px] text-slate-400 font-bold uppercase tracking-wider">Giải thưởng Nhất</span>
+          <span className="block text-xs font-extrabold text-amber-600 dark:text-amber-400 truncate tabular-nums">
+            {competition.Prize
+              ? competition.Prize.replace(/,/g, '').replace(/\B(?=(\d{3})+(?!\d))/g, ',') + ' VND'
+              : 'Chưa cập nhật'}
+          </span>
         </div>
         <Button
           onClick={() => void handleRegisterForCompetition()}

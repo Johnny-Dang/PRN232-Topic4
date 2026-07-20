@@ -10,8 +10,9 @@ import RecruitmentCard from '@/components/recruitment/RecruitmentCard';
 import ApplyModal from '@/components/application/ApplyModal';
 import CreateRecruitmentModal from '@/components/recruitment/CreateRecruitmentModal';
 import { getRecruitmentsApi } from '@/services/api/recruitment';
-import { getTeams } from '@/lib/api';
+import { getTeams, getMyApplications } from '@/lib/api';
 import { TeamRecruitment } from '@/services/types/recruitment';
+import { TeamApplication } from '@/services/types/application';
 
 export default function RecruitmentsPage() {
   const router = useRouter();
@@ -24,6 +25,7 @@ export default function RecruitmentsPage() {
   const [isCreateModalOpen, setIsCreateModalOpen] = useState<boolean>(false);
   const [myTeamId, setMyTeamId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [myApplications, setMyApplications] = useState<TeamApplication[]>([]);
 
   const fetchRecruitments = useCallback(async () => {
     setLoading(true);
@@ -47,12 +49,14 @@ export default function RecruitmentsPage() {
       setLoading(true);
       setError(null);
       try {
-        const [data, teams] = await Promise.all([
+        const [data, teams, applications] = await Promise.all([
           getRecruitmentsApi({ roleNeeded: roleFilter || undefined }),
           getTeams().catch(() => []),
+          getMyApplications().catch(() => []),
         ]);
         if (isMounted) {
           setRecruitments(data);
+          setMyApplications(applications);
           if (typeof window !== 'undefined') {
             const stored = localStorage.getItem('seal_user');
             if (stored) {
@@ -237,6 +241,9 @@ export default function RecruitmentsPage() {
                 key={recruitment.RecruitmentId}
                 recruitment={recruitment}
                 isOwner={!!myTeamId && myTeamId === recruitment.TeamId}
+                hasApplied={myApplications.some(
+                  (app) => app.RecruitmentId?.toLowerCase() === recruitment.RecruitmentId?.toLowerCase()
+                )}
                 onApply={handleOpenApply}
               />
             ))}

@@ -1,11 +1,12 @@
 "use client";
 
 import React, { useState, useRef, useEffect } from "react";
-import { Bell, Check, CheckCheck, X } from "lucide-react";
+import { Bell, Check, CheckCheck, X, Plus } from "lucide-react";
 import {
   useNotificationsQuery,
   useMarkNotificationAsRead,
   useMarkAllNotificationsAsRead,
+  useCreateTestNotification,
 } from "@/services/hooks/coordinator";
 import { cn } from "@/lib/utils";
 
@@ -17,8 +18,10 @@ export default function NotificationBell() {
   const { data: notifications, isLoading } = useNotificationsQuery();
   const markAsRead = useMarkNotificationAsRead();
   const markAllAsRead = useMarkAllNotificationsAsRead();
+  const createTest = useCreateTestNotification();
 
-  const unreadCount = notifications?.filter((n) => !n.isRead).length ?? 0;
+  // Backend trả về PascalCase: IsRead
+  const unreadCount = notifications?.filter((n) => !n.IsRead).length ?? 0;
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -104,6 +107,21 @@ export default function NotificationBell() {
               Thông báo
             </h3>
             <div className="flex items-center gap-1">
+              {/* Nút test - tạo notification thử */}
+              <button
+                type="button"
+                onClick={() => createTest.mutate()}
+                disabled={createTest.isPending}
+                className={cn(
+                  'p-1.5 rounded-md transition-colors',
+                  'hover:bg-indigo-100 dark:hover:bg-indigo-900/30',
+                  'text-indigo-500 hover:text-indigo-600 dark:hover:text-indigo-400',
+                  'disabled:opacity-50'
+                )}
+                title="Tạo thông báo test"
+              >
+                <Plus className="w-4 h-4" />
+              </button>
               {unreadCount > 0 && (
                 <button
                   type="button"
@@ -150,47 +168,49 @@ export default function NotificationBell() {
               </div>
             ) : (
               <ul className="divide-y divide-slate-100 dark:divide-slate-800">
-                {notifications.map((notification) => (
+                {notifications.map((notification) => {
+                  // Backend trả về PascalCase: NotificationId, Message, CreatedAt
+                  const id = notification.notificationId || notification.NotificationId || "";
+                  const message = notification.message || notification.Message || "";
+                  const createdAt = notification.createdAt || notification.CreatedAt || "";
+                  return (
                   <li
-                    key={notification.notificationId}
+                    key={id}
                     className={cn(
                       "relative px-4 py-3 transition-colors",
                       "hover:bg-slate-50 dark:hover:bg-slate-800/50",
-                      !notification.isRead &&
+                      !notification.IsRead &&
                         "bg-indigo-50/50 dark:bg-indigo-950/20",
                     )}
                   >
                     <div className="flex items-start gap-3">
-                      {!notification.isRead && (
+                      {!notification.IsRead && (
                         <div className="absolute left-2 top-1/2 -translate-y-1/2 w-1.5 h-1.5 rounded-full bg-indigo-500" />
                       )}
                       <div className="flex-1 min-w-0 pl-2">
                         <p
                           className={cn(
                             "text-sm leading-snug break-words",
-                            notification.isRead
+                            notification.IsRead
                               ? "text-slate-600 dark:text-slate-400"
                               : "text-slate-800 dark:text-slate-200",
-                            notification.message?.startsWith("[NOTIFICATION]")
+                            message.startsWith("[NOTIFICATION]")
                               ? "font-medium"
                               : "",
                           )}
                         >
-                          {notification.message?.replace(
-                            /^\[NOTIFICATION\]\s*/,
-                            "",
-                          )}
+                          {message.replace(/^\[NOTIFICATION\]\s*/, "")}
                         </p>
                         <p className="text-[11px] text-slate-400 dark:text-slate-500 mt-1">
-                          {formatTime(notification.createdAt)}
+                          {createdAt ? formatTime(createdAt) : ""}
                         </p>
                       </div>
-                      {!notification.isRead && (
+                      {!notification.IsRead && (
                         <button
                           type="button"
                           onClick={(e) => {
                             e.stopPropagation();
-                            handleMarkAsRead(notification.notificationId);
+                            handleMarkAsRead(id);
                           }}
                           disabled={markAsRead.isPending}
                           className={cn(
@@ -206,7 +226,7 @@ export default function NotificationBell() {
                       )}
                     </div>
                   </li>
-                ))}
+                )})}
               </ul>
             )}
           </div>
