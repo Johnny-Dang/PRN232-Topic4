@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { Users, Calendar, Briefcase, Send } from 'lucide-react';
+import { Users, Calendar, Briefcase, Send, CheckCircle } from 'lucide-react';
 import { Card, CardHeader, CardTitle, CardContent, CardFooter } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -11,6 +11,7 @@ interface RecruitmentCardProps {
   recruitment: TeamRecruitment;
   onApply?: (recruitment: TeamRecruitment) => void;
   isOwner?: boolean;
+  hasApplied?: boolean;
   onCloseRecruitment?: (recruitmentId: string) => void;
 }
 
@@ -18,6 +19,7 @@ export default function RecruitmentCard({
   recruitment,
   onApply,
   isOwner = false,
+  hasApplied = false,
   onCloseRecruitment,
 }: RecruitmentCardProps) {
   const isOpen = recruitment.Status?.toUpperCase() === 'OPEN';
@@ -39,13 +41,24 @@ export default function RecruitmentCard({
       <CardHeader className="pb-3">
         <div className="flex items-start justify-between gap-2">
           <div>
-            <Badge
-              variant="outline"
-              className="bg-indigo-50 text-indigo-700 border-indigo-200 dark:bg-indigo-950/50 dark:text-indigo-300 dark:border-indigo-800 mb-2 font-medium"
-            >
-              <Briefcase className="w-3 h-3 mr-1" />
-              {recruitment.RoleNeeded}
-            </Badge>
+            <div className="flex items-center gap-2 flex-wrap">
+              <Badge
+                variant="outline"
+                className="bg-indigo-50 text-indigo-700 border-indigo-200 dark:bg-indigo-950/50 dark:text-indigo-300 dark:border-indigo-800 mb-2 font-medium"
+              >
+                <Briefcase className="w-3 h-3 mr-1" />
+                {recruitment.RoleNeeded}
+              </Badge>
+              {hasApplied && (
+                <Badge
+                  variant="outline"
+                  className="bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/50 dark:text-emerald-300 dark:border-emerald-800 mb-2 font-medium"
+                >
+                  <CheckCircle className="w-3 h-3 mr-1" />
+                  Đã ứng tuyển
+                </Badge>
+              )}
+            </div>
             <CardTitle className="text-lg font-bold text-slate-800 dark:text-slate-100">
               {recruitment.TeamName}
             </CardTitle>
@@ -101,6 +114,15 @@ export default function RecruitmentCard({
               Đội của bạn (Không thể ứng tuyển)
             </Button>
           )
+        ) : hasApplied ? (
+          <Button
+            disabled
+            variant="secondary"
+            size="sm"
+            className="w-full bg-emerald-100 text-emerald-700 border-emerald-200 dark:bg-emerald-950/50 dark:text-emerald-400 dark:border-emerald-800 text-xs font-semibold"
+          >
+            ✓ Đã ứng tuyển
+          </Button>
         ) : (
           <Button
             size="sm"

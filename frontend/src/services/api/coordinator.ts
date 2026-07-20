@@ -36,3 +36,8 @@ export async function markAllNotificationsAsReadApi() {
   const response = await apiClient.put("/Notification/read-all");
   return response.data;
 }
+
+export async function createTestNotificationApi(message?: string) {
+  const response = await apiClient.post('/Notification/test', { message });
+  return response.data;
+}

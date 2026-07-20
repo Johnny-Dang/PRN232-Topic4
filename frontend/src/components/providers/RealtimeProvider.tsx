@@ -21,11 +21,16 @@ type RealtimeNotification = {
 };
 
 type ApiNotification = {
-  notificationId: string;
-  userId: string;
-  message: string;
-  isRead: boolean;
-  createdAt: string;
+  notificationId?: string;
+  NotificationId?: string;
+  userId?: string;
+  UserId?: string;
+  message?: string;
+  Message?: string;
+  isRead?: boolean;
+  IsRead?: boolean;
+  createdAt?: string;
+  CreatedAt?: string;
 };
 
 const getStoredUser = (): Record<string, unknown> | null => {
@@ -121,21 +126,21 @@ export default function RealtimeProvider() {
 
   const loadUnreadNotifications = useCallback(async () => {
     try {
-      const response = await apiClient.get<{
-        items: ApiNotification[];
-        totalCount: number;
-      }>("/Notification?isRead=false&pageSize=10&pageNumber=1");
+      const response = await apiClient.get<ApiNotification[]>("/Notification");
 
-      const items = response.data?.items || response.data || [];
+      // Backend trả về array trực tiếp, không phải {items, totalCount}
+      const items = response.data || [];
 
       const newNotifications: RealtimeNotification[] = [];
 
       for (const item of items) {
-        if (!displayedIds.current.has(item.notificationId)) {
-          displayedIds.current.add(item.notificationId);
+        // Backend dùng PascalCase: NotificationId, IsRead
+        const id = item.notificationId || item.NotificationId || "";
+        if (id && !displayedIds.current.has(id)) {
+          displayedIds.current.add(id);
           newNotifications.push({
             id: ++nextId.current,
-            message: item.message,
+            message: item.message || item.Message || "",
           });
         }
       }
@@ -324,7 +329,10 @@ export default function RealtimeProvider() {
 
     // Load unread notifications from API
     if (isLoggedIn()) {
-      void loadUnreadNotifications();
+      // Wrap in setTimeout to avoid cascading renders
+      setTimeout(() => {
+        void loadUnreadNotifications();
+      }, 0);
     }
 
     // Initial connection if already logged in

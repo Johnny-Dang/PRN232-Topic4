@@ -207,7 +207,11 @@ export default function FeaturedCompetitions({
                     </div>
                     <div className="flex justify-between items-center">
                       <span>Giải thưởng chính:</span>
-                      <span className="text-amber-600 dark:text-amber-400 font-bold">{comp.Prize}</span>
+                      <span className="text-amber-600 dark:text-amber-400 font-extrabold tabular-nums">
+                        {comp.Prize
+                          ? comp.Prize.replace(/,/g, '').replace(/\B(?=(\d{3})+(?!\d))/g, ',') + ' VND'
+                          : 'Chưa cập nhật'}
+                      </span>
                     </div>
                     <div className="flex justify-between items-center border-t border-slate-50 dark:border-slate-800/40 pt-2 text-[11px]">
                       <span className="flex items-center gap-1 text-slate-400">

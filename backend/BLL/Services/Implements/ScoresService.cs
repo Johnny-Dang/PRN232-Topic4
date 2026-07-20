@@ -94,6 +94,13 @@ namespace BusinessLogicLayer.Services.Implements
             var coordinatorMessage = $"Giám khảo {judge?.FullName ?? judgeUserId.ToString()} đã chấm điểm bài của đội {team?.TeamName ?? "Unknown"}.";
             await NotifyCoordinatorAsync(submission.RoundId, coordinatorMessage);
 
+            // Notify Team Leader that their submission has been scored
+            if (team != null)
+            {
+                var teamLeaderMessage = $"[KẾT QUẢ CHẤM ĐIỂM] Bài dự thi của đội {team.TeamName} cho vòng {round?.RoundName ?? "Unknown"} đã được chấm điểm bởi giám khảo {judge?.FullName ?? "Unknown"}. Vui lòng kiểm tra kết quả!";
+                await _notificationService.CreateNotificationAsync(team.TeamLeaderId, teamLeaderMessage);
+            }
+
             return result.Select(MapToDto);
         }
 
@@ -163,8 +170,15 @@ namespace BusinessLogicLayer.Services.Implements
 
             // Notify that scores have been updated and ranking recalculated
             var team = await _teamRepository.GetByIdAsync(submission.TeamId!.Value);
-            var updateMessage = $"Điểm bài của đội {team?.TeamName ?? "Unknown"} đã được cập nhật. Bảng xếp hạng đã được tính lại.";
-            await NotifyJudgeAndCoordinatorAsync(submission.RoundId, updateMessage);
+            var round = await _roundRepository.GetByIdAsync(submission.RoundId);
+            await NotifyJudgeAndCoordinatorAsync(submission.RoundId, $"Điểm bài của đội {team?.TeamName ?? "Unknown"} đã được cập nhật. Bảng xếp hạng đã được tính lại.");
+
+            // Notify Team Leader that their score has been updated
+            if (team != null)
+            {
+                var teamLeaderMessage = $"[CẬP NHẬT ĐIỂM] Điểm bài dự thi của đội {team.TeamName} cho vòng {round?.RoundName ?? "Unknown"} đã được cập nhật bởi giám khảo. Vui lòng kiểm tra kết quả mới!";
+                await _notificationService.CreateNotificationAsync(team.TeamLeaderId, teamLeaderMessage);
+            }
 
             return result.Select(MapToDto);
         }

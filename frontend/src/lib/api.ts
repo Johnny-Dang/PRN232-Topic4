@@ -1111,6 +1111,25 @@ export async function getTeams(): Promise<Team[]> {
   }
 }
 
+export interface MyApplication {
+  ApplicationId: string;
+  RecruitmentId: string;
+  CandidateUserId: string;
+  Status: string;
+  AppliedAt: string;
+}
+
+export async function getMyApplications(): Promise<MyApplication[]> {
+  if (!useLiveApi) return [];
+  try {
+    const response = await apiClient.get<MyApplication[]>("/TeamApplication/my-applications");
+    return response.data;
+  } catch (error: unknown) {
+    logApiError("getMyApplications", error);
+    return [];
+  }
+}
+
 export interface BackendTeamMemberDetail {
   teamMemberId?: string;
   teamId?: string;
@@ -1402,17 +1421,48 @@ export async function uploadFileToCloudinary(
   formData.append("folder", signature.Folder);
   formData.append("public_id", signature.PublicId);
 
-  const response = await fetch(signature.UploadUrl, {
-    method: "POST",
-    body: formData,
-  });
+  let response: Response;
+  try {
+    response = await fetch(signature.UploadUrl, {
+      method: "POST",
+      body: formData,
+    });
+  } catch (networkError: unknown) {
+    const isNetworkError =
+      networkError instanceof TypeError &&
+      (networkError.message?.includes("fetch") ||
+        networkError.message?.includes("Failed") ||
+        networkError.message?.includes("Network"));
 
-  if (!response.ok) {
-    const message = await response.text();
-    throw new Error(message || "Cloudinary upload failed.");
+    if (isNetworkError) {
+      throw new Error(
+        `Không thể kết nối đến Cloudinary (${signature.UploadUrl}). Kiểm tra kết nối mạng hoặc VPN.`,
+      );
+    }
+    throw new Error(`Lỗi mạng khi upload: ${networkError instanceof Error ? networkError.message : String(networkError)}`);
   }
 
-  return (await response.json()) as CloudinaryUploadResponse;
+  if (!response.ok) {
+    let message = "";
+    try {
+      const body = await response.text();
+      if (body) {
+        const parsed = JSON.parse(body);
+        message = parsed?.error?.message || parsed?.message || body;
+      }
+    } catch {
+      message = response.statusText;
+    }
+    throw new Error(message || `Cloudinary upload thất bại (HTTP ${response.status}).`);
+  }
+
+  const data = (await response.json()) as CloudinaryUploadResponse;
+
+  if (!data.secure_url && !data.secure_url) {
+    throw new Error("Cloudinary không trả về URL sau khi upload.");
+  }
+
+  return data;
 }
 
 export async function completeSubmissionAssetUpload(

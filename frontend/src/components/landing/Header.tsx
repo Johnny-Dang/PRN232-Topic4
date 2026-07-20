@@ -4,6 +4,7 @@ import React from 'react';
 import { useRouter } from 'next/navigation';
 import { Menu, X, LogOut, User, ChevronDown, LayoutDashboard } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import NotificationBell from '@/components/NotificationBell';
 import type { User as SealUser } from '@/lib/api';
 
 interface HeaderProps {
@@ -129,102 +130,103 @@ export default function Header({
         {/* User Auth Action (Desktop) */}
         <div className="hidden md:flex items-center gap-3">
           {currentUser ? (
-            <div className="relative">
-              {/* Dropdown Trigger */}
-              <button
-                onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-                className={`flex items-center gap-2 px-3 py-1.5 rounded-xl border transition-all duration-300 cursor-pointer outline-none select-none text-left ${
-                  isScrolled 
-                    ? 'border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/50 hover:bg-slate-100 dark:hover:bg-slate-800/80 text-slate-800 dark:text-slate-200' 
-                    : 'border-white/10 bg-white/5 hover:bg-white/10 text-white'
-                }`}
-              >
-                <div className={`w-8 h-8 rounded-full flex items-center justify-center font-extrabold text-xs border transition-colors duration-300 ${
-                  isScrolled 
-                    ? 'bg-indigo-100 dark:bg-indigo-900/40 text-indigo-600 dark:text-indigo-400 border-indigo-200/20' 
-                    : 'bg-white/10 text-white border-white/10'
-                }`}>
-                  {currentUser.FullName ? currentUser.FullName.charAt(0).toUpperCase() : 'U'}
-                </div>
-                <div className="flex flex-col">
-                  <span className={`text-xs font-bold max-w-[120px] truncate transition-colors duration-300 ${
-                    isScrolled ? 'text-slate-800 dark:text-slate-200' : 'text-white'
+            <>
+              <NotificationBell />
+              <div className="relative">
+                <button
+                  onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+                  className={`flex items-center gap-2 px-3 py-1.5 rounded-xl border transition-all duration-300 cursor-pointer outline-none select-none text-left ${
+                    isScrolled 
+                      ? 'border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/50 hover:bg-slate-100 dark:hover:bg-slate-800/80 text-slate-800 dark:text-slate-200' 
+                      : 'border-white/10 bg-white/5 hover:bg-white/10 text-white'
+                  }`}
+                >
+                  <div className={`w-8 h-8 rounded-full flex items-center justify-center font-extrabold text-xs border transition-colors duration-300 ${
+                    isScrolled 
+                      ? 'bg-indigo-100 dark:bg-indigo-900/40 text-indigo-600 dark:text-indigo-400 border-indigo-200/20' 
+                      : 'bg-white/10 text-white border-white/10'
                   }`}>
-                    {currentUser.FullName}
-                  </span>
-                  <span className={`text-[9px] font-extrabold uppercase tracking-wider transition-colors duration-300 ${
-                    isScrolled ? 'text-slate-400 dark:text-slate-500' : 'text-slate-300'
-                  }`}>
-                    {currentUser.Role}
-                  </span>
-                </div>
-                <ChevronDown className={`w-3.5 h-3.5 transition-all duration-300 ${isDropdownOpen ? 'rotate-180' : ''} ${
-                  isScrolled ? 'text-slate-400' : 'text-slate-300'
-                }`} />
-              </button>
-
-              {/* Dropdown Menu Overlay */}
-              {isDropdownOpen && (
-                <div
-                  className="fixed inset-0 z-40 cursor-default"
-                  onClick={() => setIsDropdownOpen(false)}
-                />
-              )}
-
-              {/* Dropdown Menu Card */}
-              {isDropdownOpen && (
-                <div className="absolute right-0 mt-2 w-52 bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl shadow-xl py-1.5 z-50 animate-in fade-in slide-in-from-top-2 duration-150">
-                  <div className="px-4 py-2 border-b border-slate-100 dark:border-slate-900">
-                    <p className="text-xs font-bold text-slate-800 dark:text-slate-200 truncate">{currentUser.FullName}</p>
-                    <p className="text-[10px] font-medium text-slate-400 dark:text-slate-500 truncate">{currentUser.Email}</p>
+                    {currentUser.FullName ? currentUser.FullName.charAt(0).toUpperCase() : 'U'}
                   </div>
-                  <div className="py-1">
-                    <button
-                      onClick={() => {
-                        setIsDropdownOpen(false);
-                        router.push(getDashboardPath(currentUser.Role));
-                      }}
-                      className="w-full px-4 py-2 text-left text-xs font-bold text-slate-700 dark:text-slate-350 hover:bg-slate-50 dark:hover:bg-slate-900 hover:text-indigo-600 dark:hover:text-indigo-400 flex items-center gap-2 cursor-pointer transition-colors border-none bg-transparent"
-                    >
-                      <LayoutDashboard className="w-4 h-4 text-slate-400" />
-                      Trang Quản lý ({currentUser.Role})
-                    </button>
-                    <button
-                      onClick={() => {
-                        setIsDropdownOpen(false);
-                        router.push('/recruitments');
-                      }}
-                      className="w-full px-4 py-2 text-left text-xs font-bold text-slate-700 dark:text-slate-350 hover:bg-slate-50 dark:hover:bg-slate-900 hover:text-indigo-600 dark:hover:text-indigo-400 flex items-center gap-2 cursor-pointer transition-colors border-none bg-transparent"
-                    >
-                      <User className="w-4 h-4 text-indigo-500" />
-                      🤝 Tìm đồng đội
-                    </button>
-                    <button
-                      onClick={() => {
-                        setIsDropdownOpen(false);
-                        router.push('/my-applications');
-                      }}
-                      className="w-full px-4 py-2 text-left text-xs font-bold text-slate-700 dark:text-slate-350 hover:bg-slate-50 dark:hover:bg-slate-900 hover:text-indigo-600 dark:hover:text-indigo-400 flex items-center gap-2 cursor-pointer transition-colors border-none bg-transparent"
-                    >
-                      <LayoutDashboard className="w-4 h-4 text-slate-400" />
-                      📋 Đơn nộp & Kỹ năng
-                    </button>
-                    <button
-                      onClick={() => {
-                        setIsDropdownOpen(false);
-                        handleLogout();
-                      }}
-                      className="w-full px-4 py-2 text-left text-xs font-bold text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/20 flex items-center gap-2 cursor-pointer transition-colors border-none bg-transparent"
-                    >
-                      <LogOut className="w-4 h-4" />
-                      Đăng xuất
-                    </button>
+                  <div className="flex flex-col">
+                    <span className={`text-xs font-bold max-w-[120px] truncate transition-colors duration-300 ${
+                      isScrolled ? 'text-slate-800 dark:text-slate-200' : 'text-white'
+                    }`}>
+                      {currentUser.FullName}
+                    </span>
+                    <span className={`text-[9px] font-extrabold uppercase tracking-wider transition-colors duration-300 ${
+                      isScrolled ? 'text-slate-400 dark:text-slate-500' : 'text-slate-300'
+                    }`}>
+                      {currentUser.Role}
+                    </span>
                   </div>
-                </div>
-              )}
-            </div>
+                  <ChevronDown className={`w-3.5 h-3.5 transition-all duration-300 ${isDropdownOpen ? 'rotate-180' : ''} ${
+                    isScrolled ? 'text-slate-400' : 'text-slate-300'
+                  }`} />
+                </button>
+
+                {isDropdownOpen && (
+                  <div
+                    className="fixed inset-0 z-40 cursor-default"
+                    onClick={() => setIsDropdownOpen(false)}
+                  />
+                )}
+
+                {isDropdownOpen && (
+                  <div className="absolute right-0 mt-2 w-52 bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl shadow-xl py-1.5 z-50 animate-in fade-in slide-in-from-top-2 duration-150">
+                    <div className="px-4 py-2 border-b border-slate-100 dark:border-slate-900">
+                      <p className="text-xs font-bold text-slate-800 dark:text-slate-200 truncate">{currentUser.FullName}</p>
+                      <p className="text-[10px] font-medium text-slate-400 dark:text-slate-500 truncate">{currentUser.Email}</p>
+                    </div>
+                    <div className="py-1">
+                      <button
+                        onClick={() => {
+                          setIsDropdownOpen(false);
+                          router.push(getDashboardPath(currentUser.Role));
+                        }}
+                        className="w-full px-4 py-2 text-left text-xs font-bold text-slate-700 dark:text-slate-350 hover:bg-slate-50 dark:hover:bg-slate-900 hover:text-indigo-600 dark:hover:text-indigo-400 flex items-center gap-2 cursor-pointer transition-colors border-none bg-transparent"
+                      >
+                        <LayoutDashboard className="w-4 h-4 text-slate-400" />
+                        Trang Quản lý ({currentUser.Role})
+                      </button>
+                      <button
+                        onClick={() => {
+                          setIsDropdownOpen(false);
+                          router.push('/recruitments');
+                        }}
+                        className="w-full px-4 py-2 text-left text-xs font-bold text-slate-700 dark:text-slate-350 hover:bg-slate-50 dark:hover:bg-slate-900 hover:text-indigo-600 dark:hover:text-indigo-400 flex items-center gap-2 cursor-pointer transition-colors border-none bg-transparent"
+                      >
+                        <User className="w-4 h-4 text-indigo-500" />
+                        🤝 Tìm đồng đội
+                      </button>
+                      <button
+                        onClick={() => {
+                          setIsDropdownOpen(false);
+                          router.push('/my-applications');
+                        }}
+                        className="w-full px-4 py-2 text-left text-xs font-bold text-slate-700 dark:text-slate-350 hover:bg-slate-50 dark:hover:bg-slate-900 hover:text-indigo-600 dark:hover:text-indigo-400 flex items-center gap-2 cursor-pointer transition-colors border-none bg-transparent"
+                      >
+                        <LayoutDashboard className="w-4 h-4 text-slate-400" />
+                        📋 Đơn nộp & Kỹ năng
+                      </button>
+                      <button
+                        onClick={() => {
+                          setIsDropdownOpen(false);
+                          handleLogout();
+                        }}
+                        className="w-full px-4 py-2 text-left text-xs font-bold text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/20 flex items-center gap-2 cursor-pointer transition-colors border-none bg-transparent"
+                      >
+                        <LogOut className="w-4 h-4" />
+                        Đăng xuất
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </>
           ) : (
             <div className="flex items-center gap-2">
+              <NotificationBell />
               <Button
                 variant="ghost"
                 onClick={() => router.push('/login')}

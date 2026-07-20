@@ -224,28 +224,26 @@ export default function JudgeAssignmentPanel() {
             </CardContent>
           </Card>
         ) : (
-          roundsWithJudges
-            .filter(({ judges: roundJudges }) => roundJudges.length > 0)
-            .map(({ round, judges: roundJudges }) => (
-            <Card key={round.RoundID} className="border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900">
-              <CardHeader className="pb-3">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <CardTitle className="text-sm font-bold">{round.RoundName}</CardTitle>
-                    <CardDescription className="text-xs">
-                      {roundJudges.length} judge được phân công
-                    </CardDescription>
+          <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+            {roundsWithJudges
+              .filter(({ judges: roundJudges }) => roundJudges.length > 0)
+              .map(({ round, judges: roundJudges }) => (
+              <Card key={round.RoundID} className="border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900">
+                <CardHeader className="pb-3">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <CardTitle className="text-sm font-bold">{round.RoundName}</CardTitle>
+                      <CardDescription className="text-xs">
+                        {roundJudges.length} judge được phân công
+                      </CardDescription>
+                    </div>
+                    <Badge className="bg-indigo-100 text-indigo-600 dark:bg-indigo-950/30 dark:text-indigo-400">
+                      {roundJudges.length}
+                    </Badge>
                   </div>
-                  <Badge className="bg-indigo-100 text-indigo-600 dark:bg-indigo-950/30 dark:text-indigo-400">
-                    {roundJudges.length}
-                  </Badge>
-                </div>
-              </CardHeader>
-              <CardContent>
-                {roundJudges.length === 0 ? (
-                  <p className="text-xs text-slate-400">Chưa có judge nào được phân công cho vòng này.</p>
-                ) : (
-                  <div className="flex flex-wrap gap-2">
+                </CardHeader>
+                <CardContent>
+                  <div className="flex flex-wrap gap-2 max-h-48 overflow-y-auto">
                     {roundJudges.map((assignment) => (
                       <div
                         key={assignment.AssignmentId}
@@ -265,10 +263,10 @@ export default function JudgeAssignmentPanel() {
                       </div>
                     ))}
                   </div>
-                )}
-              </CardContent>
-            </Card>
-          ))
+                </CardContent>
+              </Card>
+            ))}
+          </div>
         )}
       </div>
 
