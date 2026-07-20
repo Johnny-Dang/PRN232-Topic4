@@ -9,7 +9,7 @@ declare const process: {
   };
 };
 
-const BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://localhost:7086/api';
+const BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5279/api';
 
 console.log("API URL =", process.env.NEXT_PUBLIC_API_URL);
 console.log("BASE_URL =", BASE_URL);

@@ -6,7 +6,7 @@ using Microsoft.EntityFrameworkCore.Migrations;
 namespace DataAccessLayer.Migrations
 {
     /// <inheritdoc />
-    public partial class newmigration1 : Migration
+    public partial class Init : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
@@ -184,6 +184,28 @@ namespace DataAccessLayer.Migrations
                 });
 
             migrationBuilder.CreateTable(
+                name: "MentorSchedules",
+                columns: table => new
+                {
+                    ScheduleId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    MentorUserId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    StartTime = table.Column<DateTime>(type: "datetime2", nullable: false),
+                    EndTime = table.Column<DateTime>(type: "datetime2", nullable: false),
+                    MeetingLocation = table.Column<string>(type: "nvarchar(500)", maxLength: 500, nullable: true),
+                    IsBooked = table.Column<bool>(type: "bit", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_MentorSchedules", x => x.ScheduleId);
+                    table.ForeignKey(
+                        name: "FK_MentorSchedules_Users_MentorUserId",
+                        column: x => x.MentorUserId,
+                        principalTable: "Users",
+                        principalColumn: "UserId",
+                        onDelete: ReferentialAction.Restrict);
+                });
+
+            migrationBuilder.CreateTable(
                 name: "Notifications",
                 columns: table => new
                 {
@@ -248,6 +270,28 @@ namespace DataAccessLayer.Migrations
                 });
 
             migrationBuilder.CreateTable(
+                name: "UserSkills",
+                columns: table => new
+                {
+                    UserSkillId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    UserId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    Role = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: false),
+                    SkillName = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: false),
+                    ExperienceLevel = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: true),
+                    CreatedAt = table.Column<DateTime>(type: "datetime", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_UserSkills", x => x.UserSkillId);
+                    table.ForeignKey(
+                        name: "FK_UserSkills_Users_UserId",
+                        column: x => x.UserId,
+                        principalTable: "Users",
+                        principalColumn: "UserId",
+                        onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateTable(
                 name: "CategoryMentors",
                 columns: table => new
                 {
@@ -282,7 +326,8 @@ namespace DataAccessLayer.Migrations
                     TeamLeaderId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
                     EventId = table.Column<Guid>(type: "uniqueidentifier", nullable: true),
                     CategoryId = table.Column<Guid>(type: "uniqueidentifier", nullable: true),
-                    TeamStatus = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: false)
+                    TeamStatus = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: false),
+                    HealthStatus = table.Column<string>(type: "nvarchar(max)", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -385,6 +430,43 @@ namespace DataAccessLayer.Migrations
                 });
 
             migrationBuilder.CreateTable(
+                name: "MentorBookings",
+                columns: table => new
+                {
+                    BookingId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    ScheduleId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    TeamId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    MentorUserId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    Objective = table.Column<string>(type: "nvarchar(1000)", maxLength: 1000, nullable: false),
+                    Status = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: false),
+                    MeetingLink = table.Column<string>(type: "nvarchar(500)", maxLength: 500, nullable: true),
+                    Notes = table.Column<string>(type: "nvarchar(1000)", maxLength: 1000, nullable: true),
+                    CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_MentorBookings", x => x.BookingId);
+                    table.ForeignKey(
+                        name: "FK_MentorBookings_MentorSchedules_ScheduleId",
+                        column: x => x.ScheduleId,
+                        principalTable: "MentorSchedules",
+                        principalColumn: "ScheduleId",
+                        onDelete: ReferentialAction.Restrict);
+                    table.ForeignKey(
+                        name: "FK_MentorBookings_Teams_TeamId",
+                        column: x => x.TeamId,
+                        principalTable: "Teams",
+                        principalColumn: "TeamId",
+                        onDelete: ReferentialAction.Cascade);
+                    table.ForeignKey(
+                        name: "FK_MentorBookings_Users_MentorUserId",
+                        column: x => x.MentorUserId,
+                        principalTable: "Users",
+                        principalColumn: "UserId",
+                        onDelete: ReferentialAction.Restrict);
+                });
+
+            migrationBuilder.CreateTable(
                 name: "Rankings",
                 columns: table => new
                 {
@@ -475,6 +557,65 @@ namespace DataAccessLayer.Migrations
                         principalTable: "Users",
                         principalColumn: "UserId",
                         onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "TeamRecruitments",
+                columns: table => new
+                {
+                    RecruitmentId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    TeamId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    RoleNeeded = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: false),
+                    Description = table.Column<string>(type: "nvarchar(1000)", maxLength: 1000, nullable: false),
+                    Quantity = table.Column<int>(type: "int", nullable: false, defaultValue: 1),
+                    Status = table.Column<string>(type: "nvarchar(20)", maxLength: 20, nullable: false, defaultValue: "OPEN"),
+                    CreatedAt = table.Column<DateTime>(type: "datetime", nullable: false),
+                    UpdatedAt = table.Column<DateTime>(type: "datetime", nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_TeamRecruitments", x => x.RecruitmentId);
+                    table.ForeignKey(
+                        name: "FK_TeamRecruitments_Teams_TeamId",
+                        column: x => x.TeamId,
+                        principalTable: "Teams",
+                        principalColumn: "TeamId",
+                        onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "MentoringFeedbacks",
+                columns: table => new
+                {
+                    FeedbackId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    BookingId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    TeamId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    MentorUserId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    HealthStatus = table.Column<string>(type: "nvarchar(20)", maxLength: 20, nullable: false),
+                    Content = table.Column<string>(type: "nvarchar(2000)", maxLength: 2000, nullable: false),
+                    CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_MentoringFeedbacks", x => x.FeedbackId);
+                    table.ForeignKey(
+                        name: "FK_MentoringFeedbacks_MentorBookings_BookingId",
+                        column: x => x.BookingId,
+                        principalTable: "MentorBookings",
+                        principalColumn: "BookingId",
+                        onDelete: ReferentialAction.Restrict);
+                    table.ForeignKey(
+                        name: "FK_MentoringFeedbacks_Teams_TeamId",
+                        column: x => x.TeamId,
+                        principalTable: "Teams",
+                        principalColumn: "TeamId",
+                        onDelete: ReferentialAction.Cascade);
+                    table.ForeignKey(
+                        name: "FK_MentoringFeedbacks_Users_MentorUserId",
+                        column: x => x.MentorUserId,
+                        principalTable: "Users",
+                        principalColumn: "UserId",
+                        onDelete: ReferentialAction.Restrict);
                 });
 
             migrationBuilder.CreateTable(
@@ -620,6 +761,40 @@ namespace DataAccessLayer.Migrations
                         onDelete: ReferentialAction.Restrict);
                 });
 
+            migrationBuilder.CreateTable(
+                name: "TeamApplications",
+                columns: table => new
+                {
+                    ApplicationId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    RecruitmentId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    TeamId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    UserId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    Message = table.Column<string>(type: "nvarchar(500)", maxLength: 500, nullable: false),
+                    Status = table.Column<string>(type: "nvarchar(20)", maxLength: 20, nullable: false, defaultValue: "PENDING"),
+                    CreatedAt = table.Column<DateTime>(type: "datetime", nullable: false),
+                    UpdatedAt = table.Column<DateTime>(type: "datetime", nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_TeamApplications", x => x.ApplicationId);
+                    table.ForeignKey(
+                        name: "FK_TeamApplications_TeamRecruitments_RecruitmentId",
+                        column: x => x.RecruitmentId,
+                        principalTable: "TeamRecruitments",
+                        principalColumn: "RecruitmentId",
+                        onDelete: ReferentialAction.Cascade);
+                    table.ForeignKey(
+                        name: "FK_TeamApplications_Teams_TeamId",
+                        column: x => x.TeamId,
+                        principalTable: "Teams",
+                        principalColumn: "TeamId");
+                    table.ForeignKey(
+                        name: "FK_TeamApplications_Users_UserId",
+                        column: x => x.UserId,
+                        principalTable: "Users",
+                        principalColumn: "UserId");
+                });
+
             migrationBuilder.CreateIndex(
                 name: "IX_AdvancementRules_CategoryId",
                 table: "AdvancementRules",
@@ -721,6 +896,41 @@ namespace DataAccessLayer.Migrations
                 unique: true);
 
             migrationBuilder.CreateIndex(
+                name: "IX_MentorBookings_MentorUserId",
+                table: "MentorBookings",
+                column: "MentorUserId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_MentorBookings_ScheduleId",
+                table: "MentorBookings",
+                column: "ScheduleId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_MentorBookings_TeamId",
+                table: "MentorBookings",
+                column: "TeamId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_MentoringFeedbacks_BookingId",
+                table: "MentoringFeedbacks",
+                column: "BookingId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_MentoringFeedbacks_MentorUserId",
+                table: "MentoringFeedbacks",
+                column: "MentorUserId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_MentoringFeedbacks_TeamId",
+                table: "MentoringFeedbacks",
+                column: "TeamId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_MentorSchedules_MentorUserId",
+                table: "MentorSchedules",
+                column: "MentorUserId");
+
+            migrationBuilder.CreateIndex(
                 name: "IX_Notifications_UserId",
                 table: "Notifications",
                 column: "UserId");
@@ -814,6 +1024,21 @@ namespace DataAccessLayer.Migrations
                 column: "TeamId");
 
             migrationBuilder.CreateIndex(
+                name: "IX_TeamApplications_RecruitmentId",
+                table: "TeamApplications",
+                column: "RecruitmentId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_TeamApplications_TeamId",
+                table: "TeamApplications",
+                column: "TeamId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_TeamApplications_UserId",
+                table: "TeamApplications",
+                column: "UserId");
+
+            migrationBuilder.CreateIndex(
                 name: "IX_TeamMembers_TeamId",
                 table: "TeamMembers",
                 column: "TeamId");
@@ -822,6 +1047,11 @@ namespace DataAccessLayer.Migrations
                 name: "IX_TeamMembers_UserId",
                 table: "TeamMembers",
                 column: "UserId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_TeamRecruitments_TeamId",
+                table: "TeamRecruitments",
+                column: "TeamId");
 
             migrationBuilder.CreateIndex(
                 name: "IX_Teams_CategoryId",
@@ -849,6 +1079,11 @@ namespace DataAccessLayer.Migrations
                 table: "Users",
                 column: "ShortId",
                 unique: true);
+
+            migrationBuilder.CreateIndex(
+                name: "IX_UserSkills_UserId",
+                table: "UserSkills",
+                column: "UserId");
         }
 
         /// <inheritdoc />
@@ -876,6 +1111,9 @@ namespace DataAccessLayer.Migrations
                 name: "EventParticipants");
 
             migrationBuilder.DropTable(
+                name: "MentoringFeedbacks");
+
+            migrationBuilder.DropTable(
                 name: "Notifications");
 
             migrationBuilder.DropTable(
@@ -894,7 +1132,16 @@ namespace DataAccessLayer.Migrations
                 name: "SubmissionAssets");
 
             migrationBuilder.DropTable(
+                name: "TeamApplications");
+
+            migrationBuilder.DropTable(
                 name: "TeamMembers");
+
+            migrationBuilder.DropTable(
+                name: "UserSkills");
+
+            migrationBuilder.DropTable(
+                name: "MentorBookings");
 
             migrationBuilder.DropTable(
                 name: "Criteria");
@@ -904,6 +1151,12 @@ namespace DataAccessLayer.Migrations
 
             migrationBuilder.DropTable(
                 name: "Submissions");
+
+            migrationBuilder.DropTable(
+                name: "TeamRecruitments");
+
+            migrationBuilder.DropTable(
+                name: "MentorSchedules");
 
             migrationBuilder.DropTable(
                 name: "SubmissionTemplates");
