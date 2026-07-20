@@ -89,6 +89,16 @@ namespace SEAL_Hackathon
                     "ResearcherOrCoordinator",
                     policy => policy.RequireRole("Researcher", "Coordinator", "EventCoordinator")
                 );
+                options.AddPolicy(
+                    "TeamScoreViewer",
+                    policy => policy.RequireRole(
+                        "TeamLeader",
+                        "TeamMember",
+                        "Judge",
+                        "Coordinator",
+                        "EventCoordinator"
+                    )
+                );
             });
 
             builder.Services.AddSwaggerGen(c =>

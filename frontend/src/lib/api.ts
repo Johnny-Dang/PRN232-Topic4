@@ -1474,9 +1474,9 @@ export async function createSubmissionLinks(
     const response = await apiClient.post<BackendSubmission>("/Submissions", {
       TeamId: teamId,
       RoundId: roundId,
-      RepositoryURL: links.RepositoryURL || null,
-      DemoURL: links.DemoURL || null,
-      SlideURL: links.SlideURL || null,
+      RepositoryURL: links.RepositoryURL.trim() || null,
+      DemoURL: links.DemoURL.trim() || null,
+      SlideURL: links.SlideURL.trim() || null,
       VideoAssetId: links.VideoAssetId || null,
       SlideAssetId: links.SlideAssetId || null,
     });
@@ -1499,9 +1499,9 @@ export async function updateSubmissionLinks(
   try {
     const response = await apiClient.put<BackendSubmission>("/Submissions", {
       SubmissionId: submissionId,
-      RepositoryURL: links.RepositoryURL || null,
-      DemoURL: links.DemoURL || null,
-      SlideURL: links.SlideURL || null,
+      RepositoryURL: links.RepositoryURL.trim() || null,
+      DemoURL: links.DemoURL.trim() || null,
+      SlideURL: links.SlideURL.trim() || null,
       VideoAssetId: links.VideoAssetId || null,
       SlideAssetId: links.SlideAssetId || null,
     });
@@ -1529,16 +1529,10 @@ export async function getScores(
 ): Promise<(Score & { Judge: User; Criteria: Criteria })[]> {
   if (!useLiveApi) return [];
   try {
-    const response = await apiClient.get<BackendSubmissionWithScores[]>(
-      "/Scores/assigned-submissions",
+    const response = await apiClient.get<BackendScore[]>(
+      `/Scores/submissions/${submissionId}`,
     );
-    const targetSubmission = response.data.find(
-      (submission) =>
-        (submission.submissionId ||
-          submission.SubmissionId ||
-          submission.SubmissionID) === submissionId,
-    );
-    const scores = targetSubmission?.scores || targetSubmission?.Scores || [];
+    const scores = response.data || [];
 
     return scores.map((score) => ({
       ...mapScore(score),

@@ -58,9 +58,9 @@ namespace BusinessLogicLayer.Services.Implements
                 SubmissionId = Guid.NewGuid(),
                 TeamId = request.TeamId,
                 RoundId = request.RoundId,
-                RepositoryURL = request.RepositoryURL,
-                DemoURL = request.DemoURL,
-                SlideURL = request.SlideURL,
+                RepositoryURL = request.RepositoryURL?.Trim() ?? string.Empty,
+                DemoURL = request.DemoURL?.Trim() ?? string.Empty,
+                SlideURL = request.SlideURL?.Trim() ?? string.Empty,
                 SubmittedAt = now,
                 Status = "Submitted"
             };
@@ -153,9 +153,9 @@ namespace BusinessLogicLayer.Services.Implements
                 submission.Status
             });
 
-            submission.RepositoryURL = request.RepositoryURL;
-            submission.DemoURL = request.DemoURL;
-            submission.SlideURL = request.SlideURL;
+            submission.RepositoryURL = request.RepositoryURL?.Trim() ?? string.Empty;
+            submission.DemoURL = request.DemoURL?.Trim() ?? string.Empty;
+            submission.SlideURL = request.SlideURL?.Trim() ?? string.Empty;
             submission.SubmittedAt = DateTime.UtcNow;
             submission.Status = "Updated";
 
