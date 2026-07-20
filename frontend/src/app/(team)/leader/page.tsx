@@ -13,6 +13,9 @@ import {
   Upload,
   Users,
   Video,
+  UserPlus,
+  PlusCircle,
+  Briefcase,
 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -32,12 +35,17 @@ import {
   getTeamSubmissions,
   updateSubmissionLinks,
   uploadSubmissionAsset,
+  getRecruitmentsByTeamApi,
+  closeRecruitmentApi,
+  TeamRecruitment,
   Event as ApiEvent,
   Round as ApiRound,
   Submission,
   SubmissionAsset,
   Team,
 } from '@/lib/api';
+import CreateRecruitmentModal from '@/components/recruitment/CreateRecruitmentModal';
+import ApplicantListModal from '@/components/application/ApplicantListModal';
 
 type TeamMemberWithProfile = Awaited<ReturnType<typeof getTeamMembers>>[number];
 type ScoreWithDetails = Awaited<ReturnType<typeof getScores>>[number];
@@ -143,6 +151,18 @@ export default function LeaderPage() {
   const [event, setEvent] = useState<ApiEvent | null>(null);
   const [rounds, setRounds] = useState<ApiRound[]>([]);
   const [selectedRoundId, setSelectedRoundId] = useState('');
+  const [recruitments, setRecruitments] = useState<TeamRecruitment[]>([]);
+  const [isCreateRecruitmentOpen, setIsCreateRecruitmentOpen] = useState(false);
+  const [isApplicantListOpen, setIsApplicantListOpen] = useState(false);
+
+  const fetchTeamRecruitments = useCallback(async (teamId: string) => {
+    try {
+      const data = await getRecruitmentsByTeamApi(teamId);
+      setRecruitments(data);
+    } catch (err) {
+      console.error('Cannot load team recruitments:', err);
+    }
+  }, []);
 
   const orderedRounds = useMemo(() => sortRounds(rounds), [rounds]);
   const selectedRound = useMemo(
@@ -192,6 +212,9 @@ export default function LeaderPage() {
         : undefined;
 
       setTeam(myTeam || null);
+      if (myTeam) {
+        fetchTeamRecruitments(myTeam.TeamID);
+      }
       setMembers([]);
       setSubmissions([]);
       setScores([]);
@@ -230,7 +253,7 @@ export default function LeaderPage() {
     } finally {
       setLoading(false);
     }
-  }, [applySubmissionToForm, chooseDefaultRound]);
+  }, [applySubmissionToForm, chooseDefaultRound, fetchTeamRecruitments]);
 
   useEffect(() => {
     void Promise.resolve().then(loadData);
@@ -806,9 +829,95 @@ export default function LeaderPage() {
                 )}
               </CardContent>
             </Card>
+
+            {/* Tuyển dụng & Ứng viên Card */}
+            <Card className="border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900">
+              <CardHeader className="pb-3">
+                <CardTitle className="flex items-center gap-2 text-base font-bold">
+                  <UserPlus className="h-5 w-5 text-indigo-600 dark:text-indigo-400" /> Quản lý Tuyển dụng ({recruitments.length})
+                </CardTitle>
+                <CardDescription className="text-xs font-medium text-slate-400">
+                  Đăng bài tìm đồng đội và duyệt các đơn xin gia nhập nhóm.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-3 p-6 pt-0">
+                {team && (
+                  <div className="flex flex-col gap-2">
+                    <Button
+                      size="sm"
+                      onClick={() => setIsCreateRecruitmentOpen(true)}
+                      className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-medium text-xs rounded-xl"
+                    >
+                      <PlusCircle className="w-3.5 h-3.5 mr-1.5" /> Đăng tin tuyển thành viên
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setIsApplicantListOpen(true)}
+                      className="w-full border-slate-200 dark:border-slate-800 text-xs font-medium rounded-xl"
+                    >
+                      <Briefcase className="w-3.5 h-3.5 mr-1.5 text-indigo-500" /> Xem đơn ứng tuyển vào nhóm
+                    </Button>
+                  </div>
+                )}
+
+                {recruitments.length > 0 && (
+                  <div className="space-y-2 pt-2 border-t border-slate-100 dark:border-slate-800">
+                    <span className="text-[11px] font-semibold text-slate-500 uppercase">Tin tuyển đang có:</span>
+                    {recruitments.map((rec) => (
+                      <div
+                        key={rec.RecruitmentId}
+                        className="p-2.5 rounded-xl border border-slate-100 bg-slate-50/50 dark:border-slate-800 dark:bg-slate-900/50 flex items-center justify-between text-xs"
+                      >
+                        <div>
+                          <div className="font-bold text-slate-800 dark:text-slate-200">{rec.RoleNeeded}</div>
+                          <div className="text-[10px] text-slate-400">Cần tuyển: {rec.Quantity} người</div>
+                        </div>
+                        {rec.Status?.toUpperCase() === 'OPEN' ? (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={async () => {
+                              try {
+                                await closeRecruitmentApi(rec.RecruitmentId);
+                                if (team) fetchTeamRecruitments(team.TeamID);
+                              } catch (e) {
+                                console.error(e);
+                              }
+                            }}
+                            className="text-[10px] text-slate-500 hover:text-red-600 h-7 px-2"
+                          >
+                            Đóng tin
+                          </Button>
+                        ) : (
+                          <Badge variant="secondary" className="text-[9px]">Đã đóng</Badge>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
           </div>
         </div>
+      )}
+
+      {team && (
+        <>
+          <CreateRecruitmentModal
+            teamId={team.TeamID}
+            isOpen={isCreateRecruitmentOpen}
+            onClose={() => setIsCreateRecruitmentOpen(false)}
+            onSuccess={() => fetchTeamRecruitments(team.TeamID)}
+          />
+          <ApplicantListModal
+            teamId={team.TeamID}
+            isOpen={isApplicantListOpen}
+            onClose={() => setIsApplicantListOpen(false)}
+          />
+        </>
       )}
     </div>
   );
 }
+

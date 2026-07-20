@@ -51,6 +51,13 @@ namespace BusinessLogicLayer.Services.Implements
                 );
             }
 
+            // Update user role to TeamLeader when creating a team
+            if (creator.Role == "TeamMember" || string.IsNullOrWhiteSpace(creator.Role))
+            {
+                creator.Role = "TeamLeader";
+                _userRepository.Update(creator);
+            }
+
             var team = new Teams
             {
                 TeamId = Guid.NewGuid(),

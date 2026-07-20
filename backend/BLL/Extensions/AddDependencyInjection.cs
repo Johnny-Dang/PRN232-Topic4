@@ -52,6 +52,9 @@ namespace BusinessLogicLayer.Extensions
             serviceCollection.AddScoped<ICalibrationService, CalibrationService>();
             serviceCollection.AddScoped<IEventBannerUploadService, EventBannerUploadService>();
             serviceCollection.AddScoped<ICloudinaryService, CloudinaryService>();
+            serviceCollection.AddScoped<IUserSkillService, UserSkillService>();
+            serviceCollection.AddScoped<ITeamRecruitmentService, TeamRecruitmentService>();
+            serviceCollection.AddScoped<ITeamApplicationService, TeamApplicationService>();
         }
     }
 }

@@ -84,6 +84,14 @@ export default function Header({
           }`}>
             Trang chủ
           </a>
+          <button
+            onClick={() => router.push('/recruitments')}
+            className={`transition-colors duration-200 cursor-pointer bg-transparent border-none font-bold text-indigo-600 dark:text-indigo-400 ${
+              isScrolled ? 'hover:text-indigo-700' : 'hover:!text-white'
+            }`}
+          >
+            🤝 Tìm đồng đội
+          </button>
           <button 
             onClick={() => scrollToSection(competitionsSectionRef)} 
             className={`transition-colors duration-200 cursor-pointer bg-transparent border-none ${
@@ -101,28 +109,12 @@ export default function Header({
             Thông báo
           </button>
           <button 
-            onClick={() => handleAction('Tra cứu Lịch thi', 'Hệ thống lịch thi đồng bộ đang được tạo dựng bởi ban tổ chức.', false)} 
+            onClick={() => router.push('/my-applications')} 
             className={`transition-colors duration-200 cursor-pointer bg-transparent border-none ${
               isScrolled ? 'hover:text-indigo-600 dark:hover:text-indigo-400' : 'hover:!text-white'
             }`}
           >
-            Lịch thi
-          </button>
-          <button 
-            onClick={() => handleAction('Xem Kết quả', 'Tính năng công bố kết quả tự động đang được hoàn thiện.', false)} 
-            className={`transition-colors duration-200 cursor-pointer bg-transparent border-none ${
-              isScrolled ? 'hover:text-indigo-600 dark:hover:text-indigo-400' : 'hover:!text-white'
-            }`}
-          >
-            Kết quả
-          </button>
-          <button 
-            onClick={() => handleAction('Tải Hướng dẫn', 'Tài liệu hướng dẫn cuộc thi và tiêu chí kỹ thuật.', false)} 
-            className={`transition-colors duration-200 cursor-pointer bg-transparent border-none ${
-              isScrolled ? 'hover:text-indigo-600 dark:hover:text-indigo-400' : 'hover:!text-white'
-            }`}
-          >
-            Hướng dẫn
+            Đơn của tôi
           </button>
           <a 
             href="#footer" 
@@ -195,7 +187,27 @@ export default function Header({
                       className="w-full px-4 py-2 text-left text-xs font-bold text-slate-700 dark:text-slate-350 hover:bg-slate-50 dark:hover:bg-slate-900 hover:text-indigo-600 dark:hover:text-indigo-400 flex items-center gap-2 cursor-pointer transition-colors border-none bg-transparent"
                     >
                       <LayoutDashboard className="w-4 h-4 text-slate-400" />
-                      Quản lý
+                      Trang Quản lý ({currentUser.Role})
+                    </button>
+                    <button
+                      onClick={() => {
+                        setIsDropdownOpen(false);
+                        router.push('/recruitments');
+                      }}
+                      className="w-full px-4 py-2 text-left text-xs font-bold text-slate-700 dark:text-slate-350 hover:bg-slate-50 dark:hover:bg-slate-900 hover:text-indigo-600 dark:hover:text-indigo-400 flex items-center gap-2 cursor-pointer transition-colors border-none bg-transparent"
+                    >
+                      <User className="w-4 h-4 text-indigo-500" />
+                      🤝 Tìm đồng đội
+                    </button>
+                    <button
+                      onClick={() => {
+                        setIsDropdownOpen(false);
+                        router.push('/my-applications');
+                      }}
+                      className="w-full px-4 py-2 text-left text-xs font-bold text-slate-700 dark:text-slate-350 hover:bg-slate-50 dark:hover:bg-slate-900 hover:text-indigo-600 dark:hover:text-indigo-400 flex items-center gap-2 cursor-pointer transition-colors border-none bg-transparent"
+                    >
+                      <LayoutDashboard className="w-4 h-4 text-slate-400" />
+                      📋 Đơn nộp & Kỹ năng
                     </button>
                     <button
                       onClick={() => {
