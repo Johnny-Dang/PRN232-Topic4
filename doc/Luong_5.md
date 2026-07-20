@@ -44,6 +44,11 @@ Coordinator tạo một sample submission để tất cả Judge cùng chấm nh
 > [!NOTE]
 > Sample submission được đánh dấu `IsCalibrationSample = true`, nên không được chấm bằng workflow score thật.
 
+### Realtime Notification
+* **Hub Event**: `ReceiveNotification`
+* **Gửi đến**: Tất cả Judge trong Event
+* **Nội dung**: `"Bài calibration mới '[CalibrationTitle]' đã được tạo. Vui lòng chấm trước [deadline]."`
+
 ---
 
 ## 2. Judge xem danh sách bài mẫu
@@ -97,6 +102,11 @@ Judge nhập điểm theo toàn bộ Criteria của Event như đang chấm th�
 
 > [!IMPORTANT]
 > Điểm calibration không gọi `RankingService` và không ảnh hưởng bảng xếp hạng thật.
+
+### Realtime Notification
+* **Hub Event**: `ReceiveNotification`
+* **Gửi đến**: Coordinator
+* **Nội dung**: `"Giám khảo [Tên Judge] đã hoàn thành chấm bài calibration '[CalibrationTitle]'."`
 
 ---
 
@@ -182,3 +192,18 @@ SubmissionId,CriteriaId,CriteriaName,JudgeCode,ScoreValue,CriteriaMean,CriteriaV
 | Judge cập nhật điểm mẫu | `PUT` | `/api/Calibration/submissions/{submissionId}/scores` | Judge |
 | Xem phân tích reliability | `GET` | `/api/Calibration/submissions/{submissionId}/analysis` | Coordinator / Researcher |
 | Export CSV research dataset | `GET` | `/api/Calibration/submissions/{submissionId}/export` | Coordinator / Researcher |
+
+### Realtime Notification (Khi tất cả Judge đã chấm xong)
+* **Hub Event**: `ReceiveNotification`
+* **Gửi đến**: Coordinator + Researcher
+* **Nội dung**: `"Tất cả Judge đã chấm xong bài calibration '[CalibrationTitle]'. Phân tích inconsistency đã sẵn sàng xem."`
+
+---
+
+## 8. Tóm tắt Notification Realtime trong Luồng 5
+
+| Trigger | Gửi đến | Nội dung |
+|---------|---------|----------|
+| Tạo bài calibration mới (Bước 1) | Tất cả Judge | `"Bài calibration mới '[CalibrationTitle]' đã được tạo."` |
+| Judge chấm calibration xong (Bước 3) | Coordinator | `"Giám khảo [Tên Judge] đã hoàn thành chấm bài calibration."` |
+| Tất cả Judge chấm xong | Coordinator + Researcher | `"Phân tích inconsistency cho bài '[CalibrationTitle]' đã sẵn sàng."` |

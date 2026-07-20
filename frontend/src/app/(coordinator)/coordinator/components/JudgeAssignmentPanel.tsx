@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { Plus, Trash2, UserCheck } from 'lucide-react';
+import { Plus, Trash2, UserCheck, RefreshCw } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -19,25 +19,37 @@ export default function JudgeAssignmentPanel() {
   const [selectedRoundId, setSelectedRoundId] = useState('');
   const [selectedJudgeId, setSelectedJudgeId] = useState('');
 
+  const loadData = async () => {
+    setLoading(true);
+    try {
+      const [fetchedAssignments, fetchedRounds, fetchedJudges] = await Promise.all([
+        getJudgeAssignments(),
+        getRounds(),
+        getUsersByRole('Judge'),
+      ]);
+      setAssignments(fetchedAssignments);
+      setRounds(fetchedRounds);
+      setJudges(fetchedJudges);
+      console.log('[JudgeAssignment] Data loaded:', {
+        assignments: fetchedAssignments.length,
+        rounds: fetchedRounds.length,
+        judges: fetchedJudges.length,
+        judgesList: fetchedJudges.map(j => ({ id: j.UserID, name: j.FullName, status: j.AccountStatus }))
+      });
+    } catch (error) {
+      console.error('Failed to load data:', error);
+      setMessage('Không thể tải dữ liệu.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const activeRounds = rounds.filter((round) => {
+    const endDate = round.EndDate ? new Date(round.EndDate) : null;
+    return !endDate || endDate > new Date();
+  });
+
   useEffect(() => {
-    const loadData = async () => {
-      setLoading(true);
-      try {
-        const [fetchedAssignments, fetchedRounds, fetchedJudges] = await Promise.all([
-          getJudgeAssignments(),
-          getRounds(),
-          getUsersByRole('Judge'),
-        ]);
-        setAssignments(fetchedAssignments);
-        setRounds(fetchedRounds);
-        setJudges(fetchedJudges);
-      } catch (error) {
-        console.error('Failed to load data:', error);
-        setMessage('Không thể tải dữ liệu.');
-      } finally {
-        setLoading(false);
-      }
-    };
     void loadData();
   }, []);
 
@@ -52,8 +64,17 @@ export default function JudgeAssignmentPanel() {
     const assignedUserIds = assignments
       .filter((a) => a.RoundId === roundId)
       .map((a) => a.UserId);
-    return judges.filter((j) => !assignedUserIds.includes(j.UserID));
+    const available = judges.filter((j) => 
+      j.AccountStatus?.toLowerCase() === 'active' && 
+      !assignedUserIds.includes(j.UserID)
+    );
+    console.log('[JudgeAssignment] availableJudgesForRound', { roundId, assignedUserIds, availableCount: available.length });
+    return available;
   };
+
+  const activeJudges = judges.filter((j) => 
+    j.AccountStatus?.toLowerCase() === 'active'
+  );
 
   const handleAssignJudge = async () => {
     if (!selectedRoundId || !selectedJudgeId) {
@@ -70,15 +91,18 @@ export default function JudgeAssignmentPanel() {
       const updatedAssignments = await getJudgeAssignments();
       setAssignments(updatedAssignments);
       setSelectedJudgeId('');
-    } catch (error) {
+    } catch (error: unknown) {
       console.error('Failed to assign judge:', error);
-      setMessage('Không thể phân công judge. Vui lòng thử lại.');
+      const errorMessage = typeof error === 'object' && error !== null && 'response' in error
+        ? (error as { response?: { data?: { message?: string } } }).response?.data?.message
+        : null;
+      setMessage(errorMessage || 'Không thể phân công judge. Vui lòng thử lại.');
     } finally {
       setSaving(false);
     }
   };
 
-  const handleRemoveAssignment = async (assignmentId: string) => {
+  const handleRemoveAssignment = async (assignmentId: string, userId: string, roundId: string) => {
     if (!confirm('Bạn có chắc chắn muốn xóa phân công này?')) return;
 
     setSaving(true);
@@ -87,7 +111,13 @@ export default function JudgeAssignmentPanel() {
     try {
       await removeJudgeAssignment(assignmentId);
       setMessage('Đã xóa phân công thành công!');
-      setAssignments((current) => current.filter((a) => a.AssignmentId !== assignmentId));
+      // Refresh assignments from server to ensure data consistency
+      const updatedAssignments = await getJudgeAssignments();
+      setAssignments(updatedAssignments);
+      // Clear selected judge if it was the one being removed
+      if (selectedJudgeId === userId && selectedRoundId === roundId) {
+        setSelectedJudgeId('');
+      }
     } catch (error) {
       console.error('Failed to remove assignment:', error);
       setMessage('Không thể xóa phân công. Vui lòng thử lại.');
@@ -109,10 +139,24 @@ export default function JudgeAssignmentPanel() {
     <div className="space-y-6">
       <Card className="border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900">
         <CardHeader>
-          <CardTitle className="text-base font-bold">Phân công Judge cho vòng thi</CardTitle>
-          <CardDescription className="text-xs font-medium text-slate-400">
-            Gán judge cho các vòng thi để chấm điểm
-          </CardDescription>
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle className="text-base font-bold">Phân công Judge cho vòng thi</CardTitle>
+              <CardDescription className="text-xs font-medium text-slate-400">
+                Gán judge cho các vòng thi để chấm điểm
+              </CardDescription>
+            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => void loadData()}
+              disabled={loading}
+              className="h-8 gap-1.5 text-xs"
+            >
+              <RefreshCw className={`h-3.5 w-3.5 ${loading ? 'animate-spin' : ''}`} />
+              Refresh
+            </Button>
+          </div>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
@@ -120,11 +164,14 @@ export default function JudgeAssignmentPanel() {
               <Label className="text-xs font-semibold text-slate-600 dark:text-slate-400">Vòng thi</Label>
               <select
                 value={selectedRoundId}
-                onChange={(e) => setSelectedRoundId(e.target.value)}
+                onChange={(e) => {
+                  setSelectedRoundId(e.target.value);
+                  setSelectedJudgeId(''); // Reset judge when round changes
+                }}
                 className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200"
               >
                 <option value="">-- Chọn vòng --</option>
-                {rounds.map((round) => (
+                {activeRounds.map((round) => (
                   <option key={round.RoundID} value={round.RoundID}>
                     {round.RoundName}
                   </option>
@@ -209,8 +256,9 @@ export default function JudgeAssignmentPanel() {
                           {assignment.UserFullName || 'Unknown'}
                         </span>
                         <button
-                          onClick={() => handleRemoveAssignment(assignment.AssignmentId)}
-                          className="ml-1 text-rose-400 hover:text-rose-600"
+                          onClick={() => handleRemoveAssignment(assignment.AssignmentId, assignment.UserId, assignment.RoundId)}
+                          disabled={saving}
+                          className="ml-1 text-rose-400 hover:text-rose-600 disabled:opacity-50"
                         >
                           <Trash2 className="h-3 w-3" />
                         </button>

@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, useCallback } from 'react';
 import { HubConnectionBuilder, HubConnectionState, LogLevel } from '@microsoft/signalr';
 import { Bell, X } from 'lucide-react';
 import { useQueryClient } from '@tanstack/react-query';
@@ -35,14 +35,30 @@ const getAccessToken = (): string => {
   return '';
 };
 
+const isLoggedIn = (): boolean => {
+  return !!getAccessToken();
+};
+
 export default function RealtimeProvider() {
   const queryClient = useQueryClient();
   const [notifications, setNotifications] = useState<RealtimeNotification[]>([]);
+  const [isConnected, setIsConnected] = useState(false);
   const nextId = useRef(0);
+  const connectionRef = useRef<import('@microsoft/signalr').HubConnection | null>(null);
+  const reconnectAttemptRef = useRef(0);
+  const maxReconnectAttempts = 5;
 
-  useEffect(() => {
+  const startConnection = useCallback(async () => {
     const accessToken = getAccessToken();
     if (!accessToken) return;
+
+    // Stop existing connection if any
+    if (connectionRef.current) {
+      connectionRef.current.off('ReceiveNotification');
+      if (connectionRef.current.state !== HubConnectionState.Disconnected) {
+        await connectionRef.current.stop();
+      }
+    }
 
     const connection = new HubConnectionBuilder()
       .withUrl(HUB_URL, {
@@ -53,12 +69,16 @@ export default function RealtimeProvider() {
       .configureLogging(LogLevel.Warning)
       .build();
 
+    connectionRef.current = connection;
+
     connection.on('ReceiveNotification', (message: string) => {
       const notification = { id: ++nextId.current, message };
       setNotifications((current) => [...current, notification]);
 
-      // Backend only emits a text notification, so refresh cached API data safely.
-      void queryClient.invalidateQueries();
+      // Invalidate specific queries related to scoring and rankings
+      void queryClient.invalidateQueries({ queryKey: ['scores'] });
+      void queryClient.invalidateQueries({ queryKey: ['rankings'] });
+      void queryClient.invalidateQueries({ queryKey: ['notifications'] });
       window.dispatchEvent(new CustomEvent('seal:notification', { detail: notification }));
 
       window.setTimeout(() => {
@@ -66,20 +86,76 @@ export default function RealtimeProvider() {
       }, 7000);
     });
 
-    void connection.start().catch((error: unknown) => {
+    try {
+      await connection.start();
+      setIsConnected(true);
+      reconnectAttemptRef.current = 0;
+      console.log('SignalR connected successfully');
+    } catch (error) {
       console.warn('Không thể kết nối kênh thông báo realtime.', error);
-    });
+      setIsConnected(false);
 
-    return () => {
-      connection.off('ReceiveNotification');
-      if (connection.state !== HubConnectionState.Disconnected) {
-        void connection.stop();
+      // Retry with exponential backoff
+      if (reconnectAttemptRef.current < maxReconnectAttempts) {
+        reconnectAttemptRef.current++;
+        const delay = Math.min(1000 * Math.pow(2, reconnectAttemptRef.current), 30000);
+        setTimeout(() => {
+          void startConnection();
+        }, delay);
       }
-    };
+    }
   }, [queryClient]);
 
+  const stopConnection = useCallback(async () => {
+    if (connectionRef.current) {
+      connectionRef.current.off('ReceiveNotification');
+      if (connectionRef.current.state !== HubConnectionState.Disconnected) {
+        await connectionRef.current.stop();
+      }
+      connectionRef.current = null;
+      setIsConnected(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    // Initial connection if already logged in
+    if (isLoggedIn()) {
+      void startConnection();
+    }
+
+    // Listen for storage changes (login/logout)
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key === 'seal_user') {
+        if (e.newValue && !e.oldValue) {
+          // User logged in
+          console.log('User logged in, starting SignalR connection...');
+          setTimeout(() => void startConnection(), 100);
+        } else if (!e.newValue && e.oldValue) {
+          // User logged out
+          console.log('User logged out, stopping SignalR connection...');
+          void stopConnection();
+        }
+      }
+    };
+
+    // Listen for custom login event (for same-tab navigation)
+    const handleLoginEvent = () => {
+      console.log('Login event detected, starting SignalR connection...');
+      setTimeout(() => void startConnection(), 100);
+    };
+
+    window.addEventListener('storage', handleStorageChange);
+    window.addEventListener('seal:login-success', handleLoginEvent);
+
+    return () => {
+      window.removeEventListener('storage', handleStorageChange);
+      window.removeEventListener('seal:login-success', handleLoginEvent);
+      void stopConnection();
+    };
+  }, [startConnection, stopConnection]);
+
   return (
-    <div aria-live="polite" className="fixed right-4 top-4 z-[100] w-[min(24rem,calc(100vw-2rem))] space-y-2">
+    <div aria-live="polite" className="fixed right-4 top-4 z-100 w-[min(24rem,calc(100vw-2rem))] space-y-2">
       {notifications.map((notification) => (
         <div key={notification.id} role="status" className="flex gap-3 rounded-xl border border-indigo-100 bg-white p-3 text-sm text-slate-700 shadow-lg dark:border-indigo-900/60 dark:bg-slate-900 dark:text-slate-200">
           <Bell className="mt-0.5 h-4 w-4 shrink-0 text-indigo-600 dark:text-indigo-400" />

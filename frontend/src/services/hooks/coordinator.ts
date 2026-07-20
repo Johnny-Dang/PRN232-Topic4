@@ -1,7 +1,7 @@
 'use client';
 
-import { useQuery } from '@tanstack/react-query';
-import { getAdvancementRulesApi, getEliminationsApi, getNotificationsApi } from '../api/coordinator';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { getAdvancementRulesApi, getEliminationsApi, getNotificationsApi, markAllNotificationsAsReadApi, markNotificationAsReadApi } from '../api/coordinator';
 
 export function useAdvancementRulesQuery() {
   return useQuery({
@@ -21,5 +21,28 @@ export function useNotificationsQuery() {
   return useQuery({
     queryKey: ['notifications'],
     queryFn: getNotificationsApi,
+    refetchInterval: 30000,
+  });
+}
+
+export function useMarkNotificationAsRead() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (notificationId: string | number) => markNotificationAsReadApi(notificationId),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['notifications'] });
+    },
+  });
+}
+
+export function useMarkAllNotificationsAsRead() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: () => markAllNotificationsAsReadApi(),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['notifications'] });
+    },
   });
 }

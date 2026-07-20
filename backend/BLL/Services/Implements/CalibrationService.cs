@@ -23,12 +23,15 @@ namespace BusinessLogicLayer.Services.Implements
         private readonly IGenericRepository<Users> _userRepository;
         private readonly IGenericRepository<Criteria> _criteriaRepository;
         private readonly IGenericRepository<EventCriteria> _eventCriteriaRepository;
+        private readonly IGenericRepository<JudgeAssignments> _judgeAssignmentRepository;
         private readonly IGenericRepository<AuditLogs> _auditLogRepository;
+        private readonly INotificationService _notificationService;
         private readonly IUnitOfWork _unitOfWork;
 
-        public CalibrationService(IUnitOfWork unitOfWork)
+        public CalibrationService(IUnitOfWork unitOfWork, INotificationService notificationService)
         {
             _unitOfWork = unitOfWork;
+            _notificationService = notificationService;
             _calibrationScoreRepository = _unitOfWork.GetRepository<CalibrationScores>();
             _submissionRepository = _unitOfWork.GetRepository<Submissions>();
             _roundRepository = _unitOfWork.GetRepository<Rounds>();
@@ -36,6 +39,7 @@ namespace BusinessLogicLayer.Services.Implements
             _userRepository = _unitOfWork.GetRepository<Users>();
             _criteriaRepository = _unitOfWork.GetRepository<Criteria>();
             _eventCriteriaRepository = _unitOfWork.GetRepository<EventCriteria>();
+            _judgeAssignmentRepository = _unitOfWork.GetRepository<JudgeAssignments>();
             _auditLogRepository = _unitOfWork.GetRepository<AuditLogs>();
         }
 
@@ -85,6 +89,10 @@ namespace BusinessLogicLayer.Services.Implements
             }));
 
             await _unitOfWork.SaveChangesAsync();
+
+            // Notify all judges about new calibration sample
+            await NotifyAllJudgesAsync(submission);
+
             return await MapSubmissionToDtoAsync(submission);
         }
 
@@ -167,6 +175,10 @@ namespace BusinessLogicLayer.Services.Implements
             }
 
             await _unitOfWork.SaveChangesAsync();
+
+            // Notify Coordinator that Judge has completed calibration scoring
+            await NotifyCoordinatorCalibrationCompleteAsync(submission, judgeUserId);
+
             return result.Select(s => MapScoreToDto(s)).ToList();
         }
 
@@ -504,6 +516,39 @@ namespace BusinessLogicLayer.Services.Implements
         {
             var escaped = value.Replace("\"", "\"\"");
             return $"\"{escaped}\"";
+        }
+
+        private async Task NotifyAllJudgesAsync(Submissions submission)
+        {
+            var round = await _roundRepository.GetByIdAsync(submission.RoundId);
+            if (round == null) return;
+
+            // Get all judges assigned to this round
+            var assignments = await _judgeAssignmentRepository.FindAsync(a => a.RoundId == submission.RoundId);
+            var judgeIds = assignments.Select(a => a.UserId).Distinct().ToList();
+
+            var message = $"Bài calibration mới '{submission.CalibrationTitle ?? "Unknown"}' đã được tạo. Vui lòng chấm theo yêu cầu của Coordinator.";
+
+            foreach (var judgeId in judgeIds)
+            {
+                await _notificationService.CreateNotificationAsync(judgeId, $"[NOTIFICATION] {message}");
+            }
+        }
+
+        private async Task NotifyCoordinatorCalibrationCompleteAsync(Submissions submission, Guid judgeUserId)
+        {
+            var judge = await _userRepository.GetByIdAsync(judgeUserId);
+            if (judge == null) return;
+
+            // Get all coordinators
+            var coordinators = await _userRepository.FindAsync(u => u.Role == "Coordinator" && u.AccountStatus == "Active");
+
+            var message = $"Giám khảo {judge.FullName} đã hoàn thành chấm bài calibration '{submission.CalibrationTitle ?? "Unknown"}'.";
+
+            foreach (var coordinator in coordinators)
+            {
+                await _notificationService.CreateNotificationAsync(coordinator.UserId, $"[NOTIFICATION] {message}");
+            }
         }
     }
 }

@@ -13,6 +13,7 @@ namespace BusinessLogicLayer.Services.Interfaces
         Task<AuthResponse> RefreshTokenAsync(RefreshTokenRequest request);
         Task<bool> RevokeRefreshTokenAsync(string refreshToken);
         Task<UserDto?> GetByIdAsync(System.Guid userId);
+        Task<List<UserDto>> GetAllAsync();
         Task<List<UserDto>> GetByRoleAsync(string role);
         Task<List<UserDto>> SearchUsersAsync(string query);
     }

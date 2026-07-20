@@ -137,6 +137,17 @@ namespace BusinessLogicLayer.Services.Implements
             return users.Select(MapToDto).ToList();
         }
 
+        public async Task<List<UserDto>> GetAllAsync()
+        {
+            var users = await _userRepository.GetAllAsync();
+            foreach (var user in users)
+            {
+                await EnsureShortIdAsync(user);
+            }
+
+            return users.Select(MapToDto).ToList();
+        }
+
         public async Task<AuthResponse> RefreshTokenAsync(RefreshTokenRequest request)
         {
             var refreshToken = (await _refreshTokenRepository.FindAsync(rt => rt.Token == request.RefreshToken))

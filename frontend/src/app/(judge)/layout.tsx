@@ -7,6 +7,7 @@ import { UserCheck, HelpCircle, ChevronRight, LogOut, Menu, ChevronLeft, Home } 
 import { cn } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
+import NotificationBell from '@/components/NotificationBell';
 
 export default function JudgeLayout({
   children,
@@ -157,11 +158,10 @@ export default function JudgeLayout({
       </aside>
 
       {/* Main panel content */}
-      <main className="flex-1 flex flex-col min-w-0 relative">
-        {/* Toggle Button */}
+      <main className="flex-1 flex flex-col min-w-0 relative overflow-visible">
         <button
           onClick={toggleSidebar}
-          className="absolute top-6 left-6 z-40 p-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl shadow-sm hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-300 transition-all duration-200 outline-none cursor-pointer"
+          className="absolute top-6 left-6 z-[100] p-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl shadow-sm hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-300 transition-all duration-200 outline-none cursor-pointer"
           title={isCollapsed ? "Mở thanh điều hướng" : "Thu gọn thanh điều hướng"}
         >
           {isCollapsed ? <Menu className="w-5 h-5" /> : <ChevronLeft className="w-5 h-5" />}
@@ -177,6 +177,10 @@ export default function JudgeLayout({
         </div>
       </main>
 
+      {/* Fixed notification bell - always visible in top right */}
+      <div className="fixed top-6 right-6 z-[100]">
+        <NotificationBell />
+      </div>
     </div>
   );
 }

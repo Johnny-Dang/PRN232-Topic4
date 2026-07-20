@@ -79,5 +79,29 @@ namespace BusinessLogicLayer.Services.Implements
             // Send real-time notification via SignalR
             await _notificationSender.SendNotificationToUserAsync(userId, message);
         }
+
+        public async Task CreateNotificationForUsersAsync(IEnumerable<Guid> userIds, string message)
+        {
+            foreach (var userId in userIds)
+            {
+                var notification = new Notifications
+                {
+                    NotificationId = Guid.NewGuid(),
+                    UserId = userId,
+                    Message = message,
+                    IsRead = false,
+                    CreatedAt = DateTime.UtcNow
+                };
+                await _notificationRepository.AddAsync(notification);
+            }
+
+            await _unitOfWork.SaveChangesAsync();
+
+            // Send real-time notifications via SignalR
+            foreach (var userId in userIds)
+            {
+                await _notificationSender.SendNotificationToUserAsync(userId, message);
+            }
+        }
     }
 }

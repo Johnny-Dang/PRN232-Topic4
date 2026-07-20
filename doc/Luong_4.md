@@ -136,6 +136,12 @@ Luồng này mô tả quy trình Điều phối viên (Coordinator) cấu hình 
 > [!NOTE]
 > Giám khảo được chỉ định sẽ nhận được thông báo thời gian thực: `"Bạn đã được phân công chấm bài thi cho vòng [Tên vòng]."`
 
+### Realtime Notification
+* **Hub Event**: `ReceiveNotification`
+* **Payload**: `notificationId` để Client hiển thị Toast popup
+* **Gửi đến**: Judge được phân công
+* **Nội dung**: `"Bạn đã được phân công chấm bài thi cho vòng [Tên vòng]."`
+
 ---
 
 ## 4. Giám khảo xem danh sách bài được phân công (Judge)
@@ -230,6 +236,11 @@ Giám khảo gửi điểm cho bài nộp theo toàn bộ bộ tiêu chí đã c
 > [!NOTE]
 > Sau khi chấm điểm thành công, hệ thống tự động tạo/cập nhật Ranking cho Round tương ứng. Không cần gọi API trigger Ranking thủ công.
 
+### Realtime Notification
+* **Hub Event**: `ReceiveNotification`
+* **Gửi đến**: Coordinator (quản lý Round)
+* **Nội dung**: `"Giám khảo [Tên Judge] đã chấm điểm bài của đội [Tên đội]."`
+
 ---
 
 ## 6. Giám khảo cập nhật điểm đã chấm (Judge)
@@ -282,6 +293,11 @@ Nếu Judge đã chấm trước đó và cần điều chỉnh điểm hoặc n
 
 > [!NOTE]
 > Sau khi cập nhật điểm, Ranking của Round cũng được tự động tính lại.
+
+### Realtime Notification
+* **Hub Event**: `ReceiveNotification`
+* **Gửi đến**: Tất cả Judge trong Round + Coordinator
+* **Nội dung**: `"Điểm bài của đội [Tên đội] đã được cập nhật. Bảng xếp hạng đã được tính lại."`
 
 ---
 
@@ -342,3 +358,19 @@ Judge hoặc Coordinator xem Ranking đã được hệ thống tính tự độ
 | Judge chấm điểm | `POST` | `/api/Scores/submissions/{submissionId}` | Judge |
 | Judge cập nhật điểm | `PUT` | `/api/Scores/submissions/{submissionId}` | Judge |
 | Xem Ranking | `GET` | `/api/Rankings?roundId={roundId}&categoryId={categoryId}` | Judge / Coordinator |
+
+### Realtime Notification (Tự động gửi khi Ranking được cập nhật)
+* **Hub Event**: `ReceiveNotification`
+* **Gửi đến**: Tất cả Judge trong Round + Coordinator
+* **Nội dung**: `"Bảng xếp hạng vòng [Tên vòng] đã được cập nhật. Top 1 hiện tại: [Tên đội]."`
+
+---
+
+## 9. Tóm tắt Notification Realtime trong Luồng 4
+
+| Trigger | Gửi đến | Nội dung |
+|---------|---------|----------|
+| Phân công Judge (Bước 3) | Judge được phân công | `"Bạn đã được phân công chấm bài thi cho vòng [Tên vòng]."` |
+| Judge chấm điểm xong (Bước 5) | Coordinator | `"Giám khảo [Tên Judge] đã chấm điểm bài của đội [Tên đội]."` |
+| Judge cập nhật điểm (Bước 6) | Judge + Coordinator | `"Điểm bài của đội [Tên đội] đã được cập nhật."` |
+| Ranking được tính (Bước 7) | Judge + Coordinator | `"Bảng xếp hạng vòng [Tên vòng] đã được cập nhật."` |

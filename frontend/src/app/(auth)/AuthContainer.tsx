@@ -104,6 +104,9 @@ export default function AuthContainer({ initialMode }: { initialMode: 'login' | 
       setLoginSuccess(`Đăng nhập thành công! Vai trò: ${matchedUser.Role}`);
       localStorage.setItem('seal_user', JSON.stringify(matchedUser));
 
+      // Dispatch event to trigger SignalR reconnection
+      window.dispatchEvent(new CustomEvent('seal:login-success'));
+
       setTimeout(() => {
         router.replace(getDashboardPath(matchedUser.Role));
       }, 800);

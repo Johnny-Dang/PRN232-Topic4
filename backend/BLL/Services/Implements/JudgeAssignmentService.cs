@@ -38,9 +38,24 @@ namespace BusinessLogicLayer.Services.Implements
             if (user.Role != "Judge")
                 throw new Exception("Only users with Judge role can be assigned as judges");
 
-            var round = await _roundRepository.GetByIdAsync(request.RoundId);
+            if (!string.Equals(user.AccountStatus, "Active", StringComparison.OrdinalIgnoreCase))
+                throw new Exception("Cannot assign judge with inactive account status");
+
+            var round = await _roundRepository.FirstOrDefaultWithIncludeAsync(
+                x => x.RoundId == request.RoundId, x => x.Event);
             if (round == null)
                 throw new Exception($"Round with id {request.RoundId} not found");
+
+            if (round.EndDate < DateTime.UtcNow)
+                throw new Exception("Cannot assign judge to a round that has already ended");
+
+            if (round.Event != null && round.Event.EndDate < DateTime.UtcNow)
+                throw new Exception($"Cannot assign judge: the event '{round.Event.EventName}' has already ended");
+
+            if (round.Event != null && !string.Equals(round.Event.Status, "Active", StringComparison.OrdinalIgnoreCase) 
+                && !string.Equals(round.Event.Status, "Ongoing", StringComparison.OrdinalIgnoreCase)
+                && !string.Equals(round.Event.Status, "Published", StringComparison.OrdinalIgnoreCase))
+                throw new Exception($"Cannot assign judge: the event '{round.Event.EventName}' is not active");
 
             var existingAssignment = await _assignmentRepository.FirstOrDefaultAsync(x =>
                 x.UserId == request.UserId && x.RoundId == request.RoundId);
@@ -58,7 +73,6 @@ namespace BusinessLogicLayer.Services.Implements
             var created = await _assignmentRepository.AddAsync(assignment);
             await _unitOfWork.SaveChangesAsync();
 
-            // Fetch with User included
             var assignmentWithUser = await _assignmentRepository.FirstOrDefaultWithIncludeAsync(
                 x => x.AssignmentId == created.AssignmentId, x => x.User);
 
@@ -96,9 +110,24 @@ namespace BusinessLogicLayer.Services.Implements
             if (user.Role != "Judge")
                 throw new Exception("Only users with Judge role can be assigned as judges");
 
-            var round = await _roundRepository.GetByIdAsync(request.RoundId);
+            if (!string.Equals(user.AccountStatus, "Active", StringComparison.OrdinalIgnoreCase))
+                throw new Exception("Cannot assign judge with inactive account status");
+
+            var round = await _roundRepository.FirstOrDefaultWithIncludeAsync(
+                x => x.RoundId == request.RoundId, x => x.Event);
             if (round == null)
                 throw new Exception($"Round with id {request.RoundId} not found");
+
+            if (round.EndDate < DateTime.UtcNow)
+                throw new Exception("Cannot assign judge to a round that has already ended");
+
+            if (round.Event != null && round.Event.EndDate < DateTime.UtcNow)
+                throw new Exception($"Cannot assign judge: the event '{round.Event.EventName}' has already ended");
+
+            if (round.Event != null && !string.Equals(round.Event.Status, "Active", StringComparison.OrdinalIgnoreCase) 
+                && !string.Equals(round.Event.Status, "Ongoing", StringComparison.OrdinalIgnoreCase)
+                && !string.Equals(round.Event.Status, "Published", StringComparison.OrdinalIgnoreCase))
+                throw new Exception($"Cannot assign judge: the event '{round.Event.EventName}' is not active");
 
             var existingAssignment = await _assignmentRepository.FirstOrDefaultAsync(x =>
                 x.AssignmentId != request.AssignmentId &&
@@ -117,7 +146,6 @@ namespace BusinessLogicLayer.Services.Implements
             var message = $"[NOTIFICATION] Bạn đã được phân công chấm bài thi cho vòng {round.RoundName}.";
             await _notificationService.CreateNotificationAsync(request.UserId, message);
 
-            // Fetch with updated User
             var assignmentWithUser = await _assignmentRepository.FirstOrDefaultWithIncludeAsync(
                 x => x.AssignmentId == assignment.AssignmentId, x => x.User);
 

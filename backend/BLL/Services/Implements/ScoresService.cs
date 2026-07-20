@@ -22,13 +22,15 @@ namespace BusinessLogicLayer.Services.Implements
         private readonly IGenericRepository<Rounds> _roundRepository;
         private readonly IGenericRepository<Teams> _teamRepository;
         private readonly IGenericRepository<Users> _userRepository;
+        private readonly INotificationService _notificationService;
         private readonly IRankingService _rankingService;
         private readonly IUnitOfWork _unitOfWork;
 
-        public ScoresService(IUnitOfWork unitOfWork, IRankingService rankingService)
+        public ScoresService(IUnitOfWork unitOfWork, IRankingService rankingService, INotificationService notificationService)
         {
             _unitOfWork = unitOfWork;
             _rankingService = rankingService;
+            _notificationService = notificationService;
             _scoreRepository = _unitOfWork.GetRepository<Scores>();
             _submissionRepository = _unitOfWork.GetRepository<Submissions>();
             _assignmentRepository = _unitOfWork.GetRepository<JudgeAssignments>();
@@ -82,6 +84,14 @@ namespace BusinessLogicLayer.Services.Implements
 
             await _unitOfWork.SaveChangesAsync();
             await _rankingService.GenerateAsync(submission.RoundId);
+
+            // Notify Coordinator that Judge has scored
+            var judge = await _userRepository.GetByIdAsync(judgeUserId);
+            var round = await _roundRepository.GetByIdAsync(submission.RoundId);
+            var team = await _teamRepository.GetByIdAsync(submission.TeamId!.Value);
+            var coordinatorMessage = $"Giám khảo {judge?.FullName ?? judgeUserId.ToString()} đã chấm điểm bài của đội {team?.TeamName ?? "Unknown"}.";
+            await NotifyCoordinatorAsync(submission.RoundId, coordinatorMessage);
+
             return result.Select(MapToDto);
         }
 
@@ -148,6 +158,12 @@ namespace BusinessLogicLayer.Services.Implements
 
             await _unitOfWork.SaveChangesAsync();
             await _rankingService.GenerateAsync(submission.RoundId);
+
+            // Notify that scores have been updated and ranking recalculated
+            var team = await _teamRepository.GetByIdAsync(submission.TeamId!.Value);
+            var updateMessage = $"Điểm bài của đội {team?.TeamName ?? "Unknown"} đã được cập nhật. Bảng xếp hạng đã được tính lại.";
+            await NotifyJudgeAndCoordinatorAsync(submission.RoundId, updateMessage);
+
             return result.Select(MapToDto);
         }
 
@@ -314,6 +330,40 @@ namespace BusinessLogicLayer.Services.Implements
                 Comment = score.Comment,
                 ScoredAt = score.ScoredAt
             };
+        }
+
+        private async Task NotifyCoordinatorAsync(Guid roundId, string message)
+        {
+            // Get all coordinators from the event via rounds
+            var round = await _roundRepository.GetByIdAsync(roundId);
+            if (round == null) return;
+
+            // Get all users with Coordinator role
+            var coordinators = await _userRepository.FindAsync(u => u.Role == "Coordinator" && u.AccountStatus == "Active");
+            foreach (var coordinator in coordinators)
+            {
+                await _notificationService.CreateNotificationAsync(coordinator.UserId, $"[NOTIFICATION] {message}");
+            }
+        }
+
+        private async Task NotifyJudgeAndCoordinatorAsync(Guid roundId, string message)
+        {
+            var round = await _roundRepository.GetByIdAsync(roundId);
+            if (round == null) return;
+
+            // Get all judges assigned to this round
+            var assignments = await _assignmentRepository.FindAsync(a => a.RoundId == roundId);
+            var judgeIds = assignments.Select(a => a.UserId).Distinct().ToList();
+
+            // Get all coordinators
+            var coordinators = await _userRepository.FindAsync(u => u.Role == "Coordinator" && u.AccountStatus == "Active");
+
+            var allUserIds = judgeIds.Concat(coordinators.Select(c => c.UserId)).Distinct();
+
+            foreach (var userId in allUserIds)
+            {
+                await _notificationService.CreateNotificationAsync(userId, $"[NOTIFICATION] {message}");
+            }
         }
     }
 }

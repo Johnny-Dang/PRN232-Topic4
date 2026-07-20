@@ -369,7 +369,7 @@ export default function MemberPage() {
                   allCategories={allCategories}
                   allEvents={allEvents}
                   preferredEventId={requestedEventId}
-                  allowEventRegistration={false}
+                  allowEventRegistration={isLeader || false}
                   isLeader={isLeader || false}
                   tempCategoryName={tempCategoryName}
                   setTempCategoryName={setTempCategoryName}
