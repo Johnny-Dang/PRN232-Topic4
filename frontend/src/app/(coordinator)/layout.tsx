@@ -3,11 +3,10 @@
 import React, { useEffect, useState, Suspense } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
-import { ShieldCheck, HelpCircle, ChevronRight, LogOut, Menu, ChevronLeft, Home, Calendar, Users, Ban, Percent, Tags, UserRound, ListChecks, Trophy, UserCog, SlidersHorizontal, Target, Activity } from 'lucide-react';
+import { ShieldCheck, HelpCircle, ChevronRight, LogOut, Menu, ChevronLeft, Home, Calendar, Users, Ban, Percent, Tags, UserRound, ListChecks, Trophy, UserCog, SlidersHorizontal, Target, Activity, Bell } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
-import NotificationBell from '@/components/NotificationBell';
 
 const isCoordinatorRole = (role?: string): boolean => {
   return role === 'Coordinator' || role === 'EventCoordinator';
@@ -171,6 +170,13 @@ function CoordinatorLayoutContent({
       icon: Activity,
       description: 'Giám sát sức khỏe & tiến độ các đội thi',
       tabValue: 'health-overview'
+    },
+    {
+      label: 'Quản lý Thông báo',
+      href: '/coordinator?tab=notifications',
+      icon: Bell,
+      description: 'Gửi thông báo đến người dùng',
+      tabValue: 'notifications'
     }
   ];
 
@@ -289,11 +295,6 @@ function CoordinatorLayoutContent({
           )}
         </div>
       </main>
-
-      {/* Fixed notification bell - always visible in top right */}
-      <div className="fixed top-6 right-6 z-[100]">
-        <NotificationBell />
-      </div>
     </div>
   );
 }

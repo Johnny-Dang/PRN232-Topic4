@@ -22,11 +22,13 @@ namespace BusinessLogicLayer.Services.Implements
         private readonly IGenericRepository<Categories> _categoryRepository;
         private readonly IGenericRepository<Events> _eventRepository;
         private readonly IGenericRepository<AuditLogs> _auditLogRepository;
+        private readonly INotificationService _notificationService;
         private readonly IUnitOfWork _unitOfWork;
 
-        public MentorshipService(IUnitOfWork unitOfWork)
+        public MentorshipService(IUnitOfWork unitOfWork, INotificationService notificationService)
         {
             _unitOfWork = unitOfWork;
+            _notificationService = notificationService;
             _scheduleRepository = _unitOfWork.GetRepository<MentorSchedules>();
             _bookingRepository = _unitOfWork.GetRepository<MentorBookings>();
             _feedbackRepository = _unitOfWork.GetRepository<MentoringFeedbacks>();
@@ -216,7 +218,13 @@ namespace BusinessLogicLayer.Services.Implements
 
             await _unitOfWork.SaveChangesAsync();
 
+            // Notify Mentor about new booking
             var mentorUser = await _userRepository.GetByIdAsync(schedule.MentorUserId);
+            if (mentorUser != null)
+            {
+                var mentorMessage = $"[YÊU CẦU MENTORING] Đội {team.TeamName} đã đặt lịch mentoring với bạn vào lúc {schedule.StartTime:HH:mm dd/MM/yyyy}. Mục tiêu: {booking.Objective}";
+                await _notificationService.CreateNotificationAsync(schedule.MentorUserId, mentorMessage);
+            }
 
             return new MentorBookingDto
             {
@@ -335,9 +343,22 @@ namespace BusinessLogicLayer.Services.Implements
 
             await _unitOfWork.SaveChangesAsync();
 
+            // Notify Team Leader about booking status update
             var team = await _teamRepository.GetByIdAsync(booking.TeamId);
             var mentorUser = await _userRepository.GetByIdAsync(booking.MentorUserId);
             var scheduleEntity = await _scheduleRepository.GetByIdAsync(booking.ScheduleId);
+
+            if (team != null && mentorUser != null)
+            {
+                var statusMessage = booking.Status switch
+                {
+                    "CONFIRMED" => $"[MENTORING XÁC NHẬN] Lịch mentoring với Mentor {mentorUser.FullName} vào {scheduleEntity?.StartTime:HH:mm dd/MM/yyyy} đã được xác nhận. Link: {booking.MeetingLink}",
+                    "REJECTED" => $"[MENTORING BỊ TỪ CHỐI] Rất tiếc, Mentor {mentorUser.FullName} đã từ chối lịch mentoring của đội bạn.",
+                    "CANCELLED" => $"[MENTORING BỊ HỦY] Lịch mentoring với Mentor {mentorUser.FullName} đã bị hủy.",
+                    _ => $"[MENTORING UPDATE] Trạng thái booking với Mentor {mentorUser.FullName}: {booking.Status}"
+                };
+                await _notificationService.CreateNotificationAsync(team.TeamLeaderId, statusMessage);
+            }
 
             return new MentorBookingDto
             {
@@ -402,6 +423,13 @@ namespace BusinessLogicLayer.Services.Implements
             });
 
             await _unitOfWork.SaveChangesAsync();
+
+            // Notify Team Leader about feedback
+            if (team != null)
+            {
+                var feedbackMessage = $"[FEEDBACK TỪ MENTOR] Mentor {mentorUser?.FullName ?? "Unknown"} đã gửi feedback cho đội {team.TeamName}. Health Status: {feedback.HealthStatus}";
+                await _notificationService.CreateNotificationAsync(team.TeamLeaderId, feedbackMessage);
+            }
 
             var mentorUser = await _userRepository.GetByIdAsync(mentorUserId);
 

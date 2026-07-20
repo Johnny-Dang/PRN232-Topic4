@@ -3,6 +3,7 @@
 import { RefreshCw, LogOut } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useRouter } from 'next/navigation';
+import NotificationBell from '@/components/NotificationBell';
 
 interface CoordinatorPageHeaderProps {
   loading: boolean;
@@ -28,6 +29,7 @@ export default function CoordinatorPageHeader({ loading, onReload }: Coordinator
         </p>
       </div>
       <div className="flex items-center gap-2">
+        <NotificationBell />
         <Button
           variant="outline"
           size="sm"

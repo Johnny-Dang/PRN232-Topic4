@@ -30,6 +30,7 @@ import RankingBoard from './components/RankingBoard';
 import AdvancementRuleConfig from './components/AdvancementRuleConfig';
 import CalibrationSampleList from './components/Calibration/CalibrationSampleList';
 import TeamHealthDashboard from './components/TeamHealthDashboard';
+import NotificationManager from './components/NotificationManager';
 import type {
   AuditLogList,
   CoordinatorCategory,
@@ -338,6 +339,10 @@ function CoordinatorDashboardContent() {
 
           {activeTab === 'health-overview' && (
             <TeamHealthDashboard />
+          )}
+
+          {activeTab === 'notifications' && (
+            <NotificationManager />
           )}
         </div>
       )}
