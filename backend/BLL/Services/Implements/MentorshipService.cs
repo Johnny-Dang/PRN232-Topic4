@@ -425,13 +425,15 @@ namespace BusinessLogicLayer.Services.Implements
             await _unitOfWork.SaveChangesAsync();
 
             // Notify Team Leader about feedback
+
+
+            var mentorUser = await _userRepository.GetByIdAsync(mentorUserId);
+
             if (team != null)
             {
                 var feedbackMessage = $"[FEEDBACK TỪ MENTOR] Mentor {mentorUser?.FullName ?? "Unknown"} đã gửi feedback cho đội {team.TeamName}. Health Status: {feedback.HealthStatus}";
                 await _notificationService.CreateNotificationAsync(team.TeamLeaderId, feedbackMessage);
             }
-
-            var mentorUser = await _userRepository.GetByIdAsync(mentorUserId);
 
             return new MentoringFeedbackDto
             {
