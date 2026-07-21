@@ -163,3 +163,24 @@ export async function deleteEventApi(eventId: string) {
   const response = await apiClient.delete(`/Event/${eventId}`);
   return response.data;
 }
+
+export interface UpdateEventRequest {
+  EventId: string;
+  EventName: string;
+  Season: string;
+  Year: number;
+  Description?: string;
+  StartDate: string;
+  EndDate: string;
+  BannerUrl?: string;
+  Organizer?: string;
+  Format?: string;
+  Audience?: string;
+  Prize?: string;
+}
+
+export async function updateEventApi(eventId: string, data: UpdateEventRequest) {
+  if (!eventId) throw new Error('eventId is required');
+  const response = await apiClient.put(`/Event/${eventId}`, data);
+  return eventSchema.parse(response.data);
+}

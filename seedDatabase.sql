@@ -439,3 +439,9 @@ SELECT 'TeamApplications Count', COUNT(*) FROM TeamApplications UNION ALL
 SELECT 'MentorSchedules Count', COUNT(*) FROM MentorSchedules UNION ALL
 SELECT 'MentorBookings Count', COUNT(*) FROM MentorBookings UNION ALL
 SELECT 'MentoringFeedbacks Count', COUNT(*) FROM MentoringFeedbacks;
+select * from Events
+select * from Users
+select * from Teams
+select * from TeamMembers
+select * from Notifications
+Delete Teams where TeamId = 'B22AA831-593B-45FB-80F7-ABE38BB984AF'

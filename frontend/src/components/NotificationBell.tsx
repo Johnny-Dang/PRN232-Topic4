@@ -110,7 +110,7 @@ export default function NotificationBell() {
               {/* Nút test - tạo notification thử */}
               <button
                 type="button"
-                onClick={() => createTest.mutate()}
+                onClick={() => createTest.mutate(undefined)}
                 disabled={createTest.isPending}
                 className={cn(
                   'p-1.5 rounded-md transition-colors',
@@ -170,9 +170,9 @@ export default function NotificationBell() {
               <ul className="divide-y divide-slate-100 dark:divide-slate-800">
                 {notifications.map((notification) => {
                   // Backend trả về PascalCase: NotificationId, Message, CreatedAt
-                  const id = notification.notificationId || notification.NotificationId || "";
-                  const message = notification.message || notification.Message || "";
-                  const createdAt = notification.createdAt || notification.CreatedAt || "";
+                  const id = notification.NotificationId || "";
+                  const message = notification.Message || "";
+                  const createdAt = notification.CreatedAt || "";
                   return (
                   <li
                     key={id}

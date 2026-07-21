@@ -178,7 +178,12 @@ export default function CategoryManager({ categories, events, selectedEventId, o
               <label htmlFor="category-event" className="block text-[10px] font-bold uppercase tracking-wide text-slate-500">Event</label>
               <select id="category-event" required value={form.EventId} onChange={(event) => setForm((current) => ({ ...current, EventId: event.target.value }))} className="h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-xs font-semibold dark:border-slate-700 dark:bg-slate-900">
                 <option value="">Chọn Event</option>
-                {events.map((event) => <option key={event.EventId} value={event.EventId}>{event.EventName}</option>)}
+                {events
+                  .filter((event) => {
+                    if (editingCategoryId) return true;
+                    return categories.every((cat) => cat.EventId !== event.EventId);
+                  })
+                  .map((event) => <option key={event.EventId} value={event.EventId}>{event.EventName}</option>)}
               </select>
             </div>
             <div className="space-y-1.5 md:col-span-2">

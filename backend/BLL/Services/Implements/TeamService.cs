@@ -127,7 +127,6 @@ namespace BusinessLogicLayer.Services.Implements
 
             team.TeamName = request.TeamName;
             team.EventId = eventId;
-            team.EventId = request.EventId;
             team.CategoryId = request.CategoryId;
             team.TeamStatus = request.TeamStatus;
 
@@ -147,37 +146,100 @@ namespace BusinessLogicLayer.Services.Implements
             if (team == null)
                 throw new Exception($"Team with id {teamId} not found");
 
-            if (team.TeamLeaderId != requesterUserId)
-                throw new Exception("Only the team leader can choose or change the category");
-
-            await ValidateTeamReadyForCategoryAsync(team, request.CategoryId, request.EventId);
-
-            team.CategoryId = request.CategoryId;
-            team.EventId = request.EventId;
-
-            _teamRepository.Update(team);
-            await WriteAuditLogAsync(
-                requesterUserId,
-                "TEAM_REGISTER",
-                null,
-                JsonSerializer.Serialize(new { teamId, request.CategoryId, request.EventId })
-            );
-            await _unitOfWork.SaveChangesAsync();
-
-            var category = await _categoryRepository.GetByIdAsync(request.CategoryId);
-            var categoryName = category?.CategoryName ?? "Unknown Category";
             var teamMembers = await _teamMemberRepository.FindAsync(x => x.TeamId == teamId);
-            await RegisterTeamMembersAsEventParticipantsAsync(teamMembers, request.EventId);
-            await _unitOfWork.SaveChangesAsync();
+            var isMember = teamMembers.Any(m => m.UserId == requesterUserId);
+            if (team.TeamLeaderId != requesterUserId && !isMember)
+                throw new Exception("Only the team leader or team members can choose or change the category");
 
-            foreach (var member in teamMembers)
+            // Look up the first category of the event if request.CategoryId is not specified
+            Guid categoryId = request.CategoryId ?? Guid.Empty;
+            if (categoryId == Guid.Empty)
             {
-                var msg =
-                    $"[NOTIFICATION] Đội của bạn {team.TeamName} đã đăng ký thi đấu tại Category {categoryName}.";
-                await _notificationService.CreateNotificationAsync(member.UserId, msg);
+                var eventCategory = await _categoryRepository.FirstOrDefaultAsync(c => c.EventId == request.EventId);
+                if (eventCategory == null)
+                    throw new Exception("No categories found for this event");
+                categoryId = eventCategory.CategoryId;
             }
 
-            return MapToDto(team);
+            await ValidateTeamReadyForCategoryAsync(team, categoryId, request.EventId);
+ 
+            if (team.EventId != null && team.EventId != Guid.Empty && team.EventId != request.EventId)
+            {
+                var newTeamId = Guid.NewGuid();
+                var newTeam = new Teams
+                {
+                    TeamId = newTeamId,
+                    TeamName = team.TeamName,
+                    TeamLeaderId = team.TeamLeaderId,
+                    EventId = request.EventId,
+                    CategoryId = categoryId,
+                    TeamStatus = "Active",
+                    HealthStatus = "Green"
+                };
+ 
+                await _teamRepository.AddAsync(newTeam);
+ 
+                foreach (var member in teamMembers)
+                {
+                    await _teamMemberRepository.AddAsync(new TeamMembers
+                    {
+                        TeamMemberId = Guid.NewGuid(),
+                        TeamId = newTeamId,
+                        UserId = member.UserId,
+                        JoinDate = DateTime.UtcNow
+                    });
+                }
+ 
+                await WriteAuditLogAsync(
+                    requesterUserId,
+                    "TEAM_REGISTER_CLONE",
+                    null,
+                    JsonSerializer.Serialize(new { teamId, NewTeamId = newTeamId, CategoryId = categoryId, request.EventId })
+                );
+ 
+                await _unitOfWork.SaveChangesAsync();
+ 
+                var cat = await _categoryRepository.GetByIdAsync(categoryId);
+                var catName = cat?.CategoryName ?? "Unknown Category";
+                await RegisterTeamMembersAsEventParticipantsAsync(teamMembers, request.EventId);
+                await _unitOfWork.SaveChangesAsync();
+ 
+                foreach (var member in teamMembers)
+                {
+                    var msg = $"[NOTIFICATION] Đội mới của bạn {newTeam.TeamName} (được sao chép từ đội cũ) đã đăng ký thi đấu tại Category {catName}.";
+                    await _notificationService.CreateNotificationAsync(member.UserId, msg);
+                }
+ 
+                return MapToDto(newTeam);
+            }
+            else
+            {
+                team.CategoryId = categoryId;
+                team.EventId = request.EventId;
+ 
+                _teamRepository.Update(team);
+                await WriteAuditLogAsync(
+                    requesterUserId,
+                    "TEAM_REGISTER",
+                    null,
+                    JsonSerializer.Serialize(new { teamId, CategoryId = categoryId, request.EventId })
+                );
+                await _unitOfWork.SaveChangesAsync();
+ 
+                var category = await _categoryRepository.GetByIdAsync(categoryId);
+                var categoryName = category?.CategoryName ?? "Unknown Category";
+                await RegisterTeamMembersAsEventParticipantsAsync(teamMembers, request.EventId);
+                await _unitOfWork.SaveChangesAsync();
+ 
+                foreach (var member in teamMembers)
+                {
+                    var msg =
+                        $"[NOTIFICATION] Đội của bạn {team.TeamName} đã đăng ký thi đấu tại Category {categoryName}.";
+                    await _notificationService.CreateNotificationAsync(member.UserId, msg);
+                }
+ 
+                return MapToDto(team);
+            }
         }
 
         public async Task DeleteAsync(Guid teamId)
@@ -308,6 +370,8 @@ namespace BusinessLogicLayer.Services.Implements
             if (category.EventId != eventId)
                 throw new Exception("The selected category does not belong to the selected event.");
 
+            // Bypassed: A team can reuse its profile and register for a new event even if the current event hasn't ended.
+
             var teamMembers = await _teamMemberRepository.FindAsync(x => x.TeamId == team.TeamId);
             if (teamMembers.Count < 3)
                 throw new Exception(
@@ -324,7 +388,7 @@ namespace BusinessLogicLayer.Services.Implements
             if (!eventData.IsPublished || !string.Equals(eventData.Status, "Published", StringComparison.OrdinalIgnoreCase))
                 throw new Exception("The selected event is not published for registration.");
 
-            if (DateTime.UtcNow >= eventData.StartDate)
+            if (DateTime.UtcNow >= eventData.EndDate)
                 throw new Exception("Registration for this event is already closed.");
 
             if (
@@ -421,11 +485,7 @@ namespace BusinessLogicLayer.Services.Implements
                     throw new Exception("The user already belongs to another team in this event.");
             }
 
-            var participant = await _eventParticipantRepository.FirstOrDefaultAsync(x =>
-                x.UserId == userId && x.EventId == eventId);
-
-            if (participant != null && team.EventId != eventId)
-                throw new Exception("The user is already registered as a participant in this event.");
+            // Bypassed: A user is allowed to register their team to the event even if they have already registered individually.
         }
 
         private async Task RegisterTeamMembersAsEventParticipantsAsync(

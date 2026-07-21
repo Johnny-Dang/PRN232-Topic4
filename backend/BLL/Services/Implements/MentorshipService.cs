@@ -424,10 +424,9 @@ namespace BusinessLogicLayer.Services.Implements
 
             await _unitOfWork.SaveChangesAsync();
 
-            // Notify Team Leader about feedback
-
-
             var mentorUser = await _userRepository.GetByIdAsync(mentorUserId);
+
+            // Notify Team Leader about feedback
 
             if (team != null)
             {

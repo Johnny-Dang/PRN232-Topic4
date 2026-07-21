@@ -1225,6 +1225,20 @@ export async function addTeamMember(
   }
 }
 
+export async function removeTeamMember(
+  teamId: string,
+  teamMemberId: string,
+): Promise<boolean> {
+  if (!useLiveApi || !teamId || !teamMemberId) return false;
+  try {
+    await apiClient.delete(`/Teams/${teamId}/members/${teamMemberId}`);
+    return true;
+  } catch (error: unknown) {
+    logApiError("removeTeamMember", error);
+    throw error;
+  }
+}
+
 export async function createTeam(teamName: string): Promise<Team | null> {
   if (!useLiveApi || !teamName.trim()) return null;
   try {
@@ -1241,15 +1255,15 @@ export async function createTeam(teamName: string): Promise<Team | null> {
 
 export async function setTeamCategory(
   teamId: string,
-  categoryId: string,
+  categoryId: string | null | undefined,
   eventId: string,
 ): Promise<Team | null> {
-  if (!useLiveApi || !teamId || !categoryId || !eventId) return null;
+  if (!useLiveApi || !teamId || !eventId) return null;
   try {
     const response = await apiClient.put<BackendTeam>(
       `/Teams/${teamId}/category`,
       {
-        CategoryId: categoryId,
+        CategoryId: categoryId || null,
         EventId: eventId,
       },
     );

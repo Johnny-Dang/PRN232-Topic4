@@ -8,7 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Skeleton } from '@/components/ui/skeleton';
-import { AdvancementRule, Category, Round, getAdvancementRules, getCategories, getRounds, createAdvancementRule, deleteAdvancementRule } from '@/lib/api';
+import { AdvancementRule, Category, Round, Event, getAdvancementRules, getCategories, getRounds, getEvents, createAdvancementRule, deleteAdvancementRule } from '@/lib/api';
 
 export default function AdvancementRuleConfig() {
   const [loading, setLoading] = useState(true);
@@ -17,20 +17,24 @@ export default function AdvancementRuleConfig() {
   const [rules, setRules] = useState<AdvancementRule[]>([]);
   const [rounds, setRounds] = useState<Round[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
+  const [events, setEvents] = useState<Event[]>([]);
+  const [selectedEventId, setSelectedEventId] = useState('');
   const [newRule, setNewRule] = useState({ roundId: '', categoryId: '', topN: 2 });
 
   useEffect(() => {
     const loadData = async () => {
       setLoading(true);
       try {
-        const [fetchedRules, fetchedRounds, fetchedCategories] = await Promise.all([
+        const [fetchedRules, fetchedRounds, fetchedCategories, fetchedEvents] = await Promise.all([
           getAdvancementRules(),
           getRounds(),
           getCategories(),
+          getEvents(),
         ]);
         setRules(fetchedRules);
         setRounds(fetchedRounds);
         setCategories(fetchedCategories);
+        setEvents(fetchedEvents);
       } catch (error) {
         console.error('Failed to load data:', error);
         setMessage('Không thể tải dữ liệu.');
@@ -40,6 +44,13 @@ export default function AdvancementRuleConfig() {
     };
     void loadData();
   }, []);
+
+  const handleEventChange = (eventId: string) => {
+    setSelectedEventId(eventId);
+    const eventCategories = categories.filter((cat) => cat.EventID === eventId);
+    const defaultCategoryId = eventCategories.length > 0 ? eventCategories[0].CategoryID : '';
+    setNewRule((r) => ({ ...r, roundId: '', categoryId: defaultCategoryId }));
+  };
 
   const handleCreateRule = async () => {
     if (!newRule.roundId || !newRule.categoryId || newRule.topN < 1) {
@@ -55,7 +66,10 @@ export default function AdvancementRuleConfig() {
       setMessage('Đã tạo quy tắc thành công!');
       const updatedRules = await getAdvancementRules();
       setRules(updatedRules);
-      setNewRule({ roundId: '', categoryId: '', topN: 2 });
+      
+      const eventCategories = categories.filter((cat) => cat.EventID === selectedEventId);
+      const defaultCategoryId = eventCategories.length > 0 ? eventCategories[0].CategoryID : '';
+      setNewRule({ roundId: '', categoryId: defaultCategoryId, topN: 2 });
     } catch (error) {
       console.error('Failed to create rule:', error);
       setMessage('Không thể tạo quy tắc. Vui lòng thử lại.');
@@ -101,36 +115,58 @@ export default function AdvancementRuleConfig() {
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-4">
             <div className="space-y-2">
-              <Label className="text-xs font-semibold text-slate-600 dark:text-slate-400">Vong thi</Label>
+              <Label className="text-xs font-semibold text-slate-600 dark:text-slate-400">Sự kiện</Label>
               <select
-                value={newRule.roundId}
-                onChange={(e) => setNewRule((r) => ({ ...r, roundId: e.target.value }))}
+                value={selectedEventId}
+                onChange={(e) => handleEventChange(e.target.value)}
                 className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200"
               >
-                <option value="">-- Chọn vòng --</option>
-                {rounds.map((round) => (
-                  <option key={round.RoundID} value={round.RoundID}>
-                    {round.RoundName}
+                <option value="">-- Chọn sự kiện --</option>
+                {events.map((event) => (
+                  <option key={event.EventID} value={event.EventID}>
+                    {event.EventName}
                   </option>
                 ))}
               </select>
             </div>
 
             <div className="space-y-2">
-              <Label className="text-xs font-semibold text-slate-600 dark:text-slate-400">Hang muc</Label>
+              <Label className="text-xs font-semibold text-slate-600 dark:text-slate-400">Vòng thi</Label>
+              <select
+                value={newRule.roundId}
+                onChange={(e) => setNewRule((r) => ({ ...r, roundId: e.target.value }))}
+                disabled={!selectedEventId}
+                className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm disabled:opacity-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200"
+              >
+                <option value="">-- Chọn vòng --</option>
+                {rounds
+                  .filter((round) => round.EventID === selectedEventId)
+                  .map((round) => (
+                    <option key={round.RoundID} value={round.RoundID}>
+                      {round.RoundName}
+                    </option>
+                  ))}
+              </select>
+            </div>
+
+            <div className="space-y-2">
+              <Label className="text-xs font-semibold text-slate-600 dark:text-slate-400">Hạng mục</Label>
               <select
                 value={newRule.categoryId}
                 onChange={(e) => setNewRule((r) => ({ ...r, categoryId: e.target.value }))}
-                className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200"
+                disabled={!selectedEventId}
+                className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm disabled:opacity-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200"
               >
-                <option value="">-- Chọn hạng mục --</option>
-                {categories.map((cat) => (
-                  <option key={cat.CategoryID} value={cat.CategoryID}>
-                    {cat.CategoryName}
-                  </option>
-                ))}
+                {!selectedEventId && <option value="">-- Chọn hạng mục --</option>}
+                {categories
+                  .filter((cat) => cat.EventID === selectedEventId)
+                  .map((cat) => (
+                    <option key={cat.CategoryID} value={cat.CategoryID}>
+                      {cat.CategoryName}
+                    </option>
+                  ))}
               </select>
             </div>
 
@@ -172,6 +208,7 @@ export default function AdvancementRuleConfig() {
               {rules.map((rule) => {
                 const round = rounds.find((r) => r.RoundID === rule.RoundId);
                 const category = categories.find((c) => c.CategoryID === rule.CategoryId);
+                const event = events.find((e) => e.EventID === round?.EventID);
 
                 return (
                   <div
@@ -184,7 +221,7 @@ export default function AdvancementRuleConfig() {
                       </div>
                       <div>
                         <p className="text-sm font-semibold text-slate-800 dark:text-slate-200">
-                          {round?.RoundName || 'Unknown Round'}
+                          {round?.RoundName || 'Unknown Round'} {event ? `(${event.EventName})` : ''}
                         </p>
                         <p className="text-xs text-slate-400">
                           {category?.CategoryName || 'Unknown Category'}

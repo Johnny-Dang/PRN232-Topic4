@@ -2,7 +2,7 @@
 
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { useSearchParams } from "next/navigation";
+import { useSearchParams, useRouter } from "next/navigation";
 import {
   CalendarDays,
   CheckCircle2,
@@ -43,10 +43,11 @@ type MyEventRow = {
   isLeader: boolean;
 };
 
-type PendingRegistrationTeam = {
+type AvailableTeam = {
   team: Team;
   members: TeamMemberWithProfile[];
   isLeader: boolean;
+  canRegister: boolean;
 };
 
 const getStringProperty = (value: unknown, keys: string[]): string | null => {
@@ -122,18 +123,18 @@ const formatDate = (value: string): string => {
 
 export default function MyEventsPage() {
   const searchParams = useSearchParams();
+  const router = useRouter();
   const requestedEventId = searchParams.get("eventId") ?? "";
   const [loading, setLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState("");
   const [rows, setRows] = useState<MyEventRow[]>([]);
   const [loadedAt, setLoadedAt] = useState(0);
   const [pendingRegistrationTeam, setPendingRegistrationTeam] =
-    useState<PendingRegistrationTeam | null>(null);
-  const [availableCategories, setAvailableCategories] = useState<Category[]>(
-    [],
-  );
+    useState<AvailableTeam | null>(null);
+  const [availableTeams, setAvailableTeams] = useState<AvailableTeam[]>([]);
   const [availableEvents, setAvailableEvents] = useState<Event[]>([]);
-  const [selectedCategoryId, setSelectedCategoryId] = useState("");
+  const [selectedEventId, setSelectedEventId] = useState(() => requestedEventId);
+  const [selectedTeamId, setSelectedTeamId] = useState<string>('');
   const [registering, setRegistering] = useState(false);
   const [registrationMessage, setRegistrationMessage] = useState("");
   const [showTeamChoice, setShowTeamChoice] = useState(() =>
@@ -146,6 +147,7 @@ export default function MyEventsPage() {
 
     try {
       const userId = getStoredUserId();
+      console.log('[MyEvents] UserId from localStorage:', userId);
       if (!userId) {
         setRows([]);
         setLoadedAt(Date.now());
@@ -157,24 +159,54 @@ export default function MyEventsPage() {
         getEvents(),
         getCategories(),
       ]);
+      console.log('[MyEvents] Total teams:', teams.length);
+      console.log('[MyEvents] UserId:', userId);
 
       const myRows: MyEventRow[] = [];
-      let unregisteredTeam: PendingRegistrationTeam | null = null;
+      let defaultPendingTeam: AvailableTeam | null = null;
+      const allAvailableTeams: AvailableTeam[] = [];
+      const now = Date.now();
 
       for (const team of teams) {
         const members = await getTeamMembers(team.TeamID);
-        const isLeader =
-          team.TeamLeaderId.toLowerCase() === userId.toLowerCase();
+        // Normalize for comparison (handle different ID formats)
+        const leaderId = (team.TeamLeaderId || '').toLowerCase().trim();
+        const normalizedUserId = (userId || '').toLowerCase().trim();
+        const isLeader = leaderId === normalizedUserId;
         const isMember = members.some(
-          (member) => member.UserId.toLowerCase() === userId.toLowerCase(),
+          (member) => (member.UserId || '').toLowerCase().trim() === normalizedUserId,
         );
+
+        console.log(`[MyEvents] Team: ${team.TeamName}, LeaderId: "${team.TeamLeaderId}", isLeader: ${isLeader}, isMember: ${isMember}`);
 
         if (!isLeader && !isMember) continue;
 
-        if (!team.CategoryID && !unregisteredTeam) {
-          unregisteredTeam = { team, members, isLeader };
-          continue;
+        // Check team event status
+        let teamEvent: Event | undefined;
+        if (team.CategoryID) {
+          const category = categories.find(
+            (item) => item.CategoryID === team.CategoryID,
+          );
+          if (category) {
+            teamEvent = events.find((e) => e.EventID === category.EventID);
+          }
         }
+
+        const eventEnded = teamEvent ? new Date(teamEvent.EndDate).getTime() < now : true;
+        const isTeamPending = !team.CategoryID;
+        const canRegister = (isLeader || isMember) && (isTeamPending || team.EventID !== requestedEventId);
+
+        console.log(`[MyEvents] Team: ${team.TeamName}, CategoryID: ${team.CategoryID}, EventEnded: ${eventEnded}, CanRegister: ${canRegister}`);
+
+        if (canRegister) {
+          const teamData: AvailableTeam = { team, members, isLeader, canRegister };
+          allAvailableTeams.push(teamData);
+          if (!defaultPendingTeam) {
+            defaultPendingTeam = teamData;
+          }
+        }
+
+        if (!team.CategoryID) continue;
 
         const category = categories.find(
           (item) => item.CategoryID === team.CategoryID,
@@ -187,6 +219,8 @@ export default function MyEventsPage() {
         myRows.push({ event, team, category, members, isLeader });
       }
 
+      console.log('[MyEvents] Available teams for registration:', allAvailableTeams.length);
+
       const rowsByEvent = new Map<string, MyEventRow>();
       myRows.forEach((row) => {
         if (!rowsByEvent.has(row.event.EventID)) {
@@ -195,9 +229,13 @@ export default function MyEventsPage() {
       });
 
       setRows([...rowsByEvent.values()]);
-      setPendingRegistrationTeam(unregisteredTeam);
-      setAvailableCategories(categories);
+      setAvailableTeams(allAvailableTeams);
+      setPendingRegistrationTeam(defaultPendingTeam);
       setAvailableEvents(events);
+      // Initialize selectedTeamId with the first team if available
+      if (defaultPendingTeam && !selectedTeamId) {
+        setSelectedTeamId(defaultPendingTeam.team.TeamID);
+      }
       setLoadedAt(Date.now());
     } catch (error) {
       console.error(error);
@@ -205,35 +243,75 @@ export default function MyEventsPage() {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [selectedTeamId, requestedEventId]);
 
   const handleRegisterEvent = async () => {
-    if (!pendingRegistrationTeam || !selectedCategoryId) return;
-
-    const selectedCategory = availableCategories.find(
-      (category) => category.CategoryID === selectedCategoryId,
-    );
-    if (!selectedCategory) return;
+    const teamToUse = availableTeams.find(t => t.team.TeamID === selectedTeamId) || pendingRegistrationTeam;
+    if (!teamToUse || !selectedEventId) return;
 
     setRegistering(true);
     setRegistrationMessage("");
     try {
       await setTeamCategory(
-        pendingRegistrationTeam.team.TeamID,
-        selectedCategory.CategoryID,
-        selectedCategory.EventID,
+        teamToUse.team.TeamID,
+        null,
+        selectedEventId,
       );
       setRegistrationMessage("Đăng ký sự kiện thành công.");
+      setSelectedEventId("");
+      setSelectedTeamId("");
       await loadData();
     } catch (registrationError) {
+      console.error(registrationError);
+      const axiosError = registrationError as {
+        response?: { data?: { message?: string } };
+      };
       const message =
-        registrationError instanceof Error
-          ? registrationError.message
-          : "Không thể đăng ký sự kiện.";
+        axiosError.response?.data?.message ||
+        (registrationError instanceof Error ? registrationError.message : "") ||
+        "Không thể đăng ký sự kiện.";
       setRegistrationMessage(message);
     } finally {
       setRegistering(false);
     }
+  };
+
+  const handleContinueWithOldTeam = async () => {
+    const teamToUse = availableTeams.find(t => t.team.TeamID === selectedTeamId) || pendingRegistrationTeam;
+    if (teamToUse && requestedEventId) {
+      if (teamToUse.members.length >= 3) {
+        setRegistering(true);
+        setRegistrationMessage("");
+        setShowTeamChoice(false);
+        try {
+          await setTeamCategory(
+            teamToUse.team.TeamID,
+            null,
+            requestedEventId,
+          );
+          setRegistrationMessage("Đăng ký sự kiện thành công.");
+          setSelectedEventId("");
+          setSelectedTeamId("");
+          // Clear URL query parameters to avoid showing the choice dialog again
+          router.replace("/my-events");
+          await loadData();
+        } catch (registrationError) {
+          console.error(registrationError);
+          const axiosError = registrationError as {
+            response?: { data?: { message?: string } };
+          };
+          const message =
+            axiosError.response?.data?.message ||
+            (registrationError instanceof Error ? registrationError.message : "") ||
+            "Không thể đăng ký sự kiện.";
+          setRegistrationMessage(message);
+        } finally {
+          setRegistering(false);
+        }
+        return;
+      }
+    }
+    setShowTeamChoice(false);
   };
 
   useEffect(() => {
@@ -310,23 +388,55 @@ export default function MyEventsPage() {
               >
                 Tạo team mới
               </Link>
-              {pendingRegistrationTeam ? (
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => setShowTeamChoice(false)}
-                  className="h-11 w-full rounded-xl text-sm font-bold"
-                >
-                  Tiếp tục với team cũ
-                </Button>
-              ) : (
-                !loading && (
-                  <p className="rounded-xl bg-amber-50 px-3 py-2 text-xs font-medium text-amber-700 dark:bg-amber-950/30 dark:text-amber-300">
-                    Bạn chưa có team cũ nào đang chờ đăng ký Event. Hãy tạo team
-                    mới để tiếp tục.
-                  </p>
-                )
+              
+              {availableTeams.length > 0 ? (
+                <div className="space-y-4">
+                  <div className="space-y-1.5">
+                    <label className="text-[10px] font-semibold text-slate-500 uppercase block">
+                      Chọn team cũ để tiếp tục:
+                    </label>
+                    <select
+                      value={selectedTeamId}
+                      onChange={(e) => setSelectedTeamId(e.target.value)}
+                      className="h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-xs font-semibold text-slate-700 focus:outline-none dark:border-slate-800 dark:bg-slate-900 dark:text-slate-300"
+                    >
+                      <option value="">-- Chọn Đội thi --</option>
+                      {availableTeams.map((t) => (
+                        <option key={t.team.TeamID} value={t.team.TeamID}>
+                          {t.team.TeamName} ({t.members.length} thành viên)
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  {selectedTeamId && (() => {
+                    const selectedTeam = availableTeams.find(t => t.team.TeamID === selectedTeamId);
+                    if (!selectedTeam) return null;
+                    if (selectedTeam.members.length < 3) {
+                      return (
+                        <p className="rounded-xl bg-amber-50 px-3 py-2 text-xs font-medium text-amber-700 dark:bg-amber-950/30 dark:text-amber-300">
+                          Đội này chưa đủ 3 thành viên. Vui lòng thêm thành viên trước.
+                        </p>
+                      );
+                    }
+                    return (
+                      <Button
+                        type="button"
+                        onClick={handleContinueWithOldTeam}
+                        disabled={registering}
+                        className="h-10 w-full rounded-xl bg-indigo-600 px-4 text-xs font-bold text-white hover:bg-indigo-750"
+                      >
+                        {registering ? "Đang đăng ký..." : `Đăng ký bằng ${selectedTeam.team.TeamName}`}
+                      </Button>
+                    );
+                  })()}
+                </div>
+              ) : !loading && (
+                <p className="rounded-xl bg-amber-50 px-3 py-2 text-xs font-medium text-amber-700 dark:bg-amber-950/30 dark:text-amber-300">
+                  Bạn chưa có team cũ nào có thể đăng ký Event. Hãy tạo team mới để tiếp tục.
+                </p>
               )}
+              
               <Button
                 type="button"
                 variant="ghost"
@@ -354,62 +464,81 @@ export default function MyEventsPage() {
                   Đăng ký sự kiện cho đội
                 </CardTitle>
                 <CardDescription className="text-xs font-medium">
-                  Đội {pendingRegistrationTeam.team.TeamName} chưa đăng ký sự
-                  kiện. Chỉ trưởng nhóm có thể thực hiện thao tác này.
+                  {availableTeams.length > 1 
+                    ? `Bạn có ${availableTeams.length} đội có thể sử dụng để đăng ký sự kiện mới.`
+                    : `Đội ${pendingRegistrationTeam.team.TeamName} có thể đăng ký sự kiện mới.`
+                  } Chỉ trưởng nhóm mới có thể thực hiện thao tác này.
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-3">
-                {pendingRegistrationTeam.members.length < 3 ? (
+                {availableTeams.every(t => t.members.length < 3) ? (
                   <p className="rounded-xl border border-amber-100 bg-amber-50 p-3 text-xs font-medium text-amber-700">
-                    Đội cần tối thiểu 3 thành viên trước khi đăng ký sự kiện.
-                    Hiện có {pendingRegistrationTeam.members.length} thành viên.
-                  </p>
-                ) : !pendingRegistrationTeam.isLeader ? (
-                  <p className="rounded-xl border border-slate-200 bg-white p-3 text-xs font-medium text-slate-600 dark:border-slate-800 dark:bg-slate-900">
-                    Chỉ trưởng nhóm mới có quyền đăng ký sự kiện cho đội.
+                    Tất cả các đội của bạn chưa đủ 3 thành viên. Vui lòng thêm thành viên trước khi đăng ký sự kiện.
                   </p>
                 ) : (
                   <>
-                    <select
-                      value={selectedCategoryId}
-                      onChange={(event) =>
-                        setSelectedCategoryId(event.target.value)
-                      }
-                      className="h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-xs font-semibold dark:border-slate-700 dark:bg-slate-900"
-                    >
-                      <option value="">Chọn hạng mục và sự kiện</option>
-                      {availableCategories
-                        .filter((category) => {
-                          const event = availableEvents.find(
-                            (item) => item.EventID === category.EventID,
-                          );
-                          return (
-                            (!requestedEventId ||
-                              category.EventID === requestedEventId) &&
-                            Boolean(
-                              event?.IsPublished &&
-                              event.Status === "Published" &&
-                              new Date(event.StartDate) > new Date(),
-                            )
-                          );
-                        })
-                        .map((category) => {
-                          const event = availableEvents.find(
-                            (item) => item.EventID === category.EventID,
-                          );
-                          return (
+                    {/* Team selection dropdown */}
+                    {availableTeams.length > 1 && (
+                      <div className="space-y-1">
+                        <label className="text-[10px] font-semibold text-slate-500 uppercase">
+                          Chọn đội
+                        </label>
+                        <select
+                          value={selectedTeamId}
+                          onChange={(event) => setSelectedTeamId(event.target.value)}
+                          className="h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-xs font-semibold dark:border-slate-700 dark:bg-slate-900"
+                        >
+                          <option value="">Chọn đội</option>
+                          {availableTeams
+                            .filter(t => t.members.length >= 3)
+                            .map((t) => (
+                              <option key={t.team.TeamID} value={t.team.TeamID}>
+                                {t.team.TeamName} ({t.members.length} thành viên)
+                              </option>
+                            ))}
+                        </select>
+                        {!selectedTeamId && availableTeams.filter(t => t.members.length >= 3).length > 0 && (
+                          <p className="text-[10px] text-amber-600">Vui lòng chọn một đội để tiếp tục</p>
+                        )}
+                      </div>
+                    )}
+                    
+                    {/* Event selection dropdown */}
+                    <div className="space-y-1">
+                      <label className="text-[10px] font-semibold text-slate-500 uppercase">
+                        Chọn sự kiện
+                      </label>
+                      <select
+                        value={selectedEventId}
+                        onChange={(event) => setSelectedEventId(event.target.value)}
+                        className="h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-xs font-semibold dark:border-slate-700 dark:bg-slate-900"
+                        disabled={!selectedTeamId && availableTeams.length > 1}
+                      >
+                        <option value="">Chọn sự kiện</option>
+                        {availableEvents
+                          .filter((event) => {
+                            return (
+                              Boolean(
+                                event?.IsPublished &&
+                                event.Status === "Published" &&
+                                new Date(event.EndDate) > new Date(),
+                              )
+                            );
+                          })
+                          .map((event) => (
                             <option
-                              key={category.CategoryID}
-                              value={category.CategoryID}
+                              key={event.EventID}
+                              value={event.EventID}
                             >
-                              {event?.EventName} — {category.CategoryName}
+                              {event.EventName}
                             </option>
-                          );
-                        })}
-                    </select>
+                          ))}
+                      </select>
+                    </div>
+                    
                     <Button
                       type="button"
-                      disabled={!selectedCategoryId || registering}
+                      disabled={!selectedEventId || registering || (availableTeams.length > 1 && !selectedTeamId)}
                       onClick={() => void handleRegisterEvent()}
                       className="h-9 rounded-xl bg-indigo-600 text-xs font-bold hover:bg-indigo-700"
                     >
