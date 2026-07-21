@@ -10,7 +10,7 @@ namespace DataAccessLayer.Database
         {
             var optionsBuilder = new DbContextOptionsBuilder<ApplicationDbContext>();
 
-            var connectionString = "Server=localhost;Database=SEALHackathonDB;Trusted_Connection=True;TrustServerCertificate=True;MultipleActiveResultSets=true";
+            var connectionString = "Server=localhost;Database=SEAL_Hackathon;Trusted_Connection=True;TrustServerCertificate=True;MultipleActiveResultSets=true";
 
             optionsBuilder.UseSqlServer(connectionString);
 
