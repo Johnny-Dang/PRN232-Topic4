@@ -71,9 +71,9 @@ namespace BusinessLogicLayer.Services.Implements
                 TeamId = request.TeamId,
                 RoundId = request.RoundId,
                 CalibrationTitle = request.CalibrationTitle,
-                RepositoryURL = request.RepositoryURL,
-                DemoURL = request.DemoURL,
-                SlideURL = request.SlideURL,
+                RepositoryURL = request.RepositoryURL ?? string.Empty,
+                DemoURL = request.DemoURL ?? string.Empty,
+                SlideURL = request.SlideURL ?? string.Empty,
                 SubmittedAt = DateTime.UtcNow,
                 Status = "CalibrationSample",
                 IsCalibrationSample = true
