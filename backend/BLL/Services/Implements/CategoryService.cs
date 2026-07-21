@@ -29,6 +29,10 @@ namespace BusinessLogicLayer.Services.Implements
             if (eventEntity == null)
                 throw new Exception($"Event with id {request.EventId} not found");
 
+            var existingCategories = await _categoryRepository.FindAsync(c => c.EventId == request.EventId);
+            if (existingCategories.Count > 0)
+                throw new Exception("Sự kiện này đã có hạng mục thi đấu. Không được tạo thêm hạng mục.");
+
             var category = new Categories
             {
                 CategoryId = Guid.NewGuid(),

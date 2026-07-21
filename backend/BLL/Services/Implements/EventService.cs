@@ -42,9 +42,10 @@ namespace BusinessLogicLayer.Services.Implements
                 {
                     uploadedUrl = await _cloudinaryService.UploadImageAsync(request.BannerImage,"temp fix");
                 }
-                catch (Exception ex) 
+                catch (Exception) 
                 {
-                    throw new ArgumentException("fail upload image");
+                    // Fallback to a default placeholder image if Cloudinary upload fails (e.g. due to connection issues)
+                    uploadedUrl = "https://images.unsplash.com/photo-1555066931-4365d14bab8c?w=1600&auto=format&fit=crop&q=80";
                 }
             }
 
@@ -131,6 +132,13 @@ namespace BusinessLogicLayer.Services.Implements
             );
             if (eventEntity == null)
                 throw new Exception($"Event with id {request.EventId} not found");
+
+            var teamsRepository = _unitOfWork.GetRepository<Teams>();
+            var registeredTeams = await teamsRepository.FindAsync(t => t.EventId == request.EventId);
+            if (registeredTeams.Count > 0)
+            {
+                throw new Exception("Sự kiện đã có đội đăng ký tham gia, không thể sửa thông tin.");
+            }
 
             eventEntity.EventName = request.EventName;
             eventEntity.Season = request.Season;

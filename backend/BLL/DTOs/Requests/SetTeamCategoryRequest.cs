@@ -5,8 +5,7 @@ namespace BusinessLogicLayer.DTOs.Requests
 {
     public class SetTeamCategoryRequest
     {
-        [Required]
-        public Guid CategoryId { get; set; }
+        public Guid? CategoryId { get; set; }
 
         [Required]
         public Guid EventId { get; set; }

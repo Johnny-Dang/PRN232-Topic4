@@ -19,6 +19,7 @@ import {
   addTeamMember,
   createTeam,
   setTeamCategory,
+  removeTeamMember,
   Category as ApiCategory,
   Event as ApiEvent,
   Round as ApiRound,
@@ -100,6 +101,16 @@ export default function MemberPage() {
   const [allEvents, setAllEvents] = useState<ApiEvent[]>([]);
   const [tempCategoryName, setTempCategoryName] = useState('');
 
+  type TeamMemberWithProfileData = Awaited<ReturnType<typeof getTeamMembers>>[number];
+  
+  type OldTeamData = {
+    TeamID: string;
+    TeamName: string;
+    members: TeamMemberWithProfileData[];
+  };
+  
+  const [oldTeams, setOldTeams] = useState<OldTeamData[]>([]);
+
   const loadData = async () => {
     setLoading(true);
     setErrorMessage('');
@@ -112,25 +123,48 @@ export default function MemberPage() {
 
       let myTeam: Team | undefined;
       let myMembers: TeamMemberWithProfile[] = [];
+      const myOldTeams: OldTeamData[] = [];
+      const now = new Date();
 
       for (const candidateTeam of fetchedTeams) {
-        if (userId && candidateTeam.TeamLeaderId.toLowerCase() === userId.toLowerCase()) {
-          myTeam = candidateTeam;
-          myMembers = await getTeamMembers(candidateTeam.TeamID);
-          break;
+        const candidateMembers = await getTeamMembers(candidateTeam.TeamID);
+        const isMember = candidateMembers.some(
+          (member) => userId && member.UserId.toLowerCase() === userId.toLowerCase()
+        );
+        const isLeader = userId && candidateTeam.TeamLeaderId.toLowerCase() === userId.toLowerCase();
+
+        if (!isMember && !isLeader) continue;
+
+        // Find event for this team
+        let teamEvent: ApiEvent | undefined;
+        if (candidateTeam.CategoryID) {
+          const category = categoriesData.find((c) => c.CategoryID === candidateTeam.CategoryID);
+          if (category) {
+            teamEvent = eventsData.find((e) => e.EventID === category.EventID);
+          }
         }
 
-        const candidateMembers = await getTeamMembers(candidateTeam.TeamID);
-        if (
-          userId &&
-          candidateMembers.some((member) => member.UserId.toLowerCase() === userId.toLowerCase())
-        ) {
+        // Check if team can be used for new event registration
+        const teamEventEnded = teamEvent ? new Date(teamEvent.EndDate) < now : true;
+        const isTeamPending = !candidateTeam.CategoryID;
+
+        // If this is the user's active team (pending or in an active event), set it as myTeam
+        if (!myTeam && (isLeader || isMember) && (isTeamPending || !teamEventEnded)) {
           myTeam = candidateTeam;
           myMembers = candidateMembers;
-          break;
+        }
+
+        // Collect old teams that can join new events (not already in requestedEventId)
+        if ((isLeader || isMember) && (isTeamPending || candidateTeam.EventID !== requestedEventId)) {
+          myOldTeams.push({
+            TeamID: candidateTeam.TeamID,
+            TeamName: candidateTeam.TeamName,
+            members: candidateMembers,
+          });
         }
       }
 
+      setOldTeams(myOldTeams);
       setTeam(myTeam || null);
       setMembers(myMembers);
       setEvent(null);
@@ -145,15 +179,15 @@ export default function MemberPage() {
         return;
       }
 
-      const myCategory = categoriesData.find((item) => item.CategoryID === myTeam.CategoryID);
-      const myEvent = myCategory ? eventsData.find((item) => item.EventID === myCategory.EventID) : null;
+      const myCategory = categoriesData.find((item) => item.CategoryID === myTeam!.CategoryID);
+      const myEvent = myCategory ? eventsData.find((item) => item.EventID === myCategory!.EventID) : null;
       const roundsData = myEvent ? await getRounds(myEvent.EventID) : [];
       const rulesData = await getAdvancementRules();
 
       const rankingRows: RankingWithTeam[] = [];
       for (const round of roundsData) {
         const roundRankings = await getRankings(round.RoundID);
-        rankingRows.push(...roundRankings.filter((ranking) => ranking.TeamId === myTeam.TeamID));
+        rankingRows.push(...roundRankings.filter((ranking) => ranking.TeamId === myTeam!.TeamID));
       }
 
       setCategory(myCategory || null);
@@ -195,7 +229,7 @@ export default function MemberPage() {
       setNewTeamName('');
 
       await loadData();
-      router.push(requestedEventId ? `/my-events?eventId=${encodeURIComponent(requestedEventId)}` : '/my-events');
+      router.push(requestedEventId ? `/member?eventId=${encodeURIComponent(requestedEventId)}` : '/member');
     } catch (err: unknown) {
       console.error(err);
       const axiosError = err as { response?: { data?: { message?: string } } };
@@ -207,7 +241,7 @@ export default function MemberPage() {
   };
 
   const handleRegisterCategorySubmit = async (categoryId: string, eventId: string) => {
-    if (!categoryId || !eventId || !team) return;
+    if (!eventId || !team) return;
 
     setRegisteringCat(true);
     setRegisterCatError('');
@@ -255,6 +289,27 @@ export default function MemberPage() {
       setAddErrorMessage(msg);
     } finally {
       setAddingMember(false);
+    }
+  };
+
+  const handleRemoveMember = async (teamId: string, teamMemberId: string) => {
+    try {
+      await removeTeamMember(teamId, teamMemberId);
+      // Update old teams state
+      setOldTeams((prev) =>
+        prev.map((t) =>
+          t.TeamID === teamId
+            ? { ...t, members: t.members.filter((m) => m.TeamMemberId !== teamMemberId) }
+            : t
+        )
+      );
+      // If this is the current team, update members too
+      if (team && team.TeamID === teamId) {
+        setMembers((prev) => prev.filter((m) => m.TeamMemberId !== teamMemberId));
+      }
+    } catch (err: unknown) {
+      const axiosError = err as { response?: { data?: { message?: string } } };
+      throw new Error(axiosError.response?.data?.message || (err instanceof Error ? err.message : '') || 'Không thể xóa thành viên.');
     }
   };
 
@@ -326,12 +381,15 @@ export default function MemberPage() {
                     createTeamError={createTeamError}
                     createTeamSuccess={createTeamSuccess}
                     onSubmit={handleCreateTeamSubmit}
+                    oldTeams={oldTeams}
+                    onRemoveMember={handleRemoveMember}
+                    currentUserId={currentUserId}
                   />
                 </CardContent>
               </Card>
             ) : (
               <>
-                {requestedEventId && !team.CategoryID && (
+                {requestedEventId && (!team.CategoryID || (event && new Date(event.EndDate) < new Date())) && (
                   <Card className="border-indigo-100 bg-indigo-50/40 shadow-sm dark:border-indigo-900/50 dark:bg-indigo-950/10">
                     <CardContent className="flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:justify-between">
                       <p className="text-xs font-medium text-slate-600 dark:text-slate-300">
@@ -354,7 +412,7 @@ export default function MemberPage() {
                   allCategories={allCategories}
                   allEvents={allEvents}
                   preferredEventId={requestedEventId}
-                  allowEventRegistration={isLeader || false}
+                  allowEventRegistration={true}
                   isLeader={isLeader || false}
                   tempCategoryName={tempCategoryName}
                   setTempCategoryName={setTempCategoryName}

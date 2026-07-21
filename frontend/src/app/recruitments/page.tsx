@@ -12,7 +12,7 @@ import CreateRecruitmentModal from '@/components/recruitment/CreateRecruitmentMo
 import { getRecruitmentsApi } from '@/services/api/recruitment';
 import { getTeams, getMyApplications } from '@/lib/api';
 import { TeamRecruitment } from '@/services/types/recruitment';
-import { TeamApplication } from '@/services/types/application';
+import type { MyApplication } from '@/lib/api';
 
 export default function RecruitmentsPage() {
   const router = useRouter();
@@ -25,7 +25,7 @@ export default function RecruitmentsPage() {
   const [isCreateModalOpen, setIsCreateModalOpen] = useState<boolean>(false);
   const [myTeamId, setMyTeamId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [myApplications, setMyApplications] = useState<TeamApplication[]>([]);
+  const [myApplications, setMyApplications] = useState<MyApplication[]>([]);
 
   const fetchRecruitments = useCallback(async () => {
     setLoading(true);
