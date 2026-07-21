@@ -8,7 +8,7 @@ namespace DataAccessLayer.Database.Entities
 {
     public class CalibrationScores
     {
-        public Guid CalibrationId { get; set; }
+        public Guid CalibrationScoreId { get; set; }
         public Guid JudgeId { get; set; }
         public Guid CriteriaId { get; set; }
         public Guid SubmissionId { get; set; }

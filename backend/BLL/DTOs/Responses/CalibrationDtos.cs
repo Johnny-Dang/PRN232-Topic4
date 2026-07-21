@@ -23,7 +23,6 @@ namespace BusinessLogicLayer.DTOs.Responses
     public class CalibrationScoreDto
     {
         public Guid CalibrationScoreId { get; set; }
-        public Guid CalibrationId { get; set; }
         public Guid SubmissionId { get; set; }
         public Guid JudgeId { get; set; }
         public string? JudgeCode { get; set; }

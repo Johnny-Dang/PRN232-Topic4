@@ -161,7 +161,7 @@ namespace BusinessLogicLayer.Services.Implements
 
                 var score = new CalibrationScores
                 {
-                    CalibrationId = submissionId,
+                    CalibrationScoreId = Guid.NewGuid(),
                     SubmissionId = submissionId,
                     JudgeId = judgeUserId,
                     CriteriaId = item.CriteriaId,
@@ -473,8 +473,7 @@ namespace BusinessLogicLayer.Services.Implements
         {
             return new CalibrationScoreDto
             {
-                CalibrationScoreId = score.CalibrationId,
-                CalibrationId = score.CalibrationId,
+                CalibrationScoreId = score.CalibrationScoreId,
                 SubmissionId = score.SubmissionId,
                 JudgeId = score.JudgeId,
                 JudgeCode = judgeCode,
