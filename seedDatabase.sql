@@ -45,33 +45,33 @@ BEGIN TRY
     -- =========================================================
     INSERT INTO Users (UserID, Email, Password, FullName, Phone, ShortId, Role, AccountStatus, CreatedAt) VALUES
     -- Team leaders
-    ('00000000-0000-0000-0000-000000000001','leader.phoenix@fpt.edu.vn','$2a$12$AWgb9KdKy9sz7BM4KUxXxuH0tPdjFNp.ccFtpnmgB.Zfjv8zXaufm',N'Daniel Tran','0901000001','TM0001','TeamLeader','Approved',GETDATE()),
-    ('00000000-0000-0000-0000-000000000005','leader.beta@fpt.edu.vn','$2a$12$AWgb9KdKy9sz7BM4KUxXxuH0tPdjFNp.ccFtpnmgB.Zfjv8zXaufm',N'Henry Pham','0901000005','TM0002','TeamLeader','Approved',GETDATE()),
+    ('00000000-0000-0000-0000-000000000001','leader.phoenix@fpt.edu.vn','$2a$12$AWgb9KdKy9sz7BM4KUxXxuH0tPdjFNp.ccFtpnmgB.Zfjv8zXaufm',N'Daniel Tran','0901000001','TM0001','TeamLeader','Active',GETDATE()),
+    ('00000000-0000-0000-0000-000000000005','leader.beta@fpt.edu.vn','$2a$12$AWgb9KdKy9sz7BM4KUxXxuH0tPdjFNp.ccFtpnmgB.Zfjv8zXaufm',N'Henry Pham','0901000005','TM0002','TeamLeader','Active',GETDATE()),
 
     -- Team members - Phoenix AI
-    ('00000000-0000-0000-0000-000000000002','member.phoenix1@fpt.edu.vn','$2a$12$AWgb9KdKy9sz7BM4KUxXxuH0tPdjFNp.ccFtpnmgB.Zfjv8zXaufm',N'Noah Nguyen','0901000002','TM0003','TeamMember','Approved',GETDATE()),
-    ('00000000-0000-0000-0000-000000000003','member.phoenix2@fpt.edu.vn','$2a$12$AWgb9KdKy9sz7BM4KUxXxuH0tPdjFNp.ccFtpnmgB.Zfjv8zXaufm',N'Leo Le','0901000003','TM0004','TeamMember','Approved',GETDATE()),
-    ('00000000-0000-0000-0000-000000000004','member.phoenix3@uit.edu.vn','$2a$12$AWgb9KdKy9sz7BM4KUxXxuH0tPdjFNp.ccFtpnmgB.Zfjv8zXaufm',N'Kevin Vo','0901000004','TM0005','TeamMember','Approved',GETDATE()),
+    ('00000000-0000-0000-0000-000000000002','member.phoenix1@fpt.edu.vn','$2a$12$AWgb9KdKy9sz7BM4KUxXxuH0tPdjFNp.ccFtpnmgB.Zfjv8zXaufm',N'Noah Nguyen','0901000002','TM0003','TeamMember','Active',GETDATE()),
+    ('00000000-0000-0000-0000-000000000003','member.phoenix2@fpt.edu.vn','$2a$12$AWgb9KdKy9sz7BM4KUxXxuH0tPdjFNp.ccFtpnmgB.Zfjv8zXaufm',N'Leo Le','0901000003','TM0004','TeamMember','Active',GETDATE()),
+    ('00000000-0000-0000-0000-000000000004','member.phoenix3@uit.edu.vn','$2a$12$AWgb9KdKy9sz7BM4KUxXxuH0tPdjFNp.ccFtpnmgB.Zfjv8zXaufm',N'Kevin Vo','0901000004','TM0005','TeamMember','Active',GETDATE()),
 
     -- Team members - Beta Coders
-    ('00000000-0000-0000-0000-000000000006','member.beta1@fpt.edu.vn','$2a$12$AWgb9KdKy9sz7BM4KUxXxuH0tPdjFNp.ccFtpnmgB.Zfjv8zXaufm',N'Brian Truong','0901000006','TM0006','TeamMember','Approved',GETDATE()),
-    ('00000000-0000-0000-0000-000000000007','member.beta2@hcmus.edu.vn','$2a$12$AWgb9KdKy9sz7BM4KUxXxuH0tPdjFNp.ccFtpnmgB.Zfjv8zXaufm',N'Tristan Dang','0901000007','TM0007','TeamMember','Approved',GETDATE()),
-    ('00000000-0000-0000-0000-000000000008','member.beta3@hcmute.edu.vn','$2a$12$AWgb9KdKy9sz7BM4KUxXxuH0tPdjFNp.ccFtpnmgB.Zfjv8zXaufm',N'Logan Bui','0901000008','TM0008','TeamMember','Approved',GETDATE()),
+    ('00000000-0000-0000-0000-000000000006','member.beta1@fpt.edu.vn','$2a$12$AWgb9KdKy9sz7BM4KUxXxuH0tPdjFNp.ccFtpnmgB.Zfjv8zXaufm',N'Brian Truong','0901000006','TM0006','TeamMember','Active',GETDATE()),
+    ('00000000-0000-0000-0000-000000000007','member.beta2@hcmus.edu.vn','$2a$12$AWgb9KdKy9sz7BM4KUxXxuH0tPdjFNp.ccFtpnmgB.Zfjv8zXaufm',N'Tristan Dang','0901000007','TM0007','TeamMember','Active',GETDATE()),
+    ('00000000-0000-0000-0000-000000000008','member.beta3@hcmute.edu.vn','$2a$12$AWgb9KdKy9sz7BM4KUxXxuH0tPdjFNp.ccFtpnmgB.Zfjv8zXaufm',N'Logan Bui','0901000008','TM0008','TeamMember','Active',GETDATE()),
 
     -- Candidate (Solo Student)
-    ('00000000-0000-0000-0000-000000000015','candidate.john@fpt.edu.vn','$2a$12$AWgb9KdKy9sz7BM4KUxXxuH0tPdjFNp.ccFtpnmgB.Zfjv8zXaufm',N'John Doe','0901000015','TM0009','TeamMember','Approved',GETDATE()),
+    ('00000000-0000-0000-0000-000000000015','candidate.john@fpt.edu.vn','$2a$12$AWgb9KdKy9sz7BM4KUxXxuH0tPdjFNp.ccFtpnmgB.Zfjv8zXaufm',N'John Doe','0901000015','TM0009','TeamMember','Active',GETDATE()),
 
     -- Mentors
-    ('00000000-0000-0000-0000-000000000009','mentor.ai@fpt.edu.vn','$2a$12$AWgb9KdKy9sz7BM4KUxXxuH0tPdjFNp.ccFtpnmgB.Zfjv8zXaufm',N'Tony Pham','0901000009','ME0001','Mentor','Approved',GETDATE()),
-    ('00000000-0000-0000-0000-000000000010','mentor.web@fpt.edu.vn','$2a$12$AWgb9KdKy9sz7BM4KUxXxuH0tPdjFNp.ccFtpnmgB.Zfjv8zXaufm',N'Hannah Nguyen','0901000010','ME0002','Mentor','Approved',GETDATE()),
+    ('00000000-0000-0000-0000-000000000009','mentor.ai@fpt.edu.vn','$2a$12$AWgb9KdKy9sz7BM4KUxXxuH0tPdjFNp.ccFtpnmgB.Zfjv8zXaufm',N'Tony Pham','0901000009','ME0001','Mentor','Active',GETDATE()),
+    ('00000000-0000-0000-0000-000000000010','mentor.web@fpt.edu.vn','$2a$12$AWgb9KdKy9sz7BM4KUxXxuH0tPdjFNp.ccFtpnmgB.Zfjv8zXaufm',N'Hannah Nguyen','0901000010','ME0002','Mentor','Active',GETDATE()),
 
     -- Judges
-    ('00000000-0000-0000-0000-000000000011','judge.internal1@fpt.edu.vn','$2a$12$AWgb9KdKy9sz7BM4KUxXxuH0tPdjFNp.ccFtpnmgB.Zfjv8zXaufm',N'Harry Le','0901000011','JU0001','Judge','Approved',GETDATE()),
-    ('00000000-0000-0000-0000-000000000012','judge.internal2@fpt.edu.vn','$2a$12$AWgb9KdKy9sz7BM4KUxXxuH0tPdjFNp.ccFtpnmgB.Zfjv8zXaufm',N'Lam Tran','0901000012','JU0002','Judge','Approved',GETDATE()),
+    ('00000000-0000-0000-0000-000000000011','judge.internal1@fpt.edu.vn','$2a$12$AWgb9KdKy9sz7BM4KUxXxuH0tPdjFNp.ccFtpnmgB.Zfjv8zXaufm',N'Harry Le','0901000011','JU0001','Judge','Active',GETDATE()),
+    ('00000000-0000-0000-0000-000000000012','judge.internal2@fpt.edu.vn','$2a$12$AWgb9KdKy9sz7BM4KUxXxuH0tPdjFNp.ccFtpnmgB.Zfjv8zXaufm',N'Lam Tran','0901000012','JU0002','Judge','Active',GETDATE()),
 
     -- Event coordinators
-    ('00000000-0000-0000-0000-000000000013','coordinator.se@fpt.edu.vn','$2a$12$AWgb9KdKy9sz7BM4KUxXxuH0tPdjFNp.ccFtpnmgB.Zfjv8zXaufm',N'Casey Tran','0901000013','CO0001','Coordinator','Approved',GETDATE()),
-    ('00000000-0000-0000-0000-000000000014','coordinator.pdp@fpt.edu.vn','$2a$12$AWgb9KdKy9sz7BM4KUxXxuH0tPdjFNp.ccFtpnmgB.Zfjv8zXaufm',N'Morgan Nguyen','0901000014','CO0002','Coordinator','Approved',GETDATE());
+    ('00000000-0000-0000-0000-000000000013','coordinator.se@fpt.edu.vn','$2a$12$AWgb9KdKy9sz7BM4KUxXxuH0tPdjFNp.ccFtpnmgB.Zfjv8zXaufm',N'Casey Tran','0901000013','CO0001','Coordinator','Active',GETDATE()),
+    ('00000000-0000-0000-0000-000000000014','coordinator.pdp@fpt.edu.vn','$2a$12$AWgb9KdKy9sz7BM4KUxXxuH0tPdjFNp.ccFtpnmgB.Zfjv8zXaufm',N'Morgan Nguyen','0901000014','CO0002','Coordinator','Active',GETDATE());
 
     INSERT INTO StudentProfiles (ProfileID, UserID, StudentType, StudentCode, UniversityName) VALUES
     ('A1111111-1111-1111-1111-111111111101', '00000000-0000-0000-0000-000000000001', 'FPT', 'SE170001', 'FPT University'),
