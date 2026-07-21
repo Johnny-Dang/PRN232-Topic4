@@ -32,7 +32,7 @@ export default function Header({
 }: HeaderProps) {
   const router = useRouter();
   const [isDropdownOpen, setIsDropdownOpen] = React.useState(false);
-  
+
   const getDashboardPath = (role: SealUser['Role']): string => {
     switch (role) {
       case 'Coordinator':
@@ -226,7 +226,6 @@ export default function Header({
             </>
           ) : (
             <div className="flex items-center gap-2">
-              <NotificationBell />
               <Button
                 variant="ghost"
                 onClick={() => router.push('/login')}

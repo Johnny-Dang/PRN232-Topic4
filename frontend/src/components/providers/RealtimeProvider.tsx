@@ -131,25 +131,15 @@ export default function RealtimeProvider() {
       // Backend trả về array trực tiếp, không phải {items, totalCount}
       const items = response.data || [];
 
-      const newNotifications: RealtimeNotification[] = [];
-
       for (const item of items) {
         // Backend dùng PascalCase: NotificationId, IsRead
         const id = item.notificationId || item.NotificationId || "";
-        if (id && !displayedIds.current.has(id)) {
-          displayedIds.current.add(id);
-          newNotifications.push({
-            id: ++nextId.current,
-            message: item.message || item.Message || "",
-          });
-        }
-      }
+        const isRead = item.isRead ?? item.IsRead ?? false;
 
-      if (newNotifications.length > 0) {
-        setNotifications((current) => [
-          ...newNotifications.reverse(),
-          ...current,
-        ]);
+        // Chỉ lưu ID của notification đã đọc để tránh hiển thị lại
+        if (id && isRead) {
+          displayedIds.current.add(id);
+        }
       }
 
       localStorage.setItem(

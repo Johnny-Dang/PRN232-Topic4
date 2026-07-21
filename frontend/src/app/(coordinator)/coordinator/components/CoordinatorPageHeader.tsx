@@ -2,7 +2,6 @@
 
 import { RefreshCw, LogOut } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { useRouter } from 'next/navigation';
 import NotificationBell from '@/components/NotificationBell';
 
 interface CoordinatorPageHeaderProps {
@@ -11,11 +10,9 @@ interface CoordinatorPageHeaderProps {
 }
 
 export default function CoordinatorPageHeader({ loading, onReload }: CoordinatorPageHeaderProps) {
-  const router = useRouter();
-
   const handleLogout = () => {
     localStorage.removeItem('seal_user');
-    router.push('/login');
+    window.location.href = '/login';
   };
 
   return (
