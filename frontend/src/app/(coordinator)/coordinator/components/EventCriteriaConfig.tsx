@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { Check, Plus, Trash2, X } from 'lucide-react';
+import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -21,7 +22,6 @@ import { Criteria, Event, getEvents, getEventCriteria, setEventCriteria } from '
 export default function EventCriteriaConfig() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [message, setMessage] = useState('');
   const [events, setEvents] = useState<Event[]>([]);
   const [selectedEventId, setSelectedEventId] = useState('');
   const [criteria, setCriteria] = useState<Criteria[]>([]);
@@ -49,7 +49,7 @@ export default function EventCriteriaConfig() {
       })
       .catch((error) => {
         console.error('Failed to load events:', error);
-        if (isSubscribed) setMessage('Không thể tải danh sách sự kiện.');
+        if (isSubscribed) toast.error('Không thể tải danh sách sự kiện.');
       })
       .finally(() => {
         if (isSubscribed) setLoading(false);
@@ -74,11 +74,16 @@ export default function EventCriteriaConfig() {
       .then((fetchedCriteria) => {
         if (!isSubscribed) return;
         setCriteria(fetchedCriteria);
-        setEditingCriteria(fetchedCriteria.map((c) => ({ criteriaId: c.CriteriaID, weight: c.Weight })));
+        setEditingCriteria(
+          fetchedCriteria.map((c) => ({
+            criteriaId: c.CriteriaID,
+            weight: c.Weight > 0 && c.Weight <= 1 ? Math.round(c.Weight * 100) : c.Weight,
+          }))
+        );
       })
       .catch((error) => {
         console.error('Failed to load criteria:', error);
-        if (isSubscribed) setMessage('Không thể tải criteria cho sự kiện này.');
+        if (isSubscribed) toast.error('Không thể tải criteria cho sự kiện này.');
       })
       .finally(() => {
         if (isSubscribed) setLoading(false);
@@ -138,20 +143,24 @@ export default function EventCriteriaConfig() {
     setNewCriteriaWeight('20');
     setAddError('');
     setIsAddOpen(false);
-    setMessage('Đã thêm tiêu chí mới vào danh sách. Hãy nhấn "Lưu cấu hình" để cập nhật hệ thống.');
+    toast.success('Đã thêm tiêu chí mới vào danh sách. Hãy nhấn "Lưu cấu hình" để cập nhật hệ thống.');
   };
 
   const handleRemoveCriteria = (criteriaId: string) => {
     setCriteria((prev) => prev.filter((c) => c.CriteriaID !== criteriaId));
     setEditingCriteria((prev) => prev.filter((ec) => ec.criteriaId !== criteriaId));
-    setMessage('Đã xóa tiêu chí khỏi danh sách. Hãy nhấn "Lưu cấu hình" để hoàn tất.');
+    toast.info('Đã xóa tiêu chí khỏi danh sách. Hãy nhấn "Lưu cấu hình" để hoàn tất.');
   };
 
   const handleSave = async () => {
     if (!selectedEventId) return;
 
+    if (totalWeight !== 100) {
+      toast.warning('Tổng trọng số tất cả tiêu chí phải bằng đúng 100% để lưu cấu hình.');
+      return;
+    }
+
     setSaving(true);
-    setMessage('');
 
     try {
       await setEventCriteria(
@@ -165,13 +174,18 @@ export default function EventCriteriaConfig() {
           };
         })
       );
-      setMessage('Đã lưu cấu hình criteria thành công!');
+      toast.success('Đã lưu cấu hình criteria thành công!');
       const updatedCriteria = await getEventCriteria(selectedEventId);
       setCriteria(updatedCriteria);
-      setEditingCriteria(updatedCriteria.map((c) => ({ criteriaId: c.CriteriaID, weight: c.Weight })));
+      setEditingCriteria(
+        updatedCriteria.map((c) => ({
+          criteriaId: c.CriteriaID,
+          weight: c.Weight > 0 && c.Weight <= 1 ? Math.round(c.Weight * 100) : c.Weight,
+        }))
+      );
     } catch (error) {
       console.error('Failed to save criteria:', error);
-      setMessage('Không thể lưu cấu hình. Vui lòng thử lại.');
+      toast.error('Không thể lưu cấu hình. Vui lòng thử lại.');
     } finally {
       setSaving(false);
     }
@@ -215,7 +229,7 @@ export default function EventCriteriaConfig() {
                 <div>
                   <CardTitle className="text-base font-bold">Cấu hình Criteria cho sự kiện</CardTitle>
                   <CardDescription className="text-xs font-medium text-slate-400">
-                    Tổng trọng số: {totalWeight}% (nếu khác 100%, hệ thống sẽ tự động chuẩn hóa)
+                    Tổng trọng số: {totalWeight}% (Cần đạt đúng 100% để có thể lưu cấu hình)
                   </CardDescription>
                 </div>
 
@@ -336,24 +350,15 @@ export default function EventCriteriaConfig() {
                 </div>
                 <Button
                   onClick={handleSave}
-                  disabled={saving || editingCriteria.length === 0}
-                  className="h-9 rounded-xl bg-emerald-600 text-xs font-semibold hover:bg-emerald-700"
+                  disabled={saving || editingCriteria.length === 0 || totalWeight !== 100}
+                  className="h-9 rounded-xl bg-emerald-600 text-xs font-semibold hover:bg-emerald-700 disabled:opacity-50"
+                  title={totalWeight !== 100 ? "Tổng trọng số phải đạt đúng 100% để lưu" : undefined}
                 >
                   {saving ? 'Đang lưu...' : 'Lưu cấu hình'}
                 </Button>
               </div>
             </CardContent>
           </Card>
-
-          {message && (
-            <div className={`rounded-xl border p-3 text-xs font-medium ${
-              message.includes('thanh cong') || message.includes('success')
-                ? 'border-emerald-100 bg-emerald-50 text-emerald-700'
-                : 'border-rose-100 bg-rose-50 text-rose-700'
-            }`}>
-              {message}
-            </div>
-          )}
         </>
       )}
     </div>

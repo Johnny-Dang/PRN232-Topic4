@@ -69,6 +69,8 @@ namespace BusinessLogicLayer.Services.Implements
 
             foreach (var item in request.Criteria)
             {
+                var normalizedWeight = item.Weight > 1 ? item.Weight / 100m : item.Weight;
+
                 var criteria = await _criteriaRepository.GetByIdAsync(item.CriteriaId);
                 if (criteria == null)
                 {
@@ -77,13 +79,17 @@ namespace BusinessLogicLayer.Services.Implements
                         CriteriaId = item.CriteriaId,
                         TemplateId = defaultTemplate.TemplateId,
                         CriteriaName = string.IsNullOrWhiteSpace(item.CriteriaName) ? "Tiêu chí mới" : item.CriteriaName.Trim(),
-                        Weight = item.Weight
+                        Weight = normalizedWeight
                     };
                     await _criteriaRepository.AddAsync(criteria);
                 }
-                else if (!string.IsNullOrWhiteSpace(item.CriteriaName))
+                else
                 {
-                    criteria.CriteriaName = item.CriteriaName.Trim();
+                    if (!string.IsNullOrWhiteSpace(item.CriteriaName))
+                    {
+                        criteria.CriteriaName = item.CriteriaName.Trim();
+                    }
+                    criteria.Weight = normalizedWeight;
                     _criteriaRepository.Update(criteria);
                 }
 
@@ -95,13 +101,13 @@ namespace BusinessLogicLayer.Services.Implements
                         EventCriteriaId = Guid.NewGuid(),
                         EventId = eventId,
                         CriteriaId = item.CriteriaId,
-                        Weight = item.Weight
+                        Weight = normalizedWeight
                     });
 
                     continue;
                 }
 
-                existing.Weight = item.Weight;
+                existing.Weight = normalizedWeight;
                 _eventCriteriaRepository.Update(existing);
             }
 
