@@ -1,26 +1,33 @@
-'use client';
+"use client";
 
-import { useCallback, useEffect, useState } from 'react';
-import { Eye, FileSpreadsheet, Loader2, MoreHorizontal, Target, Trash2 } from 'lucide-react';
-import { toast } from 'sonner';
+import { useCallback, useEffect, useState } from "react";
+import {
+  Eye,
+  FileSpreadsheet,
+  Loader2,
+  MoreHorizontal,
+  Target,
+  Trash2,
+} from "lucide-react";
+import { toast } from "sonner";
 
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
+} from "@/components/ui/dropdown-menu";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select';
-import { Skeleton } from '@/components/ui/skeleton';
+} from "@/components/ui/select";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
   Table,
   TableBody,
@@ -28,7 +35,7 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from '@/components/ui/table';
+} from "@/components/ui/table";
 import {
   CalibrationAnalysis,
   CalibrationSubmission,
@@ -36,12 +43,12 @@ import {
   getCalibrationSubmissions,
   getEvents,
   Event,
-} from '@/lib/api';
+} from "@/lib/api";
 
-import CalibrationDetailView from './CalibrationDetailView';
-import CalibrationAnalysisPanel from './CalibrationAnalysisPanel';
-import CalibrationExportButton from './CalibrationExportButton';
-import CreateCalibrationDialog from './CreateCalibrationDialog';
+import CalibrationDetailView from "./CalibrationDetailView";
+import CalibrationAnalysisPanel from "./CalibrationAnalysisPanel";
+import CalibrationExportButton from "./CalibrationExportButton";
+import CreateCalibrationDialog from "./CreateCalibrationDialog";
 
 interface CalibrationSampleListProps {
   onRefresh?: () => void;
@@ -53,8 +60,8 @@ export default function CalibrationSampleList({
   const [loading, setLoading] = useState(true);
   const [submissions, setSubmissions] = useState<CalibrationSubmission[]>([]);
   const [events, setEvents] = useState<Event[]>([]);
-  const [selectedEventId, setSelectedEventId] = useState<string>('all');
-  const [selectedStatus, setSelectedStatus] = useState<string>('all');
+  const [selectedEventId, setSelectedEventId] = useState<string>("all");
+  const [selectedStatus, setSelectedStatus] = useState<string>("all");
 
   const [selectedSubmission, setSelectedSubmission] =
     useState<CalibrationSubmission | null>(null);
@@ -64,7 +71,7 @@ export default function CalibrationSampleList({
     useState<CalibrationSubmission | null>(null);
   const [analysisOpen, setAnalysisOpen] = useState(false);
   const [analysisData, setAnalysisData] = useState<CalibrationAnalysis | null>(
-    null
+    null,
   );
   const [loadingAnalysis, setLoadingAnalysis] = useState(false);
 
@@ -74,18 +81,18 @@ export default function CalibrationSampleList({
     setLoading(true);
     try {
       const filters: { eventId?: string; status?: string } = {};
-      if (selectedEventId !== 'all') {
+      if (selectedEventId !== "all") {
         filters.eventId = selectedEventId;
       }
-      if (selectedStatus !== 'all') {
+      if (selectedStatus !== "all") {
         filters.status = selectedStatus;
       }
 
       const fetchedSubmissions = await getCalibrationSubmissions(filters);
       setSubmissions(fetchedSubmissions);
     } catch (error) {
-      console.error('Failed to load submissions:', error);
-      toast.error('Không thể tải danh sách bài mẫu');
+      console.error("Failed to load submissions:", error);
+      toast.error("Không thể tải danh sách bài mẫu");
     } finally {
       setLoading(false);
     }
@@ -96,7 +103,7 @@ export default function CalibrationSampleList({
       const fetchedEvents = await getEvents();
       setEvents(fetchedEvents);
     } catch (error) {
-      console.error('Failed to load events:', error);
+      console.error("Failed to load events:", error);
     }
   };
 
@@ -124,12 +131,12 @@ export default function CalibrationSampleList({
     setLoadingAnalysis(true);
 
     try {
-      const { getCalibrationAnalysis } = await import('@/lib/api');
+      const { getCalibrationAnalysis } = await import("@/lib/api");
       const analysis = await getCalibrationAnalysis(submission.CalibrationId);
       setAnalysisData(analysis);
     } catch (error) {
-      console.error('Failed to load analysis:', error);
-      toast.error('Không thể tải phân tích');
+      console.error("Failed to load analysis:", error);
+      toast.error("Không thể tải phân tích");
     } finally {
       setLoadingAnalysis(false);
     }
@@ -138,7 +145,7 @@ export default function CalibrationSampleList({
   const handleDelete = async (submission: CalibrationSubmission) => {
     if (
       !window.confirm(
-        `Bạn có chắc muốn xóa bài mẫu "${submission.CalibrationTitle}"?`
+        `Bạn có chắc muốn xóa bài mẫu "${submission.CalibrationTitle}"?`,
       )
     ) {
       return;
@@ -147,33 +154,39 @@ export default function CalibrationSampleList({
     setDeletingId(submission.CalibrationId);
     try {
       await deleteCalibrationSubmission(submission.CalibrationId);
-      toast.success('Đã xóa bài mẫu thành công');
+      toast.success("Đã xóa bài mẫu thành công");
       void loadSubmissions();
     } catch (error) {
-      console.error('Failed to delete submission:', error);
-      toast.error('Không thể xóa bài mẫu. Vui lòng thử lại.');
+      console.error("Failed to delete submission:", error);
+      toast.error("Không thể xóa bài mẫu. Vui lòng thử lại.");
     } finally {
       setDeletingId(null);
     }
   };
 
-  const getStatusBadge = (status: CalibrationSubmission['Status']) => {
+  const getStatusBadge = (status: CalibrationSubmission["Status"]) => {
     switch (status) {
-      case 'Pending':
+      case "Pending":
         return (
           <Badge variant="secondary" className="bg-muted text-muted-foreground">
             Chưa có điểm
           </Badge>
         );
-      case 'InProgress':
+      case "InProgress":
         return (
-          <Badge variant="secondary" className="bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400">
+          <Badge
+            variant="secondary"
+            className="bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400"
+          >
             Đang chấm
           </Badge>
         );
-      case 'Completed':
+      case "Completed":
         return (
-          <Badge variant="secondary" className="bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400">
+          <Badge
+            variant="secondary"
+            className="bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400"
+          >
             Hoàn thành
           </Badge>
         );
@@ -183,14 +196,14 @@ export default function CalibrationSampleList({
   };
 
   const formatDate = (dateString: string) => {
-    if (!dateString) return '-';
+    if (!dateString) return "-";
     try {
-      return new Date(dateString).toLocaleDateString('vi-VN', {
-        day: '2-digit',
-        month: '2-digit',
-        year: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit',
+      return new Date(dateString).toLocaleDateString("vi-VN", {
+        day: "2-digit",
+        month: "2-digit",
+        year: "numeric",
+        hour: "2-digit",
+        minute: "2-digit",
       });
     } catch {
       return dateString;
@@ -212,7 +225,10 @@ export default function CalibrationSampleList({
 
       {/* Filters */}
       <div className="flex flex-wrap gap-3">
-        <Select value={selectedEventId} onValueChange={(value) => setSelectedEventId(value || 'all')}>
+        <Select
+          value={selectedEventId}
+          onValueChange={(value) => setSelectedEventId(value || "all")}
+        >
           <SelectTrigger className="w-[200px]">
             <SelectValue placeholder="Lọc theo sự kiện" />
           </SelectTrigger>
@@ -226,7 +242,10 @@ export default function CalibrationSampleList({
           </SelectContent>
         </Select>
 
-        <Select value={selectedStatus} onValueChange={(value) => setSelectedStatus(value || 'all')}>
+        <Select
+          value={selectedStatus}
+          onValueChange={(value) => setSelectedStatus(value || "all")}
+        >
           <SelectTrigger className="w-[150px]">
             <SelectValue placeholder="Lọc theo trạng thái" />
           </SelectTrigger>
@@ -298,12 +317,13 @@ export default function CalibrationSampleList({
                   <TableCell className="font-medium">
                     {submission.CalibrationTitle}
                   </TableCell>
-                  <TableCell>{submission.EventName || '-'}</TableCell>
-                  <TableCell>{submission.RoundName || '-'}</TableCell>
+                  <TableCell>{submission.EventName || "-"}</TableCell>
+                  <TableCell>{submission.RoundName || "-"}</TableCell>
                   <TableCell className="text-center">
                     {submission.JudgeCount}
-                    {submission.TotalJudges && submission.TotalJudges > 0 && (
+                    {(submission.TotalJudges ?? 0) > 0 && (
                       <span className="text-muted-foreground">
+                        {" "}
                         /{submission.TotalJudges}
                       </span>
                     )}
@@ -329,7 +349,10 @@ export default function CalibrationSampleList({
                           )}
                         </Button>
                       </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end" className="z-[100] overflow-visible">
+                      <DropdownMenuContent
+                        align="end"
+                        className="z-[100] overflow-visible"
+                      >
                         <DropdownMenuItem
                           onClick={() => handleViewDetail(submission)}
                         >

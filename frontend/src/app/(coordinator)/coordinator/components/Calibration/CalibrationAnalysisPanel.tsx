@@ -110,7 +110,7 @@ export default function CalibrationAnalysisPanel({
             </div>
             <h3 className="text-xl font-medium mb-2">Chưa có dữ liệu phân tích</h3>
             <p className="text-sm text-muted-foreground max-w-md">
-              Cần ít nhất 1 judge chấm điểm calibration sample để xem phân tích inconsistency.
+              Cần ít nhất 2 judges chấm điểm calibration sample để xem phân tích inconsistency.
             </p>
           </div>
         ) : (

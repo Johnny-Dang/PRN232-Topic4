@@ -25,6 +25,7 @@ namespace BusinessLogicLayer.Services.Implements
         private readonly IGenericRepository<EventCriteria> _eventCriteriaRepository;
         private readonly IGenericRepository<JudgeAssignments> _judgeAssignmentRepository;
         private readonly IGenericRepository<AuditLogs> _auditLogRepository;
+        private readonly IGenericRepository<Events> _eventRepository;
         private readonly INotificationService _notificationService;
         private readonly IUnitOfWork _unitOfWork;
 
@@ -41,6 +42,7 @@ namespace BusinessLogicLayer.Services.Implements
             _eventCriteriaRepository = _unitOfWork.GetRepository<EventCriteria>();
             _judgeAssignmentRepository = _unitOfWork.GetRepository<JudgeAssignments>();
             _auditLogRepository = _unitOfWork.GetRepository<AuditLogs>();
+            _eventRepository = _unitOfWork.GetRepository<Events>();
         }
 
         public async Task<CalibrationSubmissionDto> CreateSampleSubmissionAsync(CreateCalibrationSubmissionRequest request, Guid userId)
@@ -444,6 +446,19 @@ namespace BusinessLogicLayer.Services.Implements
             var round = await _roundRepository.GetByIdAsync(submission.RoundId);
             var eventName = round != null ? (await GetEventNameAsync(round.EventId)) : null;
 
+            // Count unique judges who have scored this submission
+            var scores = await _calibrationScoreRepository.FindAsync(x => x.SubmissionId == submission.SubmissionId);
+            var judgeCount = scores.Select(x => x.JudgeId).Distinct().Count();
+
+            // Calculate status based on scores
+            string status;
+            if (judgeCount == 0)
+                status = "Pending";
+            else if (judgeCount >= 2) // Assuming 2 judges are enough to complete
+                status = "Completed";
+            else
+                status = "InProgress";
+
             return new CalibrationSubmissionDto
             {
                 SubmissionId = submission.SubmissionId,
@@ -457,16 +472,15 @@ namespace BusinessLogicLayer.Services.Implements
                 DemoURL = submission.DemoURL,
                 SlideURL = submission.SlideURL,
                 SubmittedAt = submission.SubmittedAt,
-                Status = submission.Status,
-                JudgeCount = 0
+                Status = status,
+                JudgeCount = judgeCount
             };
         }
 
         private async Task<string?> GetEventNameAsync(Guid eventId)
         {
-            // This would need Events repository - for now return null
-            // Can be extended to include Event name
-            return null;
+            var eventEntity = await _eventRepository.GetByIdAsync(eventId);
+            return eventEntity?.EventName;
         }
 
         private static CalibrationScoreDto MapScoreToDto(CalibrationScores score, string? judgeCode = null, string? criteriaName = null)
