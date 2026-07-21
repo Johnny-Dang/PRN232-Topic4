@@ -20,8 +20,18 @@ export function useEliminationsQuery() {
 export function useNotificationsQuery() {
   return useQuery({
     queryKey: ['notifications'],
-    queryFn: getNotificationsApi,
+    queryFn: async () => {
+      try {
+        const result = await getNotificationsApi();
+        console.log("[useNotificationsQuery] Result:", result);
+        return result;
+      } catch (error) {
+        console.error("[useNotificationsQuery] Error:", error);
+        throw error;
+      }
+    },
     refetchInterval: 30000,
+    retry: 1,
   });
 }
 

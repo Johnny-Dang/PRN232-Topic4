@@ -4,6 +4,7 @@ import {
   advancementRuleSchema,
   eliminationSchema,
   notificationSchema,
+  type Notification,
 } from "../types/coordinator";
 
 export async function getAdvancementRulesApi() {
@@ -16,13 +17,35 @@ export async function getEliminationsApi() {
   return z.array(eliminationSchema).parse(response.data);
 }
 
-export async function getNotificationsApi() {
+export async function getNotificationsApi(): Promise<Notification[]> {
   const response = await apiClient.get("/Notification", {
     withCredentials: false,
   });
   const data = response.data;
+  
+  // Support both array directly or wrapped in {items: []}
   const items = Array.isArray(data) ? data : data?.items;
-  return z.array(notificationSchema).parse(items ?? []);
+  
+  if (!items || !Array.isArray(items)) {
+    console.log("[Notifications API] No items found, raw data:", data);
+    return [];
+  }
+  
+  // Log for debugging
+  console.log("[Notifications API] Raw data:", items);
+  console.log("[Notifications API] Count:", items.length);
+  
+  // Parse với optional fields để tránh lỗi
+  const result: Notification[] = items.map((item: Record<string, unknown>) => ({
+    NotificationId: String(item.NotificationId || item.notificationId || ""),
+    UserId: String(item.UserId || item.userId || ""),
+    Message: String(item.Message || item.message || ""),
+    IsRead: Boolean(item.IsRead ?? item.isRead ?? false),
+    CreatedAt: String(item.CreatedAt || item.createdAt || new Date().toISOString()),
+  }));
+  
+  console.log("[Notifications API] Parsed:", result);
+  return result;
 }
 
 export async function markNotificationAsReadApi(
