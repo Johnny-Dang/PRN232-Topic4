@@ -17,10 +17,22 @@ interface UserOption {
   Role: string;
 }
 
+interface RawUserOption {
+  userId?: string;
+  UserId?: string;
+  userID?: string;
+  UserID?: string;
+  fullName?: string;
+  FullName?: string;
+  email?: string;
+  Email?: string;
+  role?: string;
+  Role?: string;
+}
+
 export default function NotificationManager() {
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
-  const [message, setMessage] = useState('');
   const [users, setUsers] = useState<UserOption[]>([]);
   const [selectedUsers, setSelectedUsers] = useState<string[]>([]);
   const [targetRole, setTargetRole] = useState('');
@@ -33,9 +45,16 @@ export default function NotificationManager() {
     const loadUsers = async () => {
       setLoading(true);
       try {
-        const response = await apiClient.get('/User');
-        setUsers(response.data || []);
-      } catch (error) {
+        const response = await apiClient.get<RawUserOption[]>('/Users');
+        const rawData = Array.isArray(response.data) ? response.data : [];
+        const mappedUsers: UserOption[] = rawData.map((u) => ({
+          UserID: u.userId ?? u.UserId ?? u.userID ?? u.UserID ?? '',
+          FullName: u.fullName ?? u.FullName ?? '',
+          Email: u.email ?? u.Email ?? '',
+          Role: u.role ?? u.Role ?? '',
+        }));
+        setUsers(mappedUsers);
+      } catch (error: unknown) {
         console.error('Failed to load users:', error);
       } finally {
         setLoading(false);
@@ -78,7 +97,7 @@ export default function NotificationManager() {
     try {
       const userIds = selectedUsers.map((id) => id);
       
-      const response = await apiClient.post('/Notification/create', {
+      await apiClient.post('/Notification/create', {
         message: notificationMessage,
         userIds: userIds,
         targetRole: targetRole || null,
