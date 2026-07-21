@@ -26,7 +26,6 @@ import {
 import {
   CalibrationSubmission,
   createCalibrationSubmission,
-  getCalibrationSubmissions,
   getEvents,
   getRounds,
   Event,
@@ -58,48 +57,6 @@ export default function CreateCalibrationDialog({
 
   const [errors, setErrors] = useState<Record<string, string>>({});
 
-  useEffect(() => {
-    if (open) {
-      loadEvents();
-      resetForm();
-    }
-  }, [open]);
-
-  useEffect(() => {
-    if (formData.eventId) {
-      loadRounds(formData.eventId);
-    } else {
-      setRounds([]);
-      setFormData((prev) => ({ ...prev, roundId: '' }));
-    }
-  }, [formData.eventId]);
-
-  const loadEvents = async () => {
-    setLoadingEvents(true);
-    try {
-      const fetchedEvents = await getEvents();
-      setEvents(fetchedEvents);
-    } catch (error) {
-      console.error('Failed to load events:', error);
-      toast.error('Không thể tải danh sách sự kiện');
-    } finally {
-      setLoadingEvents(false);
-    }
-  };
-
-  const loadRounds = async (eventId: string) => {
-    setLoadingRounds(true);
-    try {
-      const fetchedRounds = await getRounds(eventId);
-      setRounds(fetchedRounds);
-    } catch (error) {
-      console.error('Failed to load rounds:', error);
-      toast.error('Không thể tải danh sách vòng');
-    } finally {
-      setLoadingRounds(false);
-    }
-  };
-
   const resetForm = () => {
     setFormData({
       eventId: '',
@@ -111,6 +68,59 @@ export default function CreateCalibrationDialog({
     });
     setErrors({});
   };
+
+  const handleOpenChange = (newOpen: boolean) => {
+    setOpen(newOpen);
+    if (newOpen) {
+      resetForm();
+    }
+  };
+
+  useEffect(() => {
+    if (!open) return;
+    let isSubscribed = true;
+    queueMicrotask(() => {
+      if (isSubscribed) setLoadingEvents(true);
+    });
+    getEvents()
+      .then((fetchedEvents) => {
+        if (isSubscribed) setEvents(fetchedEvents);
+      })
+      .catch((error) => {
+        console.error('Failed to load events:', error);
+        toast.error('Không thể tải danh sách sự kiện');
+      })
+      .finally(() => {
+        if (isSubscribed) setLoadingEvents(false);
+      });
+    return () => {
+      isSubscribed = false;
+    };
+  }, [open]);
+
+  useEffect(() => {
+    if (!formData.eventId) {
+      return;
+    }
+    let isSubscribed = true;
+    queueMicrotask(() => {
+      if (isSubscribed) setLoadingRounds(true);
+    });
+    getRounds(formData.eventId)
+      .then((fetchedRounds) => {
+        if (isSubscribed) setRounds(fetchedRounds);
+      })
+      .catch((error) => {
+        console.error('Failed to load rounds:', error);
+        toast.error('Không thể tải danh sách vòng');
+      })
+      .finally(() => {
+        if (isSubscribed) setLoadingRounds(false);
+      });
+    return () => {
+      isSubscribed = false;
+    };
+  }, [formData.eventId]);
 
   const validateForm = (): boolean => {
     const newErrors: Record<string, string> = {};
@@ -125,15 +135,26 @@ export default function CreateCalibrationDialog({
       newErrors.calibrationTitle = 'Tiêu đề không được vượt quá 200 ký tự';
     }
 
-    if (formData.repositoryURL && !isValidURL(formData.repositoryURL)) {
+    const hasAtLeastOneUrl = Boolean(
+      formData.repositoryURL.trim() ||
+        formData.demoURL.trim() ||
+        formData.slideURL.trim()
+    );
+
+    if (!hasAtLeastOneUrl) {
+      newErrors.urls =
+        'Vui lòng nhập ít nhất 1 trong 3 liên kết (Repository URL, Demo URL, hoặc Slide URL)';
+    }
+
+    if (formData.repositoryURL.trim() && !isValidURL(formData.repositoryURL.trim())) {
       newErrors.repositoryURL = 'URL repository không hợp lệ';
     }
 
-    if (formData.demoURL && !isValidURL(formData.demoURL)) {
+    if (formData.demoURL.trim() && !isValidURL(formData.demoURL.trim())) {
       newErrors.demoURL = 'URL demo không hợp lệ';
     }
 
-    if (formData.slideURL && !isValidURL(formData.slideURL)) {
+    if (formData.slideURL.trim() && !isValidURL(formData.slideURL.trim())) {
       newErrors.slideURL = 'URL slide không hợp lệ';
     }
 
@@ -143,8 +164,8 @@ export default function CreateCalibrationDialog({
 
   const isValidURL = (url: string): boolean => {
     try {
-      new URL(url);
-      return true;
+      const parsed = new URL(url);
+      return parsed.protocol === 'http:' || parsed.protocol === 'https:';
     } catch {
       return false;
     }
@@ -179,9 +200,10 @@ export default function CreateCalibrationDialog({
   };
 
   const selectedEvent = events.find((e) => e.EventID === formData.eventId);
+  const selectedRound = rounds.find((r) => r.RoundID === formData.roundId);
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
+    <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogTrigger render={<Button size="sm">
         <Plus className="size-4" />
         Tạo bài mẫu mới
@@ -207,10 +229,19 @@ export default function CreateCalibrationDialog({
               </Label>
               <Select
                 value={formData.eventId}
-                onValueChange={(value) => setFormData((prev) => ({ ...prev, eventId: value || '' }))}
+                onValueChange={(value) => {
+                  setRounds([]);
+                  setFormData((prev) => ({
+                    ...prev,
+                    eventId: value || '',
+                    roundId: '',
+                  }));
+                }}
               >
                 <SelectTrigger id="event" disabled={loadingEvents}>
-                  <SelectValue placeholder="Chọn sự kiện" />
+                  <SelectValue placeholder="Chọn sự kiện">
+                    {selectedEvent?.EventName}
+                  </SelectValue>
                 </SelectTrigger>
                 <SelectContent>
                   {events.map((event) => (
@@ -239,7 +270,9 @@ export default function CreateCalibrationDialog({
                   disabled={!formData.eventId || loadingRounds}
                 >
                   <SelectTrigger id="round">
-                    <SelectValue placeholder="Chọn vòng thi" />
+                    <SelectValue placeholder="Chọn vòng thi">
+                      {selectedRound?.RoundName}
+                    </SelectValue>
                   </SelectTrigger>
                   <SelectContent>
                     {rounds.map((round) => (
@@ -288,7 +321,19 @@ export default function CreateCalibrationDialog({
 
             {/* URLs Section */}
             <div className="space-y-3 rounded-lg border bg-muted/30 p-3">
-              <p className="text-sm font-medium">Liên kết (tùy chọn)</p>
+              <div className="flex items-center justify-between">
+                <p className="text-sm font-medium">
+                  Liên kết <span className="text-destructive">*</span>
+                </p>
+                <span className="text-xs text-muted-foreground">(Cần nhập ít nhất 1 đường dẫn)</span>
+              </div>
+
+              {errors.urls && (
+                <p className="flex items-center gap-1 text-xs text-destructive">
+                  <AlertCircle className="size-3" />
+                  {errors.urls}
+                </p>
+              )}
 
               <div className="grid gap-2">
                 <Label htmlFor="repo" className="text-xs">

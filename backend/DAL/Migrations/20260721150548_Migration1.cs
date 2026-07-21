@@ -6,7 +6,7 @@ using Microsoft.EntityFrameworkCore.Migrations;
 namespace DataAccessLayer.Migrations
 {
     /// <inheritdoc />
-    public partial class AddNewMigration : Migration
+    public partial class Migration1 : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
@@ -622,7 +622,7 @@ namespace DataAccessLayer.Migrations
                 name: "CalibrationScores",
                 columns: table => new
                 {
-                    CalibrationId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    CalibrationScoreId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
                     JudgeId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
                     CriteriaId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
                     SubmissionId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
@@ -632,7 +632,7 @@ namespace DataAccessLayer.Migrations
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_CalibrationScores", x => x.CalibrationId);
+                    table.PrimaryKey("PK_CalibrationScores", x => x.CalibrationScoreId);
                     table.ForeignKey(
                         name: "FK_CalibrationScores_Criteria_CriteriaId",
                         column: x => x.CriteriaId,

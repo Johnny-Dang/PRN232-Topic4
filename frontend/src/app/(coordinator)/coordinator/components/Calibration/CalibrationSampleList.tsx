@@ -3,7 +3,6 @@
 import { useCallback, useEffect, useState } from "react";
 import {
   Eye,
-  FileSpreadsheet,
   Loader2,
   MoreHorizontal,
   Target,
@@ -108,11 +107,23 @@ export default function CalibrationSampleList({
   };
 
   useEffect(() => {
-    void loadEvents();
+    let isSubscribed = true;
+    queueMicrotask(() => {
+      if (isSubscribed) void loadEvents();
+    });
+    return () => {
+      isSubscribed = false;
+    };
   }, []);
 
   useEffect(() => {
-    void loadSubmissions();
+    let isSubscribed = true;
+    queueMicrotask(() => {
+      if (isSubscribed) void loadSubmissions();
+    });
+    return () => {
+      isSubscribed = false;
+    };
   }, [loadSubmissions]);
 
   const handleRefresh = () => {
@@ -224,39 +235,57 @@ export default function CalibrationSampleList({
       </div>
 
       {/* Filters */}
-      <div className="flex flex-wrap gap-3">
-        <Select
-          value={selectedEventId}
-          onValueChange={(value) => setSelectedEventId(value || "all")}
-        >
-          <SelectTrigger className="w-[200px]">
-            <SelectValue placeholder="Lọc theo sự kiện" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">Tất cả sự kiện</SelectItem>
-            {events.map((event) => (
-              <SelectItem key={event.EventID} value={event.EventID}>
-                {event.EventName}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+      {(() => {
+        const selectedEventFilter = events.find((e) => e.EventID === selectedEventId);
+        const statusLabels: Record<string, string> = {
+          all: "Tất cả trạng thái",
+          Pending: "Chưa có điểm",
+          InProgress: "Đang chấm",
+          Completed: "Hoàn thành",
+        };
 
-        <Select
-          value={selectedStatus}
-          onValueChange={(value) => setSelectedStatus(value || "all")}
-        >
-          <SelectTrigger className="w-[150px]">
-            <SelectValue placeholder="Lọc theo trạng thái" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">Tất cả trạng thái</SelectItem>
-            <SelectItem value="Pending">Chưa có điểm</SelectItem>
-            <SelectItem value="InProgress">Đang chấm</SelectItem>
-            <SelectItem value="Completed">Hoàn thành</SelectItem>
-          </SelectContent>
-        </Select>
-      </div>
+        return (
+          <div className="flex flex-wrap gap-3">
+            <Select
+              value={selectedEventId}
+              onValueChange={(value) => setSelectedEventId(value || "all")}
+            >
+              <SelectTrigger className="w-[200px]">
+                <SelectValue placeholder="Lọc theo sự kiện">
+                  {selectedEventId === "all"
+                    ? "Tất cả sự kiện"
+                    : selectedEventFilter?.EventName}
+                </SelectValue>
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Tất cả sự kiện</SelectItem>
+                {events.map((event) => (
+                  <SelectItem key={event.EventID} value={event.EventID}>
+                    {event.EventName}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+
+            <Select
+              value={selectedStatus}
+              onValueChange={(value) => setSelectedStatus(value || "all")}
+            >
+              <SelectTrigger className="w-[150px]">
+                <SelectValue placeholder="Lọc theo trạng thái">
+                  {statusLabels[selectedStatus] ?? selectedStatus}
+                </SelectValue>
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Tất cả trạng thái</SelectItem>
+                <SelectItem value="Pending">Chưa có điểm</SelectItem>
+                <SelectItem value="InProgress">Đang chấm</SelectItem>
+                <SelectItem value="Completed">Hoàn thành</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        );
+      })()}
 
       {/* Table */}
       <div className="rounded-lg border">

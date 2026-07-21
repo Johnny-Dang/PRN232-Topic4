@@ -12,8 +12,8 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace DataAccessLayer.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    [Migration("20260721014633_AddNewMigration")]
-    partial class AddNewMigration
+    [Migration("20260721150548_Migration1")]
+    partial class Migration1
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -83,7 +83,7 @@ namespace DataAccessLayer.Migrations
 
             modelBuilder.Entity("DataAccessLayer.Database.Entities.CalibrationScores", b =>
                 {
-                    b.Property<Guid>("CalibrationId")
+                    b.Property<Guid>("CalibrationScoreId")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier");
 
@@ -107,7 +107,7 @@ namespace DataAccessLayer.Migrations
                     b.Property<Guid>("SubmissionId")
                         .HasColumnType("uniqueidentifier");
 
-                    b.HasKey("CalibrationId");
+                    b.HasKey("CalibrationScoreId");
 
                     b.HasIndex("CriteriaId");
 
