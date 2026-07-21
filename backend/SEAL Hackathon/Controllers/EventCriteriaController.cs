@@ -30,7 +30,8 @@ namespace SEALHackathonSystem.Controllers
             }
             catch (Exception ex)
             {
-                return BadRequest(new { message = ex.Message });
+                var detail = ex.InnerException != null ? $"{ex.Message} -> {ex.InnerException.Message}" : ex.Message;
+                return BadRequest(new { message = detail });
             }
         }
 
@@ -49,7 +50,8 @@ namespace SEALHackathonSystem.Controllers
             }
             catch (Exception ex)
             {
-                return BadRequest(new { message = ex.Message });
+                var detail = ex.InnerException != null ? $"{ex.Message} -> {ex.InnerException.Message}" : ex.Message;
+                return BadRequest(new { message = detail });
             }
         }
 

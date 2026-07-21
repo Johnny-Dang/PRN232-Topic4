@@ -2,12 +2,20 @@
 
 import { useEffect, useState } from 'react';
 import { Check, Plus, Trash2, X } from 'lucide-react';
-import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Skeleton } from '@/components/ui/skeleton';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from '@/components/ui/dialog';
 import { Criteria, Event, getEvents, getEventCriteria, setEventCriteria } from '@/lib/api';
 
 export default function EventCriteriaConfig() {
@@ -19,46 +27,66 @@ export default function EventCriteriaConfig() {
   const [criteria, setCriteria] = useState<Criteria[]>([]);
   const [editingCriteria, setEditingCriteria] = useState<{ criteriaId: string; weight: number }[]>([]);
 
+  // State cho Modal Tạo Criteria mới
+  const [isAddOpen, setIsAddOpen] = useState(false);
+  const [newCriteriaName, setNewCriteriaName] = useState('');
+  const [newCriteriaWeight, setNewCriteriaWeight] = useState('20');
+  const [addError, setAddError] = useState('');
+
   useEffect(() => {
-    const loadEvents = async () => {
-      setLoading(true);
-      try {
-        const fetchedEvents = await getEvents();
+    let isSubscribed = true;
+    queueMicrotask(() => {
+      if (isSubscribed) setLoading(true);
+    });
+
+    getEvents()
+      .then((fetchedEvents) => {
+        if (!isSubscribed) return;
         setEvents(fetchedEvents);
-        if (fetchedEvents.length > 0 && !selectedEventId) {
-          setSelectedEventId(fetchedEvents[0].EventID);
+        if (fetchedEvents.length > 0) {
+          setSelectedEventId((prev) => prev || fetchedEvents[0].EventID);
         }
-      } catch (error) {
+      })
+      .catch((error) => {
         console.error('Failed to load events:', error);
-        setMessage('Không thể tải danh sách sự kiện.');
-      } finally {
-        setLoading(false);
-      }
+        if (isSubscribed) setMessage('Không thể tải danh sách sự kiện.');
+      })
+      .finally(() => {
+        if (isSubscribed) setLoading(false);
+      });
+
+    return () => {
+      isSubscribed = false;
     };
-    void loadEvents();
   }, []);
 
   useEffect(() => {
-    const loadCriteria = async () => {
-      if (!selectedEventId) {
-        setCriteria([]);
-        setEditingCriteria([]);
-        return;
-      }
+    if (!selectedEventId) {
+      return;
+    }
 
-      setLoading(true);
-      try {
-        const fetchedCriteria = await getEventCriteria(selectedEventId);
+    let isSubscribed = true;
+    queueMicrotask(() => {
+      if (isSubscribed) setLoading(true);
+    });
+
+    getEventCriteria(selectedEventId)
+      .then((fetchedCriteria) => {
+        if (!isSubscribed) return;
         setCriteria(fetchedCriteria);
         setEditingCriteria(fetchedCriteria.map((c) => ({ criteriaId: c.CriteriaID, weight: c.Weight })));
-      } catch (error) {
+      })
+      .catch((error) => {
         console.error('Failed to load criteria:', error);
-        setMessage('Không thể tải criteria cho sự kiện này.');
-      } finally {
-        setLoading(false);
-      }
+        if (isSubscribed) setMessage('Không thể tải criteria cho sự kiện này.');
+      })
+      .finally(() => {
+        if (isSubscribed) setLoading(false);
+      });
+
+    return () => {
+      isSubscribed = false;
     };
-    void loadCriteria();
   }, [selectedEventId]);
 
   const totalWeight = editingCriteria.reduce((sum, c) => sum + c.weight, 0);
@@ -70,6 +98,55 @@ export default function EventCriteriaConfig() {
     );
   };
 
+  const generateGuid = (): string => {
+    if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
+      return crypto.randomUUID();
+    }
+    return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
+      const r = (Math.random() * 16) | 0;
+      const v = c === 'x' ? r : (r & 0x3) | 0x8;
+      return v.toString(16);
+    });
+  };
+
+  const handleAddCriteria = (e: React.FormEvent) => {
+    e.preventDefault();
+    const name = newCriteriaName.trim();
+    const weight = Math.min(100, Math.max(1, parseFloat(newCriteriaWeight) || 0));
+
+    if (!name) {
+      setAddError('Vui lòng nhập tên tiêu chí.');
+      return;
+    }
+
+    if (weight <= 0) {
+      setAddError('Trọng số phải lớn hơn 0%.');
+      return;
+    }
+
+    const newCriteriaId = generateGuid();
+    const newCriteriaObj: Criteria = {
+      CriteriaID: newCriteriaId,
+      CriteriaName: name,
+      Weight: weight,
+    };
+
+    setCriteria((prev) => [...prev, newCriteriaObj]);
+    setEditingCriteria((prev) => [...prev, { criteriaId: newCriteriaId, weight }]);
+
+    setNewCriteriaName('');
+    setNewCriteriaWeight('20');
+    setAddError('');
+    setIsAddOpen(false);
+    setMessage('Đã thêm tiêu chí mới vào danh sách. Hãy nhấn "Lưu cấu hình" để cập nhật hệ thống.');
+  };
+
+  const handleRemoveCriteria = (criteriaId: string) => {
+    setCriteria((prev) => prev.filter((c) => c.CriteriaID !== criteriaId));
+    setEditingCriteria((prev) => prev.filter((ec) => ec.criteriaId !== criteriaId));
+    setMessage('Đã xóa tiêu chí khỏi danh sách. Hãy nhấn "Lưu cấu hình" để hoàn tất.');
+  };
+
   const handleSave = async () => {
     if (!selectedEventId) return;
 
@@ -79,11 +156,19 @@ export default function EventCriteriaConfig() {
     try {
       await setEventCriteria(
         selectedEventId,
-        editingCriteria.map((c) => ({ criteriaId: c.criteriaId, weight: c.weight }))
+        editingCriteria.map((c) => {
+          const match = criteria.find((item) => item.CriteriaID === c.criteriaId);
+          return {
+            criteriaId: c.criteriaId,
+            criteriaName: match?.CriteriaName,
+            weight: c.weight,
+          };
+        })
       );
       setMessage('Đã lưu cấu hình criteria thành công!');
       const updatedCriteria = await getEventCriteria(selectedEventId);
       setCriteria(updatedCriteria);
+      setEditingCriteria(updatedCriteria.map((c) => ({ criteriaId: c.CriteriaID, weight: c.Weight })));
     } catch (error) {
       console.error('Failed to save criteria:', error);
       setMessage('Không thể lưu cấu hình. Vui lòng thử lại.');
@@ -126,14 +211,76 @@ export default function EventCriteriaConfig() {
         <>
           <Card className="border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900">
             <CardHeader>
-              <CardTitle className="text-base font-bold">Cấu hình Criteria cho sự kiện</CardTitle>
-              <CardDescription className="text-xs font-medium text-slate-400">
-Tổng trọng số: {totalWeight}% (nếu khác 100%, hệ thống sẽ tự động chuẩn hóa)
-              </CardDescription>
+              <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+                <div>
+                  <CardTitle className="text-base font-bold">Cấu hình Criteria cho sự kiện</CardTitle>
+                  <CardDescription className="text-xs font-medium text-slate-400">
+                    Tổng trọng số: {totalWeight}% (nếu khác 100%, hệ thống sẽ tự động chuẩn hóa)
+                  </CardDescription>
+                </div>
+
+                <Dialog open={isAddOpen} onOpenChange={setIsAddOpen}>
+                  <DialogTrigger render={<Button size="sm" className="h-9 gap-1.5 rounded-xl bg-indigo-600 text-xs font-semibold text-white hover:bg-indigo-700">
+                    <Plus className="h-4 w-4" /> Thêm tiêu chí mới
+                  </Button>} />
+                  <DialogContent className="sm:max-w-md">
+                    <form onSubmit={handleAddCriteria}>
+                      <DialogHeader>
+                        <DialogTitle className="text-base font-bold">Thêm Tiêu Chí Chấm Điểm Mới</DialogTitle>
+                        <DialogDescription className="text-xs text-slate-500">
+                          Tạo tiêu chí chấm điểm mới và gán vào sự kiện hiện tại.
+                        </DialogDescription>
+                      </DialogHeader>
+
+                      <div className="space-y-4 py-4">
+                        <div className="space-y-1.5">
+                          <Label htmlFor="new-criteria-name" className="text-xs font-semibold">
+                            Tên tiêu chí <span className="text-rose-500">*</span>
+                          </Label>
+                          <Input
+                            id="new-criteria-name"
+                            placeholder="VD: Tính sáng tạo & Ứng dụng thực tế"
+                            value={newCriteriaName}
+                            onChange={(e) => setNewCriteriaName(e.target.value)}
+                            className="h-10 rounded-xl"
+                          />
+                        </div>
+
+                        <div className="space-y-1.5">
+                          <Label htmlFor="new-criteria-weight" className="text-xs font-semibold">
+                            Trọng số (%) <span className="text-rose-500">*</span>
+                          </Label>
+                          <Input
+                            id="new-criteria-weight"
+                            type="number"
+                            min={1}
+                            max={100}
+                            placeholder="20"
+                            value={newCriteriaWeight}
+                            onChange={(e) => setNewCriteriaWeight(e.target.value)}
+                            className="h-10 rounded-xl"
+                          />
+                        </div>
+
+                        {addError && <p className="text-xs font-medium text-rose-500">{addError}</p>}
+                      </div>
+
+                      <DialogFooter>
+                        <Button type="button" variant="outline" onClick={() => setIsAddOpen(false)}>
+                          Hủy
+                        </Button>
+                        <Button type="submit" className="bg-indigo-600 hover:bg-indigo-700">
+                          Thêm tiêu chí
+                        </Button>
+                      </DialogFooter>
+                    </form>
+                  </DialogContent>
+                </Dialog>
+              </div>
             </CardHeader>
             <CardContent className="space-y-4">
               {criteria.length === 0 ? (
-                <p className="py-8 text-center text-xs text-slate-500">Sự kiện này chưa có criteria nào.</p>
+                <p className="py-8 text-center text-xs text-slate-500">Sự kiện này chưa có criteria nào. Nhấn &quot;+ Thêm tiêu chí mới&quot; để khởi tạo.</p>
               ) : (
                 <div className="space-y-3">
                   {criteria.map((c) => {
@@ -155,6 +302,16 @@ Tổng trọng số: {totalWeight}% (nếu khác 100%, hệ thống sẽ tự đ
                             className="h-9 w-20 rounded-lg border-slate-200 text-center text-sm font-bold dark:border-slate-700 dark:bg-slate-800"
                           />
                           <span className="text-sm font-semibold text-slate-400">%</span>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon"
+                            title="Xóa tiêu chí này"
+                            className="h-8 w-8 text-slate-400 hover:bg-rose-50 hover:text-rose-600 dark:hover:bg-rose-950/20"
+                            onClick={() => handleRemoveCriteria(c.CriteriaID)}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
                         </div>
                       </div>
                     );

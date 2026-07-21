@@ -16,6 +16,8 @@ namespace BusinessLogicLayer.DTOs.Requests
         [Required]
         public Guid CriteriaId { get; set; }
 
+        public string? CriteriaName { get; set; }
+
         [Range(0.01, 100)]
         public decimal Weight { get; set; }
     }

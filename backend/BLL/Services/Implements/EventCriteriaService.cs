@@ -54,11 +54,38 @@ namespace BusinessLogicLayer.Services.Implements
                 _eventCriteriaRepository.Delete(removed);
             }
 
+            var templateRepo = _unitOfWork.GetRepository<SubmissionTemplates>();
+            var defaultTemplate = (await templateRepo.GetAllAsync()).FirstOrDefault();
+            if (defaultTemplate == null)
+            {
+                defaultTemplate = new SubmissionTemplates
+                {
+                    TemplateId = Guid.NewGuid(),
+                    TemplateName = "Default Event Submission Template",
+                    Description = "Auto-generated template for event criteria"
+                };
+                await templateRepo.AddAsync(defaultTemplate);
+            }
+
             foreach (var item in request.Criteria)
             {
                 var criteria = await _criteriaRepository.GetByIdAsync(item.CriteriaId);
                 if (criteria == null)
-                    throw new Exception($"Criteria with id {item.CriteriaId} not found");
+                {
+                    criteria = new Criteria
+                    {
+                        CriteriaId = item.CriteriaId,
+                        TemplateId = defaultTemplate.TemplateId,
+                        CriteriaName = string.IsNullOrWhiteSpace(item.CriteriaName) ? "Tiêu chí mới" : item.CriteriaName.Trim(),
+                        Weight = item.Weight
+                    };
+                    await _criteriaRepository.AddAsync(criteria);
+                }
+                else if (!string.IsNullOrWhiteSpace(item.CriteriaName))
+                {
+                    criteria.CriteriaName = item.CriteriaName.Trim();
+                    _criteriaRepository.Update(criteria);
+                }
 
                 var existing = existingEventCriteria.FirstOrDefault(x => x.CriteriaId == item.CriteriaId);
                 if (existing == null)

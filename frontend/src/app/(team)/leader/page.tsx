@@ -46,6 +46,7 @@ import {
   Submission,
   SubmissionAsset,
   Team,
+  Category,
 } from '@/lib/api';
 import CreateRecruitmentModal from '@/components/recruitment/CreateRecruitmentModal';
 import ApplicantListModal from '@/components/application/ApplicantListModal';
@@ -163,6 +164,11 @@ export default function LeaderPage() {
   const [uploadingAssetType, setUploadingAssetType] = useState<'VideoDemo' | 'SlideDocument' | null>(null);
 
   const [team, setTeam] = useState<Team | null>(null);
+  const [myLeaderTeams, setMyLeaderTeams] = useState<Team[]>([]);
+  const [selectedTeamId, setSelectedTeamId] = useState<string>('');
+  const [allEvents, setAllEvents] = useState<ApiEvent[]>([]);
+  const [allCategories, setAllCategories] = useState<Category[]>([]);
+
   const [members, setMembers] = useState<TeamMemberWithProfile[]>([]);
   const [submissions, setSubmissions] = useState<SubmissionWithTeam[]>([]);
   const [currentSubmission, setCurrentSubmission] = useState<SubmissionWithTeam | null>(null);
@@ -225,14 +231,44 @@ export default function LeaderPage() {
 
     try {
       const currentUserId = getStoredUserId();
-      const fetchedTeams = await getTeams();
-      const myTeam = currentUserId
-        ? fetchedTeams.find((item) => item.TeamLeaderId.toLowerCase() === currentUserId.toLowerCase())
-        : undefined;
+      const [fetchedTeams, eventsData, categoriesData] = await Promise.all([
+        getTeams(),
+        getEvents(),
+        getCategories(),
+      ]);
 
-      setTeam(myTeam || null);
-      if (myTeam) {
-        fetchTeamRecruitments(myTeam.TeamID);
+      setAllEvents(eventsData);
+      setAllCategories(categoriesData);
+
+      let userTeams = currentUserId
+        ? fetchedTeams.filter((item) => (item.TeamLeaderId || '').toLowerCase() === currentUserId.toLowerCase())
+        : [];
+
+      if (userTeams.length === 0 && currentUserId) {
+        const memberCheckPromises = fetchedTeams.map(async (t) => {
+          try {
+            const mList = await getTeamMembers(t.TeamID);
+            const isMember = mList.some(
+              (m) => (m.UserId || '').toLowerCase().trim() === currentUserId.toLowerCase().trim()
+            );
+            return isMember ? t : null;
+          } catch {
+            return null;
+          }
+        });
+        const memberTeams = (await Promise.all(memberCheckPromises)).filter((t): t is Team => t !== null);
+        userTeams = memberTeams;
+      }
+
+      setMyLeaderTeams(userTeams);
+
+      const activeTeam = userTeams.find((t) => t.TeamID === selectedTeamId) || userTeams[0] || null;
+      if (activeTeam) {
+        setSelectedTeamId(activeTeam.TeamID);
+      }
+      setTeam(activeTeam);
+      if (activeTeam) {
+        fetchTeamRecruitments(activeTeam.TeamID);
       }
       setMembers([]);
       setSubmissions([]);
@@ -242,20 +278,18 @@ export default function LeaderPage() {
       setSelectedRoundId('');
       applySubmissionToForm(null);
 
-      if (!myTeam) {
-        setErrorMessage('Không tìm thấy đội gắn với tài khoản trưởng nhóm hiện tại.');
+      if (!activeTeam) {
+        setErrorMessage('Không tìm thấy đội gắn với tài khoản hiện tại.');
         return;
       }
 
-      const [membersData, eventsData, categoriesData, teamSubmissions] = await Promise.all([
-        getTeamMembers(myTeam.TeamID),
-        getEvents(),
-        getCategories(),
-        getTeamSubmissions(myTeam.TeamID),
+      const [membersData, teamSubmissions] = await Promise.all([
+        getTeamMembers(activeTeam.TeamID),
+        getTeamSubmissions(activeTeam.TeamID),
       ]);
 
-      const category = categoriesData.find((item) => item.CategoryID === myTeam.CategoryID);
-      const teamEventId = myTeam.EventID || category?.EventID || '';
+      const category = categoriesData.find((item) => item.CategoryID === activeTeam.CategoryID);
+      const teamEventId = activeTeam.EventID || category?.EventID || '';
       const myEvent = eventsData.find((item) => item.EventID === teamEventId) || null;
       const roundsData = myEvent ? await getRounds(myEvent.EventID) : [];
       const defaultRoundId = chooseDefaultRound(roundsData, teamSubmissions);
@@ -272,11 +306,57 @@ export default function LeaderPage() {
     } finally {
       setLoading(false);
     }
-  }, [applySubmissionToForm, chooseDefaultRound, fetchTeamRecruitments]);
+  }, [applySubmissionToForm, chooseDefaultRound, fetchTeamRecruitments, selectedTeamId]);
 
   useEffect(() => {
-    void Promise.resolve().then(loadData);
+    let isSubscribed = true;
+    queueMicrotask(() => {
+      if (isSubscribed) void loadData();
+    });
+    return () => {
+      isSubscribed = false;
+    };
   }, [loadData]);
+
+  const handleTeamChange = useCallback(
+    async (teamId: string) => {
+      setSelectedTeamId(teamId);
+      const activeTeam = myLeaderTeams.find((t) => t.TeamID === teamId);
+      if (!activeTeam) return;
+
+      setTeam(activeTeam);
+      fetchTeamRecruitments(activeTeam.TeamID);
+      setLoading(true);
+      setSuccessMessage('');
+      setErrorMessage('');
+
+      try {
+        const [membersData, teamSubmissions] = await Promise.all([
+          getTeamMembers(activeTeam.TeamID),
+          getTeamSubmissions(activeTeam.TeamID),
+        ]);
+
+        const category = allCategories.find((item) => item.CategoryID === activeTeam.CategoryID);
+        const teamEventId = activeTeam.EventID || category?.EventID || '';
+        const myEvent = allEvents.find((item) => item.EventID === teamEventId) || null;
+        const roundsData = myEvent ? await getRounds(myEvent.EventID) : [];
+        const defaultRoundId = chooseDefaultRound(roundsData, teamSubmissions);
+
+        setMembers(membersData);
+        setEvent(myEvent);
+        setRounds(roundsData);
+        setSubmissions(teamSubmissions);
+        setSelectedRoundId(defaultRoundId);
+        applySubmissionToForm(teamSubmissions.find((submission) => submission.RoundID === defaultRoundId) || null);
+      } catch (error) {
+        console.error(error);
+        setErrorMessage('Không thể chuyển đổi dữ liệu đội từ API.');
+      } finally {
+        setLoading(false);
+      }
+    },
+    [allCategories, allEvents, applySubmissionToForm, chooseDefaultRound, fetchTeamRecruitments, myLeaderTeams]
+  );
 
   const handleRoundChange = useCallback(
     (roundId: string) => {
@@ -470,6 +550,11 @@ export default function LeaderPage() {
           <h2 className="text-2xl font-black tracking-tight text-slate-900 dark:text-white">Cổng Trưởng Nhóm</h2>
           <p className="mt-1 text-xs font-medium leading-relaxed text-slate-500 dark:text-slate-400">
             {team ? `Nhóm: ${team.TeamName}` : 'Chưa tìm thấy đội'} | Sự kiện: {event?.EventName || 'Chưa có'}
+            {myLeaderTeams.length > 1 && (
+              <span className="ml-2 font-semibold text-indigo-600 dark:text-indigo-400">
+                (Đang quản lý {myLeaderTeams.length} sự kiện/đội)
+              </span>
+            )}
           </p>
         </div>
         <Button
@@ -499,7 +584,7 @@ export default function LeaderPage() {
                       <FileCode2 className="h-5 w-5 text-indigo-600 dark:text-indigo-400" /> Cổng nộp bài dự án
                     </CardTitle>
                     <CardDescription className="text-xs font-medium text-slate-400">
-                      Chọn vòng thi, gửi mới hoặc cập nhật repository, demo và slide trước hạn nộp.
+                      Chọn đội/sự kiện, vòng thi, gửi mới hoặc cập nhật repository, demo và slide trước hạn nộp.
                     </CardDescription>
                   </div>
                   {currentSubmission && (
@@ -511,6 +596,40 @@ export default function LeaderPage() {
               </CardHeader>
               <CardContent className="p-6 pt-0">
                 <form onSubmit={handleSubmit} className="space-y-4">
+                  {/* Select Team / Event if user has teams */}
+                  <div className="space-y-1.5">
+                    <label
+                      htmlFor="leader-team-select"
+                      className="block text-xs font-semibold uppercase tracking-wider text-slate-500"
+                    >
+                      Đội & Sự kiện
+                    </label>
+                    <select
+                      id="leader-team-select"
+                      title="Chọn đội và sự kiện để nộp bài"
+                      aria-label="Chọn đội và sự kiện để nộp bài"
+                      className="h-11 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 text-sm font-semibold text-slate-800 outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
+                      value={selectedTeamId}
+                      onChange={(e) => void handleTeamChange(e.target.value)}
+                      disabled={myLeaderTeams.length === 0}
+                    >
+                      {myLeaderTeams.length === 0 ? (
+                        <option value="">Chưa có đội</option>
+                      ) : (
+                        myLeaderTeams.map((t) => {
+                          const cat = allCategories.find((c) => c.CategoryID === t.CategoryID);
+                          const evId = t.EventID || cat?.EventID;
+                          const ev = allEvents.find((e) => e.EventID === evId);
+                          return (
+                            <option key={t.TeamID} value={t.TeamID}>
+                              Đội: {t.TeamName} {ev ? `— Sự kiện: ${ev.EventName}` : ''}
+                            </option>
+                          );
+                        })
+                      )}
+                    </select>
+                  </div>
+
                   <div className="space-y-1.5">
                     <label
                       htmlFor="leader-round-select"

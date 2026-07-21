@@ -1854,12 +1854,16 @@ export async function getAdvancementRules(
 
 export async function setEventCriteria(
   eventId: string,
-  criteria: { criteriaId: string; weight: number }[],
+  criteria: { criteriaId: string; criteriaName?: string; weight: number }[],
 ): Promise<Criteria[]> {
   const response = await apiClient.post<BackendEventCriteria[]>(
     `/events/${eventId}/criteria`,
     {
-      criteria,
+      criteria: criteria.map((c) => ({
+        criteriaId: c.criteriaId,
+        criteriaName: c.criteriaName,
+        weight: c.weight,
+      })),
     },
   );
   return response.data.map(mapEventCriteria);
