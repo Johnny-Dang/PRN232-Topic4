@@ -114,7 +114,7 @@ export interface CloudinaryUploadSignature {
 
 export interface Criteria {
   CriteriaID: string;
-  TemplateID: string;
+  TemplateID?: string;
   CriteriaName: string;
   Weight: number;
 }

@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect, useMemo, useState } from 'react';
-import { CalendarPlus, ChevronDown, ChevronUp, CirclePlus, Globe2, ImageUp, Pencil, Star, Trash2 } from 'lucide-react';
+import { CalendarPlus, ChevronDown, ChevronUp, CirclePlus, Globe2, ImageUp, Pencil, Star, Trash2, Plus, X, Layers, Check, Calendar } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -21,6 +21,7 @@ import {
   getCategoriesApi,
   updateCategoryApi,
   updateEventApi,
+  getEventByIdApi,
   type UpdateEventRequest,
 } from '@/services/api/competition';
 import { getTeams, type Team } from '@/lib/api';
@@ -35,6 +36,21 @@ interface EventHomeManagerProps {
   onEventDeleted: (eventId: string) => void;
 }
 
+export interface FormCategoryItem {
+  id: string;
+  CategoryName: string;
+  Description: string;
+}
+
+export interface FormRoundItem {
+  id: string;
+  RoundName: string;
+  RoundOrder: number;
+  StartDate: string;
+  EndDate: string;
+  SubmissionDeadline: string;
+}
+
 const createInitialForm = () => {
   const now = new Date();
   const start = new Date(now);
@@ -42,6 +58,8 @@ const createInitialForm = () => {
 
   const end = new Date(start);
   end.setDate(end.getDate() + 30);
+
+  const round1End = new Date(start.getTime() + 14 * 24 * 60 * 60 * 1000);
 
   return {
     EventName: '',
@@ -55,6 +73,8 @@ const createInitialForm = () => {
     Format: 'Online' as const,
     Audience: 'Sinh viên',
     Prize: '',
+    initialCategories: [] as FormCategoryItem[],
+    initialRounds: [] as FormRoundItem[],
   };
 };
 
@@ -244,16 +264,143 @@ export default function EventHomeManager({
     }
   };
 
+  const toggleSelectCategory = (categoryName: string, description: string) => {
+    setForm((prev) => {
+      const exists = prev.initialCategories.some(
+        (c) => c.CategoryName.toLowerCase() === categoryName.toLowerCase()
+      );
+      if (exists) {
+        return {
+          ...prev,
+          initialCategories: prev.initialCategories.filter(
+            (c) => c.CategoryName.toLowerCase() !== categoryName.toLowerCase()
+          ),
+        };
+      } else {
+        return {
+          ...prev,
+          initialCategories: [
+            ...prev.initialCategories,
+            { id: `cat-${Date.now()}-${Math.random()}`, CategoryName: categoryName, Description: description },
+          ],
+        };
+      }
+    });
+  };
+
+  const removeCategoryFromForm = (id: string) => {
+    setForm((prev) => ({
+      ...prev,
+      initialCategories: prev.initialCategories.filter((c) => c.id !== id),
+    }));
+  };
+
+  const addRoundToForm = () => {
+    setForm((prev) => {
+      const newOrder = prev.initialRounds.length + 1;
+      const lastRound = prev.initialRounds[prev.initialRounds.length - 1];
+      const startDate = lastRound ? lastRound.EndDate : prev.StartDate;
+      const endDate = prev.EndDate;
+
+      return {
+        ...prev,
+        initialRounds: [
+          ...prev.initialRounds,
+          {
+            id: `round-${Date.now()}`,
+            RoundName: `Vòng ${newOrder}`,
+            RoundOrder: newOrder,
+            StartDate: startDate,
+            EndDate: endDate,
+            SubmissionDeadline: endDate,
+          },
+        ],
+      };
+    });
+  };
+
+  const updateFormRound = (id: string, field: keyof FormRoundItem, value: string | number) => {
+    setForm((prev) => ({
+      ...prev,
+      initialRounds: prev.initialRounds.map((r) => (r.id === id ? { ...r, [field]: value } : r)),
+    }));
+  };
+
+  const removeRoundFromForm = (id: string) => {
+    setForm((prev) => {
+      const filtered = prev.initialRounds.filter((r) => r.id !== id);
+      const reindexed = filtered.map((r, idx) => ({ ...r, RoundOrder: idx + 1 }));
+      return {
+        ...prev,
+        initialRounds: reindexed,
+      };
+    });
+  };
+
   const handleCreateEvent = async (event: React.FormEvent) => {
     event.preventDefault();
     setCreating(true);
     setMessage('');
     setError('');
 
+    if (!form.EventName.trim()) {
+      setError('Vui lòng nhập Tên Event.');
+      setCreating(false);
+      return;
+    }
+
+    if (!form.Season.trim()) {
+      setError('Vui lòng nhập Mùa giải.');
+      setCreating(false);
+      return;
+    }
+
+    if (!form.Description.trim()) {
+      setError('Vui lòng nhập Mô tả cho Event (Mô tả là trường bắt buộc).');
+      setCreating(false);
+      return;
+    }
+
+    if (!form.StartDate) {
+      setError('Vui lòng chọn Ngày bắt đầu Event.');
+      setCreating(false);
+      return;
+    }
+
+    if (!form.EndDate) {
+      setError('Vui lòng chọn Ngày kết thúc Event.');
+      setCreating(false);
+      return;
+    }
+
+    if (new Date(form.StartDate) >= new Date(form.EndDate)) {
+      setError('Ngày bắt đầu phải trước ngày kết thúc Event.');
+      setCreating(false);
+      return;
+    }
+
     if (!form.BannerImage) {
       setError('Vui lòng chọn ảnh banner cho Event.');
       setCreating(false);
       return;
+    }
+
+    for (const rnd of form.initialRounds) {
+      if (!rnd.RoundName.trim()) {
+        setError(`Vòng thi thứ ${rnd.RoundOrder} chưa có tên. Vui lòng nhập tên cho tất cả các vòng thi.`);
+        setCreating(false);
+        return;
+      }
+      if (rnd.StartDate >= rnd.EndDate) {
+        setError(`Vòng thi "${rnd.RoundName}": Ngày bắt đầu phải sớm hơn ngày kết thúc.`);
+        setCreating(false);
+        return;
+      }
+      if (rnd.SubmissionDeadline < rnd.StartDate || rnd.SubmissionDeadline > rnd.EndDate) {
+        setError(`Vòng thi "${rnd.RoundName}": Hạn nộp bài phải nằm trong khoảng thời gian diễn ra vòng thi.`);
+        setCreating(false);
+        return;
+      }
     }
 
     const requestData = {
@@ -280,9 +427,44 @@ export default function EventHomeManager({
 
     try {
       const createdEvent = await createEventApi(formData);
-      onEventCreated(createdEvent);
+
+      // Create initial Categories
+      for (const cat of form.initialCategories) {
+        if (cat.CategoryName.trim()) {
+          try {
+            const savedCat = await createCategoryApi({
+              EventId: createdEvent.EventId,
+              CategoryName: cat.CategoryName.trim(),
+              Description: cat.Description.trim(),
+            });
+            setCategories((current) => [...current, savedCat]);
+          } catch (catErr) {
+            console.error('Lỗi khi tạo category:', catErr);
+          }
+        }
+      }
+
+      // Create initial Rounds
+      for (const rnd of form.initialRounds) {
+        if (rnd.RoundName.trim()) {
+          try {
+            await addRoundForEventApi(createdEvent.EventId, {
+              RoundName: rnd.RoundName.trim(),
+              RoundOrder: rnd.RoundOrder,
+              StartDate: new Date(rnd.StartDate).toISOString(),
+              EndDate: new Date(rnd.EndDate).toISOString(),
+              SubmissionDeadline: new Date(rnd.SubmissionDeadline).toISOString(),
+            });
+          } catch (rndErr) {
+            console.error('Lỗi khi tạo vòng thi:', rndErr);
+          }
+        }
+      }
+
+      const fullCreatedEvent = await getEventByIdApi(createdEvent.EventId);
+      onEventCreated(fullCreatedEvent);
       setForm(createInitialForm());
-      setMessage('Đã tạo Event mới ở trạng thái Draft. Bạn có thể Publish để đưa lên Home page.');
+      setMessage('Đã tạo Event mới cùng các Hạng mục & Vòng thi thành công. Trạng thái: Draft.');
     } catch (createError: unknown) {
       console.error(createError);
       setError(getApiErrorMessage(createError, 'Không thể tạo Event mới.'));
@@ -619,7 +801,7 @@ export default function EventHomeManager({
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             <div className="space-y-1.5 md:col-span-2">
               <label htmlFor="event-name" className="text-xs font-semibold text-slate-500 uppercase tracking-wider block">
-                Tên Event
+                Tên Event <span className="text-rose-500">*</span>
               </label>
               <Input
                 id="event-name"
@@ -633,7 +815,7 @@ export default function EventHomeManager({
 
             <div className="space-y-1.5">
               <label htmlFor="event-season" className="text-xs font-semibold text-slate-500 uppercase tracking-wider block">
-                Mùa
+                Mùa <span className="text-rose-500">*</span>
               </label>
               <Input
                 id="event-season"
@@ -646,7 +828,7 @@ export default function EventHomeManager({
 
             <div className="space-y-1.5">
               <label htmlFor="event-year" className="text-xs font-semibold text-slate-500 uppercase tracking-wider block">
-                Năm
+                Năm <span className="text-rose-500">*</span>
               </label>
               <Input
                 id="event-year"
@@ -662,7 +844,7 @@ export default function EventHomeManager({
 
             <div className="space-y-1.5">
               <label htmlFor="event-start" className="text-xs font-semibold text-slate-500 uppercase tracking-wider block">
-                Ngày bắt đầu
+                Ngày bắt đầu <span className="text-rose-500">*</span>
               </label>
               <Input
                 id="event-start"
@@ -676,7 +858,7 @@ export default function EventHomeManager({
 
             <div className="space-y-1.5">
               <label htmlFor="event-end" className="text-xs font-semibold text-slate-500 uppercase tracking-wider block">
-                Ngày kết thúc
+                Ngày kết thúc <span className="text-rose-500">*</span>
               </label>
               <Input
                 id="event-end"
@@ -745,7 +927,7 @@ export default function EventHomeManager({
 
             <div className="space-y-1.5 md:col-span-2">
               <label htmlFor="event-banner-image" className="text-xs font-semibold text-slate-500 uppercase tracking-wider block">
-                Banner ảnh
+                Banner ảnh <span className="text-rose-500">*</span>
               </label>
               <div className="flex flex-col gap-2 sm:flex-row items-center">
                 <label htmlFor="event-banner-image" className="inline-flex h-10 shrink-0 cursor-pointer items-center justify-center gap-2 rounded-xl px-4 text-xs font-bold text-white bg-indigo-600 hover:bg-indigo-700">
@@ -769,9 +951,158 @@ export default function EventHomeManager({
               <p className="text-[10px] text-slate-400">Chọn ảnh JPG, PNG hoặc WebP (tối đa 5 MB); ảnh sẽ được gửi lên backend trong multipart/form-data.</p>
             </div>
 
+            {/* Category (Hạng mục thi đấu) Section */}
+            <div className="space-y-3 md:col-span-2 pt-2 border-t border-slate-100 dark:border-slate-800">
+              <div className="flex items-center justify-between">
+                <label className="text-xs font-bold text-slate-700 dark:text-slate-200 uppercase tracking-wider flex items-center gap-1.5">
+                  <Layers className="w-4 h-4 text-indigo-500" />
+                  Hạng mục thi đấu (Categories)
+                </label>
+                <span className="text-[11px] text-slate-500 font-medium">
+                  Đã chọn: <strong className="text-indigo-600 dark:text-indigo-400">{form.initialCategories.length}</strong> hạng mục
+                </span>
+              </div>
+
+              <p className="text-[11px] text-slate-500">
+                Nhấp vào các hạng mục dưới đây để chọn hoặc bỏ chọn hạng mục thi đấu cho sự kiện này:
+              </p>
+
+              {/* Selectable Categories Grid List */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2">
+                {uniqueCategories.map((cat) => {
+                  const selected = form.initialCategories.some(
+                    (c) => c.CategoryName.toLowerCase() === cat.name.toLowerCase()
+                  );
+                  return (
+                    <button
+                      type="button"
+                      key={cat.name}
+                      onClick={() => toggleSelectCategory(cat.name, cat.description)}
+                      className={`flex items-start gap-2.5 p-2.5 rounded-xl border text-left transition-all ${
+                        selected
+                          ? 'bg-indigo-50/90 border-indigo-300 text-indigo-900 shadow-sm dark:bg-indigo-950/70 dark:border-indigo-700 dark:text-indigo-200'
+                          : 'bg-slate-50/60 border-slate-200 text-slate-700 hover:bg-slate-100 hover:border-slate-300 dark:bg-slate-800/40 dark:border-slate-700 dark:text-slate-300'
+                      }`}
+                    >
+                      <div className={`w-4 h-4 rounded-md shrink-0 flex items-center justify-center mt-0.5 transition-colors ${
+                        selected
+                          ? 'bg-indigo-600 text-white dark:bg-indigo-500'
+                          : 'border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800'
+                      }`}>
+                        {selected && <Check className="w-3 h-3 stroke-[3]" />}
+                      </div>
+                      <div className="space-y-0.5 min-w-0">
+                        <div className="text-xs font-bold truncate">{cat.name}</div>
+                        {cat.description && (
+                          <div className="text-[10px] text-slate-500 dark:text-slate-400 line-clamp-1">
+                            {cat.description}
+                          </div>
+                        )}
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Rounds (Vòng thi) Section */}
+            <div className="space-y-3 md:col-span-2 pt-3 border-t border-slate-100 dark:border-slate-800">
+              <div className="flex items-center justify-between">
+                <label className="text-xs font-bold text-slate-700 dark:text-slate-200 uppercase tracking-wider flex items-center gap-1.5">
+                  <Calendar className="w-4 h-4 text-emerald-500" />
+                  Danh sách Vòng thi (Rounds)
+                </label>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={addRoundToForm}
+                  className="h-8 px-3 text-xs font-semibold rounded-xl text-emerald-600 border-emerald-200 hover:bg-emerald-50 dark:border-emerald-800 dark:text-emerald-400"
+                >
+                  <Plus className="w-3.5 h-3.5 mr-1" /> Thêm Vòng thi
+                </Button>
+              </div>
+
+              {form.initialRounds.length === 0 ? (
+                <div className="p-3 text-center text-xs text-slate-400 bg-slate-50 dark:bg-slate-800/40 rounded-xl border border-dashed border-slate-200 dark:border-slate-700">
+                  Chưa có vòng thi nào. Hãy nhấn "Thêm Vòng thi" để bắt đầu thiết lập.
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {form.initialRounds.map((round) => (
+                    <div
+                      key={round.id}
+                      className="p-3.5 bg-slate-50 dark:bg-slate-800/60 rounded-xl border border-slate-200 dark:border-slate-700 space-y-3"
+                    >
+                      <div className="flex items-center justify-between gap-2">
+                        <div className="flex items-center gap-2">
+                          <span className="w-6 h-6 rounded-full bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300 font-bold text-xs flex items-center justify-center">
+                            {round.RoundOrder}
+                          </span>
+                          <span className="text-xs font-bold text-slate-700 dark:text-slate-200">
+                            Vòng {round.RoundOrder}
+                          </span>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => removeRoundFromForm(round.id)}
+                          className="text-slate-400 hover:text-rose-500 p-1 transition-colors"
+                          title="Xóa vòng thi này"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
+
+                      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-2.5">
+                        <div className="space-y-1 md:col-span-1">
+                          <label className="text-[10px] font-semibold text-slate-500 uppercase">Tên Vòng thi <span className="text-rose-500">*</span></label>
+                          <Input
+                            value={round.RoundName}
+                            onChange={(e) => updateFormRound(round.id, 'RoundName', e.target.value)}
+                            placeholder="Vòng Sơ loại..."
+                            className="rounded-lg h-8 bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700 text-xs font-semibold"
+                            required
+                          />
+                        </div>
+                        <div className="space-y-1">
+                          <label className="text-[10px] font-semibold text-slate-500 uppercase">Bắt đầu <span className="text-rose-500">*</span></label>
+                          <Input
+                            type="date"
+                            value={round.StartDate}
+                            onChange={(e) => updateFormRound(round.id, 'StartDate', e.target.value)}
+                            className="rounded-lg h-8 bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700 text-xs font-semibold"
+                            required
+                          />
+                        </div>
+                        <div className="space-y-1">
+                          <label className="text-[10px] font-semibold text-slate-500 uppercase">Kết thúc <span className="text-rose-500">*</span></label>
+                          <Input
+                            type="date"
+                            value={round.EndDate}
+                            onChange={(e) => updateFormRound(round.id, 'EndDate', e.target.value)}
+                            className="rounded-lg h-8 bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700 text-xs font-semibold"
+                            required
+                          />
+                        </div>
+                        <div className="space-y-1">
+                          <label className="text-[10px] font-semibold text-slate-500 uppercase">Hạn nộp bài <span className="text-rose-500">*</span></label>
+                          <Input
+                            type="date"
+                            value={round.SubmissionDeadline}
+                            onChange={(e) => updateFormRound(round.id, 'SubmissionDeadline', e.target.value)}
+                            className="rounded-lg h-8 bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700 text-xs font-semibold"
+                            required
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
             <div className="space-y-1.5 md:col-span-2">
               <label htmlFor="event-description" className="text-xs font-semibold text-slate-500 uppercase tracking-wider block">
-                Mô tả
+                Mô tả <span className="text-rose-500">*</span>
               </label>
               <textarea
                 id="event-description"
@@ -780,6 +1111,7 @@ export default function EventHomeManager({
                 onChange={(event) => updateForm('Description', event.target.value)}
                 placeholder="Mô tả ngắn về nội dung và mục tiêu của Event."
                 className="w-full p-3 rounded-xl border border-slate-200 bg-slate-50 text-xs font-medium focus:outline-none dark:bg-slate-800 dark:border-slate-700"
+                required
               />
             </div>
           </div>
