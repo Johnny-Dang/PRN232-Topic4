@@ -248,6 +248,8 @@ namespace BusinessLogicLayer.Services.Implements
             if (team.EventId != null && team.EventId != round.EventId)
                 throw new Exception("Round does not belong to the team's event.");
 
+            if (DateTime.UtcNow < round.StartDate)
+                throw new Exception($"Submission is not yet open. Uploads will be accepted starting from {round.StartDate:yyyy-MM-dd HH:mm:ss} UTC.");
             if (DateTime.UtcNow > round.SubmissionDeadline)
                 throw new Exception("Submission deadline has passed. You cannot upload files for this round.");
 
