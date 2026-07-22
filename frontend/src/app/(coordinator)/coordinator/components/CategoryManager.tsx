@@ -19,13 +19,13 @@ interface CategoryManagerProps {
 const CATEGORIES_PER_PAGE = 6;
 
 const DEFAULT_CATEGORIES = [
-  { name: 'Software Development', description: 'Developing software applications' },
-  { name: 'Artificial Intelligence', description: 'AI and Machine Learning projects' },
-  { name: 'Internet of Things', description: 'IoT and Hardware projects' },
-  { name: 'Game Development', description: 'Game development and design projects' },
-  { name: 'Cyber Security', description: 'Security and vulnerability assessments' },
-  { name: 'Cloud Computing', description: 'Cloud infrastructure and solutions' },
-  { name: 'Blockchain', description: 'Decentralized and Web3 projects' }
+  { name: 'Phát triển Phần mềm', description: 'Các dự án ứng dụng và hệ thống phần mềm' },
+  { name: 'Trí tuệ nhân tạo (AI)', description: 'Các dự án AI, Machine Learning và Deep Learning' },
+  { name: 'Internet of Things (IoT)', description: 'Các dự án kết nối thiết bị thông minh và phần cứng' },
+  { name: 'Phát triển Game', description: 'Các dự án thiết kế và lập trình trò chơi' },
+  { name: 'An toàn thông tin', description: 'Các dự án bảo mật, kiểm thử và an ninh mạng' },
+  { name: 'Điện toán đám mây', description: 'Các giải pháp hạ tầng và ứng dụng Cloud' },
+  { name: 'Công nghệ Blockchain', description: 'Các dự án phân tán, hợp đồng thông minh và Web3' }
 ];
 
 const emptyForm = (eventId = '') => ({

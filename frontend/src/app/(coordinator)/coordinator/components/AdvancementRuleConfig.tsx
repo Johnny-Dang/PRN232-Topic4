@@ -221,10 +221,10 @@ export default function AdvancementRuleConfig() {
                       </div>
                       <div>
                         <p className="text-sm font-semibold text-slate-800 dark:text-slate-200">
-                          {round?.RoundName || 'Unknown Round'} {event ? `(${event.EventName})` : ''}
+                          {round?.RoundName || 'Vòng thi không xác định'} {event ? `(${event.EventName})` : ''}
                         </p>
                         <p className="text-xs text-slate-400">
-                          {category?.CategoryName || 'Unknown Category'}
+                          {category?.CategoryName || 'Hạng mục không xác định'}
                         </p>
                       </div>
                     </div>

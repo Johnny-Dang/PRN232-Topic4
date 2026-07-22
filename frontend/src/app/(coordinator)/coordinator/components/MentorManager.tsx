@@ -50,12 +50,12 @@ export default function MentorManager({ mentors, categories, assignments }: Ment
                       <p className="mt-1 truncate text-xs text-slate-500">{mentor.Email}</p>
                       <p className="mt-1 text-[10px] font-semibold uppercase tracking-wide text-slate-400">Mã: {mentor.ShortId || 'Chưa cập nhật'} · {mentor.AccountStatus}</p>
                     </div>
-                    <Badge className="border border-indigo-100 bg-indigo-50 text-[9px] font-extrabold text-indigo-700">{mentorAssignments.length} Category</Badge>
+                    <Badge className="border border-indigo-100 bg-indigo-50 text-[9px] font-extrabold text-indigo-700">{mentorAssignments.length} Hạng mục</Badge>
                   </div>
                   <div className="mt-4 space-y-2 border-t border-slate-200 pt-3 dark:border-slate-800">
-                    <div className="text-[10px] font-black uppercase tracking-widest text-slate-400">Category phụ trách</div>
+                    <div className="text-[10px] font-black uppercase tracking-widest text-slate-400">Hạng mục phụ trách</div>
                     {mentorAssignments.length === 0 ? (
-                      <p className="text-xs text-slate-500">Chưa có Category được phân công.</p>
+                      <p className="text-xs text-slate-500">Chưa có Hạng mục nào được phân công.</p>
                     ) : mentorAssignments.map((assignment) => {
                       const category = categories.find((item) => item.CategoryId === assignment.CategoryId);
                       return (

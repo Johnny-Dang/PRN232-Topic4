@@ -95,13 +95,13 @@ const createRoundFormFromRound = (round: CoordinatorEvent['Rounds'][number]) => 
 });
 
 const DEFAULT_CATEGORIES = [
-  { name: 'Software Development', description: 'Developing software applications' },
-  { name: 'Artificial Intelligence', description: 'AI and Machine Learning projects' },
-  { name: 'Internet of Things', description: 'IoT and Hardware projects' },
-  { name: 'Game Development', description: 'Game development and design projects' },
-  { name: 'Cyber Security', description: 'Security and vulnerability assessments' },
-  { name: 'Cloud Computing', description: 'Cloud infrastructure and solutions' },
-  { name: 'Blockchain', description: 'Decentralized and Web3 projects' }
+  { name: 'Phát triển Phần mềm', description: 'Các dự án ứng dụng và hệ thống phần mềm' },
+  { name: 'Trí tuệ nhân tạo (AI)', description: 'Các dự án AI, Machine Learning và Deep Learning' },
+  { name: 'Internet of Things (IoT)', description: 'Các dự án kết nối thiết bị thông minh và phần cứng' },
+  { name: 'Phát triển Game', description: 'Các dự án thiết kế và lập trình trò chơi' },
+  { name: 'An toàn thông tin', description: 'Các dự án bảo mật, kiểm thử và an ninh mạng' },
+  { name: 'Điện toán đám mây', description: 'Các giải pháp hạ tầng và ứng dụng Cloud' },
+  { name: 'Công nghệ Blockchain', description: 'Các dự án phân tán, hợp đồng thông minh và Web3' }
 ];
 
 const createInitialCategoryForm = (eventId: string) => ({
@@ -998,17 +998,15 @@ export default function EventHomeManager({
                       type="button"
                       key={cat.name}
                       onClick={() => toggleSelectCategory(cat.name, cat.description)}
-                      className={`flex items-start gap-2.5 p-2.5 rounded-xl border text-left transition-all ${
-                        selected
+                      className={`flex items-start gap-2.5 p-2.5 rounded-xl border text-left transition-all ${selected
                           ? 'bg-indigo-50/90 border-indigo-300 text-indigo-900 shadow-sm dark:bg-indigo-950/70 dark:border-indigo-700 dark:text-indigo-200'
                           : 'bg-slate-50/60 border-slate-200 text-slate-700 hover:bg-slate-100 hover:border-slate-300 dark:bg-slate-800/40 dark:border-slate-700 dark:text-slate-300'
-                      }`}
+                        }`}
                     >
-                      <div className={`w-4 h-4 rounded-full shrink-0 flex items-center justify-center mt-0.5 transition-colors ${
-                        selected
+                      <div className={`w-4 h-4 rounded-full shrink-0 flex items-center justify-center mt-0.5 transition-colors ${selected
                           ? 'bg-indigo-600 text-white dark:bg-indigo-500'
                           : 'border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800'
-                      }`}>
+                        }`}>
                         {selected && <Check className="w-3 h-3 stroke-[3]" />}
                       </div>
                       <div className="space-y-0.5 min-w-0">
@@ -1188,11 +1186,10 @@ export default function EventHomeManager({
                   </div>
                   <div className="flex items-center gap-1 shrink-0">
                     {event.IsFeatured && <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />}
-                    <Badge className={`text-[9px] font-extrabold border ${
-                      event.IsPublished
+                    <Badge className={`text-[9px] font-extrabold border ${event.IsPublished
                         ? 'bg-emerald-50 text-emerald-700 border-emerald-100'
                         : 'bg-slate-100 text-slate-500 border-slate-200'
-                    }`}>
+                      }`}>
                       {event.IsPublished ? 'Published' : 'Draft'}
                     </Badge>
                   </div>
@@ -1249,11 +1246,10 @@ export default function EventHomeManager({
                       ) : (
                         <Button
                           type="button"
-                          className={`h-8 rounded-lg text-[10px] font-bold transition-all ${
-                            canPublishEvent
+                          className={`h-8 rounded-lg text-[10px] font-bold transition-all ${canPublishEvent
                               ? 'bg-indigo-600 hover:bg-indigo-700 text-white'
                               : 'bg-slate-200 text-slate-400 dark:bg-slate-800 dark:text-slate-500 cursor-not-allowed opacity-75'
-                          }`}
+                            }`}
                           disabled={eventActionId === event.EventId || !canPublishEvent}
                           title={
                             !canPublishEvent
@@ -1449,229 +1445,229 @@ export default function EventHomeManager({
                         </div>
                       )
                     )}
-                {(expandedSection === 'details' || expandedSection === 'categories') && (
-                <div className="space-y-2 rounded-xl bg-white/80 p-3 shadow-sm dark:bg-slate-900/70">
-                  <div className="flex items-center justify-between gap-2">
-                    <div className="text-[10px] font-bold text-slate-500">Category thi đấu</div>
-                    {expandedSection === 'categories' && categories.filter((category) => category.EventId === event.EventId).length === 0 && (
-                      hasRegisteredTeams(event.EventId) ? (
-                        <span className="text-[9px] font-bold text-amber-600 italic">
-                          Không thể thêm khi đã có đội đăng ký
-                        </span>
-                      ) : (
-                        <Button type="button" variant="outline" className="h-7 rounded-md px-2 text-[10px]" onClick={() => toggleCategoryForm(event)}>
-                          <CirclePlus className="mr-1 h-3 w-3" />Thêm Category
-                        </Button>
-                      )
-                    )}
-                    {hasRegisteredTeams(event.EventId) && categories.filter((category) => category.EventId === event.EventId).length > 0 && (
-                      <span className="text-[9px] font-bold text-amber-600 italic">
-                        Đã có đội đăng ký - không thể sửa Category
-                      </span>
-                    )}
-                  </div>
-                  {categories.filter((category) => category.EventId === event.EventId).length === 0 ? (
-                    <p className="text-[10px] text-slate-400">Chưa có Category. Thêm ít nhất một Category để đội có thể đăng ký Event.</p>
-                  ) : (
-                    <div className="space-y-2">
-                      {categories.filter((category) => category.EventId === event.EventId).map((category) => (
-                        <div key={category.CategoryId} className="flex items-start justify-between gap-3 rounded-lg bg-slate-50 p-2.5 dark:bg-slate-950/50">
-                          <div className="min-w-0">
-                            <div className="text-[10px] font-bold text-slate-700 dark:text-slate-200">{category.CategoryName}</div>
-                            {category.Description && <p className="mt-1 text-[10px] text-slate-500 dark:text-slate-400">{category.Description}</p>}
-                          </div>
-                          {!hasRegisteredTeams(event.EventId) && (
-                            <div className="flex shrink-0 gap-1">
-                              <Button type="button" variant="outline" className="h-7 rounded-md px-2 text-[10px]" disabled={savingCategory} onClick={() => handleEditCategory(category)}>
-                                <Pencil className="mr-1 h-3 w-3" /> Sửa
+                    {(expandedSection === 'details' || expandedSection === 'categories') && (
+                      <div className="space-y-2 rounded-xl bg-white/80 p-3 shadow-sm dark:bg-slate-900/70">
+                        <div className="flex items-center justify-between gap-2">
+                          <div className="text-[10px] font-bold text-slate-500">Category thi đấu</div>
+                          {expandedSection === 'categories' && categories.filter((category) => category.EventId === event.EventId).length === 0 && (
+                            hasRegisteredTeams(event.EventId) ? (
+                              <span className="text-[9px] font-bold text-amber-600 italic">
+                                Không thể thêm khi đã có đội đăng ký
+                              </span>
+                            ) : (
+                              <Button type="button" variant="outline" className="h-7 rounded-md px-2 text-[10px]" onClick={() => toggleCategoryForm(event)}>
+                                <CirclePlus className="mr-1 h-3 w-3" />Thêm Category
                               </Button>
-                              <Button type="button" variant="outline" className="h-7 rounded-md border-rose-200 px-2 text-[10px] text-rose-600 hover:bg-rose-50 dark:border-rose-900/50 dark:text-rose-400" disabled={savingCategory} onClick={() => void handleDeleteCategory(category)}>
-                                <Trash2 className="mr-1 h-3 w-3" /> Xóa
-                              </Button>
-                            </div>
+                            )
+                          )}
+                          {hasRegisteredTeams(event.EventId) && categories.filter((category) => category.EventId === event.EventId).length > 0 && (
+                            <span className="text-[9px] font-bold text-amber-600 italic">
+                              Đã có đội đăng ký - không thể sửa Category
+                            </span>
                           )}
                         </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-                )}
+                        {categories.filter((category) => category.EventId === event.EventId).length === 0 ? (
+                          <p className="text-[10px] text-slate-400">Chưa có Category. Thêm ít nhất một Category để đội có thể đăng ký Event.</p>
+                        ) : (
+                          <div className="space-y-2">
+                            {categories.filter((category) => category.EventId === event.EventId).map((category) => (
+                              <div key={category.CategoryId} className="flex items-start justify-between gap-3 rounded-lg bg-slate-50 p-2.5 dark:bg-slate-950/50">
+                                <div className="min-w-0">
+                                  <div className="text-[10px] font-bold text-slate-700 dark:text-slate-200">{category.CategoryName}</div>
+                                  {category.Description && <p className="mt-1 text-[10px] text-slate-500 dark:text-slate-400">{category.Description}</p>}
+                                </div>
+                                {!hasRegisteredTeams(event.EventId) && (
+                                  <div className="flex shrink-0 gap-1">
+                                    <Button type="button" variant="outline" className="h-7 rounded-md px-2 text-[10px]" disabled={savingCategory} onClick={() => handleEditCategory(category)}>
+                                      <Pencil className="mr-1 h-3 w-3" /> Sửa
+                                    </Button>
+                                    <Button type="button" variant="outline" className="h-7 rounded-md border-rose-200 px-2 text-[10px] text-rose-600 hover:bg-rose-50 dark:border-rose-900/50 dark:text-rose-400" disabled={savingCategory} onClick={() => void handleDeleteCategory(category)}>
+                                      <Trash2 className="mr-1 h-3 w-3" /> Xóa
+                                    </Button>
+                                  </div>
+                                )}
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    )}
 
-                {expandedSection === 'categories' && categoryEventId === event.EventId && categoryForm && (
-                  <form onSubmit={(submitEvent) => void handleSaveCategory(submitEvent)} className="space-y-3 rounded-xl border border-indigo-100 bg-indigo-50/50 p-3 dark:border-indigo-900/50 dark:bg-indigo-950/20">
-                    <div className="text-[10px] font-black uppercase tracking-widest text-indigo-600 dark:text-indigo-400">
-                      {editingCategoryId ? 'Chỉnh sửa Category của' : 'Thêm Category cho'} {event.EventName}
-                    </div>
-                    {categoryError && <div role="alert" className="rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-xs font-medium text-rose-700 dark:border-rose-900/60 dark:bg-rose-950/30 dark:text-rose-300">{categoryError}</div>}
-                    {!editingCategoryId ? (
-                      <div className="space-y-1.5">
-                        <label htmlFor={`category-select-${event.EventId}`} className="block text-[10px] font-bold uppercase tracking-wide text-slate-500">Tên Category (Hệ thống)</label>
-                        <select
-                          id={`category-select-${event.EventId}`}
-                          required
-                          value={categoryForm.CategoryName}
-                          className="w-full h-9 px-3 rounded-lg border border-slate-200 bg-white text-xs font-semibold focus:outline-none dark:bg-slate-900 dark:border-slate-700 dark:text-slate-200"
-                          onChange={(e) => {
-                            const val = e.target.value;
-                            const found = uniqueCategories.find((uc) => uc.name === val);
-                            if (found) {
-                              setCategoryForm((current) => current ? { ...current, CategoryName: found.name, Description: found.description } : current);
-                            } else {
-                              setCategoryForm((current) => current ? { ...current, CategoryName: '', Description: '' } : current);
-                            }
-                          }}
-                        >
-                          <option value="">-- Chọn Category từ hệ thống --</option>
-                          {uniqueCategories.map((uc) => (
-                            <option key={uc.name} value={uc.name}>{uc.name}</option>
+                    {expandedSection === 'categories' && categoryEventId === event.EventId && categoryForm && (
+                      <form onSubmit={(submitEvent) => void handleSaveCategory(submitEvent)} className="space-y-3 rounded-xl border border-indigo-100 bg-indigo-50/50 p-3 dark:border-indigo-900/50 dark:bg-indigo-950/20">
+                        <div className="text-[10px] font-black uppercase tracking-widest text-indigo-600 dark:text-indigo-400">
+                          {editingCategoryId ? 'Chỉnh sửa Category của' : 'Thêm Category cho'} {event.EventName}
+                        </div>
+                        {categoryError && <div role="alert" className="rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-xs font-medium text-rose-700 dark:border-rose-900/60 dark:bg-rose-950/30 dark:text-rose-300">{categoryError}</div>}
+                        {!editingCategoryId ? (
+                          <div className="space-y-1.5">
+                            <label htmlFor={`category-select-${event.EventId}`} className="block text-[10px] font-bold uppercase tracking-wide text-slate-500">Tên Category (Hệ thống)</label>
+                            <select
+                              id={`category-select-${event.EventId}`}
+                              required
+                              value={categoryForm.CategoryName}
+                              className="w-full h-9 px-3 rounded-lg border border-slate-200 bg-white text-xs font-semibold focus:outline-none dark:bg-slate-900 dark:border-slate-700 dark:text-slate-200"
+                              onChange={(e) => {
+                                const val = e.target.value;
+                                const found = uniqueCategories.find((uc) => uc.name === val);
+                                if (found) {
+                                  setCategoryForm((current) => current ? { ...current, CategoryName: found.name, Description: found.description } : current);
+                                } else {
+                                  setCategoryForm((current) => current ? { ...current, CategoryName: '', Description: '' } : current);
+                                }
+                              }}
+                            >
+                              <option value="">-- Chọn Category từ hệ thống --</option>
+                              {uniqueCategories.map((uc) => (
+                                <option key={uc.name} value={uc.name}>{uc.name}</option>
+                              ))}
+                            </select>
+                          </div>
+                        ) : (
+                          <div className="space-y-1.5">
+                            <span className="block text-[10px] font-bold uppercase tracking-wide text-slate-500">Tên Category</span>
+                            <div className="h-9 px-3 flex items-center rounded-lg border border-slate-200 bg-slate-100 text-xs font-semibold text-slate-700 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-350">
+                              {categoryForm.CategoryName}
+                            </div>
+                          </div>
+                        )}
+                        <div className="space-y-1.5">
+                          <label htmlFor={`category-description-${event.EventId}`} className="block text-[10px] font-bold uppercase tracking-wide text-slate-500">Mô tả</label>
+                          <textarea id={`category-description-${event.EventId}`} rows={2} maxLength={2000} value={categoryForm.Description} onChange={(inputEvent) => setCategoryForm((current) => current ? { ...current, Description: inputEvent.target.value } : current)} placeholder="Mô tả ngắn về hạng mục thi đấu." className="w-full rounded-lg border border-slate-200 bg-white p-2 text-xs font-medium focus:outline-none dark:border-slate-700 dark:bg-slate-900" />
+                        </div>
+                        <div className="flex justify-end gap-2">
+                          <Button type="button" variant="outline" className="h-8 rounded-lg text-[10px]" onClick={() => toggleCategoryForm(event)}>Hủy</Button>
+                          <Button type="submit" disabled={savingCategory || hasRegisteredTeams(event.EventId)} className="h-8 rounded-lg bg-indigo-600 text-[10px] hover:bg-indigo-700">{savingCategory ? 'Đang lưu...' : editingCategoryId ? 'Lưu thay đổi' : 'Tạo Category'}</Button>
+                        </div>
+                      </form>
+                    )}
+
+                    {(expandedSection === 'details' || expandedSection === 'rounds') && event.Rounds.length > 0 && (
+                      <div className="space-y-2">
+                        <div className="flex items-center justify-between gap-2">
+                          <div className="text-[10px] font-bold text-slate-500">Các vòng thi đã tạo</div>
+                          {!hasRegisteredTeams(event.EventId) && expandedSection === 'rounds' && (
+                            <Button type="button" variant="outline" className="h-7 rounded-md px-2 text-[10px]" onClick={() => toggleRoundForm(event)}><CirclePlus className="mr-1 h-3 w-3" />Thêm vòng thi</Button>
+                          )}
+                          {hasRegisteredTeams(event.EventId) && (
+                            <span className="text-[9px] font-bold text-amber-600 italic">
+                              Đã có đội đăng ký - không thể sửa/xóa Round
+                            </span>
+                          )}
+                        </div>
+                        {[...event.Rounds].sort((a, b) => a.RoundOrder - b.RoundOrder).map((round) => (
+                          <div key={round.RoundId} className="rounded-xl bg-white p-3.5 text-[10px] shadow-sm dark:bg-slate-900">
+                            <div className="flex items-start justify-between gap-3">
+                              <div className="min-w-0">
+                                <div className="font-bold text-slate-800 dark:text-slate-100">Vòng {round.RoundOrder}: {round.RoundName}</div>
+                                <div className="mt-1 text-slate-500 dark:text-slate-400">Diễn ra: {formatDate(round.StartDate)} – {formatDate(round.EndDate)}</div>
+                                <div className="mt-1 text-slate-500 dark:text-slate-400">Hạn nộp bài: <strong className="text-slate-700 dark:text-slate-200">{formatDate(round.SubmissionDeadline)}</strong></div>
+                              </div>
+                              {!hasRegisteredTeams(event.EventId) && (
+                                <div className="flex shrink-0 gap-1">
+                                  <Button type="button" variant="outline" className="h-7 rounded-md px-2 text-[10px]" disabled={creatingRound} onClick={() => handleEditRound(event, round)}>
+                                    <Pencil className="mr-1 h-3 w-3" /> Sửa
+                                  </Button>
+                                  <Button type="button" variant="outline" className="h-7 rounded-md border-rose-200 px-2 text-[10px] text-rose-600 hover:bg-rose-50 dark:border-rose-900/50 dark:text-rose-400" disabled={creatingRound} onClick={() => void handleDeleteRound(event, round.RoundId)}>
+                                    <Trash2 className="mr-1 h-3 w-3" /> Xóa
+                                  </Button>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+
+                    {expandedSection === 'rounds' && event.Rounds.length === 0 && (
+                      <div className="space-y-2 rounded-xl bg-white p-3 dark:bg-slate-900">
+                        <div className="flex items-center justify-between gap-2">
+                          <p className="text-[10px] text-slate-400">Event chưa có vòng thi.</p>
+                          {!hasRegisteredTeams(event.EventId) ? (
+                            <Button type="button" variant="outline" className="h-7 rounded-md px-2 text-[10px]" onClick={() => toggleRoundForm(event)}><CirclePlus className="mr-1 h-3 w-3" />Thêm vòng thi</Button>
+                          ) : (
+                            <span className="text-[9px] font-bold text-amber-600 italic">
+                              Không thể thêm khi đã có đội đăng ký
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    )}
+
+                    {expandedSection === 'details' && event.Rounds.length > 0 && false && (
+                      <div className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-[10px] dark:border-slate-700 dark:bg-slate-900">
+                        <div className="mb-1 font-bold text-slate-500">Vòng thi đã tạo</div>
+                        <div className="space-y-1">
+                          {[...event.Rounds].sort((a, b) => a.RoundOrder - b.RoundOrder).map((round) => (
+                            <div key={round.RoundId} className="flex justify-between gap-2 text-slate-600 dark:text-slate-300">
+                              <span>Vòng {round.RoundOrder}: {round.RoundName}</span>
+                              <span className="shrink-0">Hạn nộp: {formatDate(round.SubmissionDeadline)}</span>
+                            </div>
                           ))}
-                        </select>
-                      </div>
-                    ) : (
-                      <div className="space-y-1.5">
-                        <span className="block text-[10px] font-bold uppercase tracking-wide text-slate-500">Tên Category</span>
-                        <div className="h-9 px-3 flex items-center rounded-lg border border-slate-200 bg-slate-100 text-xs font-semibold text-slate-700 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-350">
-                          {categoryForm.CategoryName}
                         </div>
                       </div>
                     )}
-                    <div className="space-y-1.5">
-                      <label htmlFor={`category-description-${event.EventId}`} className="block text-[10px] font-bold uppercase tracking-wide text-slate-500">Mô tả</label>
-                      <textarea id={`category-description-${event.EventId}`} rows={2} maxLength={2000} value={categoryForm.Description} onChange={(inputEvent) => setCategoryForm((current) => current ? { ...current, Description: inputEvent.target.value } : current)} placeholder="Mô tả ngắn về hạng mục thi đấu." className="w-full rounded-lg border border-slate-200 bg-white p-2 text-xs font-medium focus:outline-none dark:border-slate-700 dark:bg-slate-900" />
-                    </div>
-                    <div className="flex justify-end gap-2">
-                      <Button type="button" variant="outline" className="h-8 rounded-lg text-[10px]" onClick={() => toggleCategoryForm(event)}>Hủy</Button>
-                      <Button type="submit" disabled={savingCategory || hasRegisteredTeams(event.EventId)} className="h-8 rounded-lg bg-indigo-600 text-[10px] hover:bg-indigo-700">{savingCategory ? 'Đang lưu...' : editingCategoryId ? 'Lưu thay đổi' : 'Tạo Category'}</Button>
-                    </div>
-                  </form>
-                )}
 
-                {(expandedSection === 'details' || expandedSection === 'rounds') && event.Rounds.length > 0 && (
-                  <div className="space-y-2">
-                    <div className="flex items-center justify-between gap-2">
-                      <div className="text-[10px] font-bold text-slate-500">Các vòng thi đã tạo</div>
-                      {!hasRegisteredTeams(event.EventId) && expandedSection === 'rounds' && (
-                        <Button type="button" variant="outline" className="h-7 rounded-md px-2 text-[10px]" onClick={() => toggleRoundForm(event)}><CirclePlus className="mr-1 h-3 w-3" />Thêm vòng thi</Button>
-                      )}
-                      {hasRegisteredTeams(event.EventId) && (
-                        <span className="text-[9px] font-bold text-amber-600 italic">
-                          Đã có đội đăng ký - không thể sửa/xóa Round
-                        </span>
-                      )}
-                    </div>
-                    {[...event.Rounds].sort((a, b) => a.RoundOrder - b.RoundOrder).map((round) => (
-                      <div key={round.RoundId} className="rounded-xl bg-white p-3.5 text-[10px] shadow-sm dark:bg-slate-900">
-                        <div className="flex items-start justify-between gap-3">
-                          <div className="min-w-0">
-                            <div className="font-bold text-slate-800 dark:text-slate-100">Vòng {round.RoundOrder}: {round.RoundName}</div>
-                            <div className="mt-1 text-slate-500 dark:text-slate-400">Diễn ra: {formatDate(round.StartDate)} – {formatDate(round.EndDate)}</div>
-                            <div className="mt-1 text-slate-500 dark:text-slate-400">Hạn nộp bài: <strong className="text-slate-700 dark:text-slate-200">{formatDate(round.SubmissionDeadline)}</strong></div>
+                    {expandedSection === 'rounds' && roundEventId === event.EventId && roundForm && (
+                      <form onSubmit={(submitEvent) => void handleCreateRound(submitEvent, event)} className="rounded-xl border border-indigo-100 bg-indigo-50/50 p-3 space-y-3 dark:border-indigo-900/50 dark:bg-indigo-950/20">
+                        {hasRegisteredTeams(event.EventId) && (
+                          <div className="p-2 bg-amber-50 border border-amber-200 text-amber-700 rounded-lg text-[10px] font-semibold">
+                            Không thể sửa vòng thi khi đã có đội đăng ký.
                           </div>
-                          {!hasRegisteredTeams(event.EventId) && (
-                            <div className="flex shrink-0 gap-1">
-                              <Button type="button" variant="outline" className="h-7 rounded-md px-2 text-[10px]" disabled={creatingRound} onClick={() => handleEditRound(event, round)}>
-                                <Pencil className="mr-1 h-3 w-3" /> Sửa
-                              </Button>
-                              <Button type="button" variant="outline" className="h-7 rounded-md border-rose-200 px-2 text-[10px] text-rose-600 hover:bg-rose-50 dark:border-rose-900/50 dark:text-rose-400" disabled={creatingRound} onClick={() => void handleDeleteRound(event, round.RoundId)}>
-                                <Trash2 className="mr-1 h-3 w-3" /> Xóa
-                              </Button>
-                            </div>
-                          )}
+                        )}
+                        <div className="text-[10px] font-black uppercase tracking-widest text-indigo-600 dark:text-indigo-400">
+                          {editingRoundId ? 'Chỉnh sửa vòng thi của' : 'Thêm vòng thi cho'} {event.EventName}
                         </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
-
-                {expandedSection === 'rounds' && event.Rounds.length === 0 && (
-                  <div className="space-y-2 rounded-xl bg-white p-3 dark:bg-slate-900">
-                    <div className="flex items-center justify-between gap-2">
-                      <p className="text-[10px] text-slate-400">Event chưa có vòng thi.</p>
-                      {!hasRegisteredTeams(event.EventId) ? (
-                        <Button type="button" variant="outline" className="h-7 rounded-md px-2 text-[10px]" onClick={() => toggleRoundForm(event)}><CirclePlus className="mr-1 h-3 w-3" />Thêm vòng thi</Button>
-                      ) : (
-                        <span className="text-[9px] font-bold text-amber-600 italic">
-                          Không thể thêm khi đã có đội đăng ký
-                        </span>
-                      )}
-                    </div>
-                  </div>
-                )}
-
-                {expandedSection === 'details' && event.Rounds.length > 0 && false && (
-                  <div className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-[10px] dark:border-slate-700 dark:bg-slate-900">
-                    <div className="mb-1 font-bold text-slate-500">Vòng thi đã tạo</div>
-                    <div className="space-y-1">
-                      {[...event.Rounds].sort((a, b) => a.RoundOrder - b.RoundOrder).map((round) => (
-                        <div key={round.RoundId} className="flex justify-between gap-2 text-slate-600 dark:text-slate-300">
-                          <span>Vòng {round.RoundOrder}: {round.RoundName}</span>
-                          <span className="shrink-0">Hạn nộp: {formatDate(round.SubmissionDeadline)}</span>
+                        {roundFormError && (
+                          <div role="alert" className="rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-xs font-medium text-rose-700 dark:border-rose-900/60 dark:bg-rose-950/30 dark:text-rose-300">
+                            {roundFormError}
+                          </div>
+                        )}
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                          <div className="space-y-1.5 md:col-span-2">
+                            <label htmlFor={`round-name-${event.EventId}`} className="block text-[10px] font-bold uppercase tracking-wide text-slate-500">
+                              Tên vòng thi
+                            </label>
+                            <Input id={`round-name-${event.EventId}`} required value={roundForm.RoundName} onChange={(inputEvent) => updateRoundForm('RoundName', inputEvent.target.value)} placeholder="Ví dụ: Vòng loại 1 - Thực hiện phát thảo ý tưởng" className="h-9 rounded-lg text-xs" />
+                            <p className="text-[10px] text-slate-400">Tên giúp phân biệt mục tiêu và nội dung của từng vòng.</p>
+                          </div>
+                          <div className="space-y-1.5">
+                            <label htmlFor={`round-order-${event.EventId}`} className="block text-[10px] font-bold uppercase tracking-wide text-slate-500">
+                              Thứ tự vòng
+                            </label>
+                            <Input id={`round-order-${event.EventId}`} required type="number" min={1} max={100} value={roundForm.RoundOrder} onChange={(inputEvent) => updateRoundForm('RoundOrder', Number(inputEvent.target.value))} placeholder="Ví dụ: 1" className="h-9 rounded-lg text-xs" />
+                            <p className="text-[10px] text-slate-400">Số nhỏ hơn sẽ diễn ra trước.</p>
+                          </div>
+                          <div className="space-y-1.5">
+                            <label htmlFor={`round-deadline-${event.EventId}`} className="block text-[10px] font-bold uppercase tracking-wide text-slate-500">
+                              Hạn cuối nộp bài
+                            </label>
+                            <Input id={`round-deadline-${event.EventId}`} required type="date" min={roundForm.StartDate || toDateInputValue(new Date(event.StartDate))} max={roundForm.EndDate || toDateInputValue(new Date(event.EndDate))} value={roundForm.SubmissionDeadline} onChange={(inputEvent) => updateRoundForm('SubmissionDeadline', inputEvent.target.value)} className="h-9 rounded-lg text-xs" />
+                            <p className="text-[10px] text-slate-400">Đội thi không thể nộp bài sau ngày này.</p>
+                          </div>
+                          <div className="space-y-1.5">
+                            <label htmlFor={`round-start-${event.EventId}`} className="block text-[10px] font-bold uppercase tracking-wide text-slate-500">
+                              Ngày bắt đầu vòng
+                            </label>
+                            <Input id={`round-start-${event.EventId}`} required type="date" min={toDateInputValue(new Date(event.StartDate))} max={toDateInputValue(new Date(event.EndDate))} value={roundForm.StartDate} onChange={(inputEvent) => updateRoundForm('StartDate', inputEvent.target.value)} className="h-9 rounded-lg text-xs" />
+                            <p className="text-[10px] text-slate-400">Ngày mở vòng thi cho các đội tham gia.</p>
+                          </div>
+                          <div className="space-y-1.5">
+                            <label htmlFor={`round-end-${event.EventId}`} className="block text-[10px] font-bold uppercase tracking-wide text-slate-500">
+                              Ngày kết thúc vòng
+                            </label>
+                            <Input id={`round-end-${event.EventId}`} required type="date" min={roundForm.StartDate || toDateInputValue(new Date(event.StartDate))} max={toDateInputValue(new Date(event.EndDate))} value={roundForm.EndDate} onChange={(inputEvent) => updateRoundForm('EndDate', inputEvent.target.value)} className="h-9 rounded-lg text-xs" />
+                            <p className="text-[10px] text-slate-400">Ngày đóng vòng và chuyển sang vòng kế tiếp.</p>
+                          </div>
                         </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                {expandedSection === 'rounds' && roundEventId === event.EventId && roundForm && (
-                  <form onSubmit={(submitEvent) => void handleCreateRound(submitEvent, event)} className="rounded-xl border border-indigo-100 bg-indigo-50/50 p-3 space-y-3 dark:border-indigo-900/50 dark:bg-indigo-950/20">
-                    {hasRegisteredTeams(event.EventId) && (
-                      <div className="p-2 bg-amber-50 border border-amber-200 text-amber-700 rounded-lg text-[10px] font-semibold">
-                        Không thể sửa vòng thi khi đã có đội đăng ký.
-                      </div>
+                        <div className="flex justify-end gap-2">
+                          <Button type="button" variant="outline" className="h-8 rounded-lg text-[10px]" onClick={() => toggleRoundForm(event)}>Hủy</Button>
+                          <Button type="submit" disabled={creatingRound || hasRegisteredTeams(event.EventId)} className="h-8 rounded-lg bg-indigo-600 text-[10px] hover:bg-indigo-700">
+                            {creatingRound ? 'Đang lưu...' : editingRoundId ? 'Lưu thay đổi' : 'Tạo vòng thi'}
+                          </Button>
+                        </div>
+                      </form>
                     )}
-                    <div className="text-[10px] font-black uppercase tracking-widest text-indigo-600 dark:text-indigo-400">
-                      {editingRoundId ? 'Chỉnh sửa vòng thi của' : 'Thêm vòng thi cho'} {event.EventName}
-                    </div>
-                    {roundFormError && (
-                      <div role="alert" className="rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-xs font-medium text-rose-700 dark:border-rose-900/60 dark:bg-rose-950/30 dark:text-rose-300">
-                        {roundFormError}
-                      </div>
-                    )}
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                      <div className="space-y-1.5 md:col-span-2">
-                        <label htmlFor={`round-name-${event.EventId}`} className="block text-[10px] font-bold uppercase tracking-wide text-slate-500">
-                          Tên vòng thi
-                        </label>
-                        <Input id={`round-name-${event.EventId}`} required value={roundForm.RoundName} onChange={(inputEvent) => updateRoundForm('RoundName', inputEvent.target.value)} placeholder="Ví dụ: Vòng loại 1 - Thực hiện phát thảo ý tưởng" className="h-9 rounded-lg text-xs" />
-                        <p className="text-[10px] text-slate-400">Tên giúp phân biệt mục tiêu và nội dung của từng vòng.</p>
-                      </div>
-                      <div className="space-y-1.5">
-                        <label htmlFor={`round-order-${event.EventId}`} className="block text-[10px] font-bold uppercase tracking-wide text-slate-500">
-                          Thứ tự vòng
-                        </label>
-                        <Input id={`round-order-${event.EventId}`} required type="number" min={1} max={100} value={roundForm.RoundOrder} onChange={(inputEvent) => updateRoundForm('RoundOrder', Number(inputEvent.target.value))} placeholder="Ví dụ: 1" className="h-9 rounded-lg text-xs" />
-                        <p className="text-[10px] text-slate-400">Số nhỏ hơn sẽ diễn ra trước.</p>
-                      </div>
-                      <div className="space-y-1.5">
-                        <label htmlFor={`round-deadline-${event.EventId}`} className="block text-[10px] font-bold uppercase tracking-wide text-slate-500">
-                          Hạn cuối nộp bài
-                        </label>
-                        <Input id={`round-deadline-${event.EventId}`} required type="date" min={roundForm.StartDate || toDateInputValue(new Date(event.StartDate))} max={roundForm.EndDate || toDateInputValue(new Date(event.EndDate))} value={roundForm.SubmissionDeadline} onChange={(inputEvent) => updateRoundForm('SubmissionDeadline', inputEvent.target.value)} className="h-9 rounded-lg text-xs" />
-                        <p className="text-[10px] text-slate-400">Đội thi không thể nộp bài sau ngày này.</p>
-                      </div>
-                      <div className="space-y-1.5">
-                        <label htmlFor={`round-start-${event.EventId}`} className="block text-[10px] font-bold uppercase tracking-wide text-slate-500">
-                          Ngày bắt đầu vòng
-                        </label>
-                        <Input id={`round-start-${event.EventId}`} required type="date" min={toDateInputValue(new Date(event.StartDate))} max={toDateInputValue(new Date(event.EndDate))} value={roundForm.StartDate} onChange={(inputEvent) => updateRoundForm('StartDate', inputEvent.target.value)} className="h-9 rounded-lg text-xs" />
-                        <p className="text-[10px] text-slate-400">Ngày mở vòng thi cho các đội tham gia.</p>
-                      </div>
-                      <div className="space-y-1.5">
-                        <label htmlFor={`round-end-${event.EventId}`} className="block text-[10px] font-bold uppercase tracking-wide text-slate-500">
-                          Ngày kết thúc vòng
-                        </label>
-                        <Input id={`round-end-${event.EventId}`} required type="date" min={roundForm.StartDate || toDateInputValue(new Date(event.StartDate))} max={toDateInputValue(new Date(event.EndDate))} value={roundForm.EndDate} onChange={(inputEvent) => updateRoundForm('EndDate', inputEvent.target.value)} className="h-9 rounded-lg text-xs" />
-                        <p className="text-[10px] text-slate-400">Ngày đóng vòng và chuyển sang vòng kế tiếp.</p>
-                      </div>
-                    </div>
-                    <div className="flex justify-end gap-2">
-                      <Button type="button" variant="outline" className="h-8 rounded-lg text-[10px]" onClick={() => toggleRoundForm(event)}>Hủy</Button>
-                      <Button type="submit" disabled={creatingRound || hasRegisteredTeams(event.EventId)} className="h-8 rounded-lg bg-indigo-600 text-[10px] hover:bg-indigo-700">
-                        {creatingRound ? 'Đang lưu...' : editingRoundId ? 'Lưu thay đổi' : 'Tạo vòng thi'}
-                      </Button>
-                    </div>
-                  </form>
-                )}
                   </div>
                 )}
               </div>
