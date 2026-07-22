@@ -17,5 +17,6 @@ namespace BusinessLogicLayer.DTOs.Responses
         public DateTime SubmittedAt { get; set; }
         public string Status { get; set; } = string.Empty;
         public List<ScoreDto> Scores { get; set; } = new();
+        public List<SubmissionAssetDto> Assets { get; set; } = new();
     }
 }

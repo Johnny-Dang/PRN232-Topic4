@@ -371,6 +371,7 @@ export interface JudgeAssignedSubmission {
   status: string;
   submittedAt: string;
   scores: Score[];
+  assets: SubmissionAsset[];
 }
 
 export interface Announcement {
@@ -697,6 +698,17 @@ interface BackendSubmissionWithScores extends BackendSubmission {
   Scores?: BackendScore[];
 }
 
+interface BackendJudgeAssignedSubmission extends BackendSubmissionWithScores {
+  teamName?: string;
+  TeamName?: string;
+  assignmentId?: string;
+  AssignmentId?: string;
+  categoryId?: string | null;
+  CategoryId?: string | null;
+  assets?: BackendSubmissionAsset[];
+  Assets?: BackendSubmissionAsset[];
+}
+
 let useLiveApi = true;
 
 export const isLiveApiEnabled = () => useLiveApi;
@@ -875,6 +887,28 @@ const mapScore = (score: BackendScore): Score => ({
   Comment: score.comment || score.Comment || "",
   ScoredAt: score.scoredAt || score.ScoredAt || "",
 });
+
+const mapJudgeAssignedSubmission = (
+  submission: BackendJudgeAssignedSubmission,
+): JudgeAssignedSubmission => {
+  const mappedSubmission = mapSubmission(submission);
+
+  return {
+    submissionId: mappedSubmission.SubmissionID,
+    teamId: mappedSubmission.TeamID,
+    teamName: submission.teamName || submission.TeamName || "",
+    roundId: mappedSubmission.RoundID,
+    assignmentId: submission.assignmentId || submission.AssignmentId || "",
+    categoryId: submission.categoryId ?? submission.CategoryId ?? null,
+    repositoryURL: mappedSubmission.RepositoryURL,
+    demoURL: mappedSubmission.DemoURL,
+    slideURL: mappedSubmission.SlideURL,
+    status: mappedSubmission.Status,
+    submittedAt: mappedSubmission.SubmittedAt,
+    scores: (submission.scores || submission.Scores || []).map(mapScore),
+    assets: (submission.assets || submission.Assets || []).map(mapSubmissionAsset),
+  };
+};
 
 const mapAdvancementRule = (rule: BackendAdvancementRule): AdvancementRule => ({
   RuleId: rule.ruleId || rule.RuleId || "",
@@ -1659,10 +1693,10 @@ export async function getAssignedSubmissions(): Promise<
 > {
   if (!useLiveApi) return [];
   try {
-    const response = await apiClient.get<JudgeAssignedSubmission[]>(
+    const response = await apiClient.get<BackendJudgeAssignedSubmission[]>(
       "/Scores/assigned-submissions",
     );
-    return response.data;
+    return response.data.map(mapJudgeAssignedSubmission);
   } catch (error: unknown) {
     logApiError("getAssignedSubmissions", error);
     return [];
