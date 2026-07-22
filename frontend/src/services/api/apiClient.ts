@@ -75,16 +75,32 @@ apiClient.interceptors.request.use(
   },
 );
 
-// Response interceptor to simplify extracting payload
+let isRedirecting = false;
+
+// Response interceptor to handle token expiration gracefully without redirect loops
 apiClient.interceptors.response.use(
   (response) => {
     return response;
   },
   (error) => {
     if (error.response && error.response.status === 401) {
-      console.warn(
-        "Yêu cầu không hợp lệ hoặc hết hạn token (401 Unauthorized)",
-      );
+      const requestUrl = error.config?.url ?? "";
+      const isPublicAuthEndpoint =
+        requestUrl.endsWith("/Auth/login") ||
+        requestUrl.endsWith("/Auth/register");
+
+      if (!isPublicAuthEndpoint && typeof window !== "undefined") {
+        localStorage.removeItem("seal_user");
+
+        // Avoid infinite reload loop if already on Home page, and avoid multiple concurrent redirects
+        if (!isRedirecting && window.location.pathname !== "/") {
+          isRedirecting = true;
+          console.warn(
+            "Token hết hạn hoặc không hợp lệ (401 Unauthorized). Đang xóa session và chuyển hướng về Trang chủ...",
+          );
+          window.location.href = "/";
+        }
+      }
     }
     return Promise.reject(error);
   },
