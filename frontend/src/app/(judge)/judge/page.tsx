@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Skeleton } from '@/components/ui/skeleton';
-import { useToast } from '@/components/Toast';
+import { useToast } from '@/contexts/ToastContext';
 import { parseApiError } from '@/lib/errorHandler';
 import {
   Category,
