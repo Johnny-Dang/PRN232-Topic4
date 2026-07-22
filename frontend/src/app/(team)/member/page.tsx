@@ -205,6 +205,7 @@ export default function MemberPage() {
 
   useEffect(() => {
     void Promise.resolve().then(loadData);
+    // eslint-disable-next-line react-hooks/set-state-in-effect
   }, []);
 
   const handleCreateTeamSubmit = async (e: React.FormEvent) => {

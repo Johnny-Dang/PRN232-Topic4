@@ -63,11 +63,15 @@ export default function JudgeCalibrationScoringForm({
   const [hasExistingScores, setHasExistingScores] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
 
-  useEffect(() => {
-    if (open) {
-      loadData();
-    }
-  }, [open]);
+  const getDefaultFormData = (): ScoreFormData[] => {
+    return [
+      { criteriaId: 'criteria-1', criteriaName: 'Tính đúng đắn (Correctness)', scoreValue: 0, comment: '', minScore: 0, maxScore: 10 },
+      { criteriaId: 'criteria-2', criteriaName: 'Chức năng (Functionality)', scoreValue: 0, comment: '', minScore: 0, maxScore: 10 },
+      { criteriaId: 'criteria-3', criteriaName: 'Giao diện (UI/UX)', scoreValue: 0, comment: '', minScore: 0, maxScore: 10 },
+      { criteriaId: 'criteria-4', criteriaName: 'Code chất lượng (Code Quality)', scoreValue: 0, comment: '', minScore: 0, maxScore: 10 },
+      { criteriaId: 'criteria-5', criteriaName: 'Trình bày (Presentation)', scoreValue: 0, comment: '', minScore: 0, maxScore: 10 },
+    ];
+  };
 
   const loadData = async () => {
     setLoading(true);
@@ -76,7 +80,7 @@ export default function JudgeCalibrationScoringForm({
     try {
       // Get criteria from API or use default
       let criteriaData: ScoreFormData[] = [];
-      
+
       if (submission.EventId) {
         try {
           const criteriaResult = await getEventCriteria(submission.EventId);
@@ -128,15 +132,12 @@ export default function JudgeCalibrationScoringForm({
     }
   };
 
-  const getDefaultFormData = (): ScoreFormData[] => {
-    return [
-      { criteriaId: 'criteria-1', criteriaName: 'Tính đúng đắn (Correctness)', scoreValue: 0, comment: '', minScore: 0, maxScore: 10 },
-      { criteriaId: 'criteria-2', criteriaName: 'Chức năng (Functionality)', scoreValue: 0, comment: '', minScore: 0, maxScore: 10 },
-      { criteriaId: 'criteria-3', criteriaName: 'Giao diện (UI/UX)', scoreValue: 0, comment: '', minScore: 0, maxScore: 10 },
-      { criteriaId: 'criteria-4', criteriaName: 'Code chất lượng (Code Quality)', scoreValue: 0, comment: '', minScore: 0, maxScore: 10 },
-      { criteriaId: 'criteria-5', criteriaName: 'Trình bày (Presentation)', scoreValue: 0, comment: '', minScore: 0, maxScore: 10 },
-    ];
-  };
+  useEffect(() => {
+    if (open) {
+      void loadData();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open]);
 
   const handleScoreChange = (criteriaId: string, value: number) => {
     setFormData((prev) =>

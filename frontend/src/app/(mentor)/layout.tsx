@@ -40,6 +40,7 @@ function MentorLayoutContent({ children }: { children: React.ReactNode }) {
   };
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setIsCollapsed(localStorage.getItem('sidebar_collapsed') === 'true');
 
     const session = localStorage.getItem('seal_user');

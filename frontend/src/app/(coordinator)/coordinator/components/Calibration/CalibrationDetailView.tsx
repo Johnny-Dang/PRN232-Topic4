@@ -5,7 +5,6 @@ import { ExternalLink, GitBranch, Globe, Presentation } from 'lucide-react';
 import { Loader2 } from 'lucide-react';
 
 import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
 import {
   Dialog,
   DialogContent,
@@ -13,7 +12,6 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
-import { Skeleton } from '@/components/ui/skeleton';
 import {
   CalibrationScoreOutput,
   CalibrationSubmission,
@@ -39,12 +37,6 @@ export default function CalibrationDetailView({
   const [loading, setLoading] = useState(true);
   const [scores, setScores] = useState<CalibrationScoreOutput[]>([]);
 
-  useEffect(() => {
-    if (open && submission.CalibrationId) {
-      loadScores();
-    }
-  }, [open, submission.CalibrationId]);
-
   const loadScores = async () => {
     setLoading(true);
     try {
@@ -56,6 +48,13 @@ export default function CalibrationDetailView({
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    if (open && submission.CalibrationId) {
+      void loadScores();
+    }
+    // eslint-disable-next-line react-hooks/set-state-in-effect, react-hooks/exhaustive-deps
+  }, [open, submission.CalibrationId]);
 
   const groupedByJudge = scores.reduce<Record<string, JudgeScores>>(
     (acc, score) => {
