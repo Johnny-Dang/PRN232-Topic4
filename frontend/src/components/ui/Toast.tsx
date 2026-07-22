@@ -1,12 +1,12 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { AlertCircle, CheckCircle2, AlertTriangle, X } from 'lucide-react';
+import { AlertCircle, CheckCircle2, AlertTriangle, Info, X } from 'lucide-react';
 
 export interface Toast {
   id: string;
   message: string;
-  type: 'error' | 'success' | 'warning';
+  type: 'error' | 'success' | 'warning' | 'info';
 }
 
 interface ToastItemProps {
@@ -18,12 +18,14 @@ const iconMap = {
   error: AlertCircle,
   success: CheckCircle2,
   warning: AlertTriangle,
+  info: Info,
 };
 
 const styleMap = {
   error: 'border-red-200 bg-red-50 text-red-800 dark:bg-red-950 dark:border-red-800 dark:text-red-200',
   success: 'border-emerald-200 bg-emerald-50 text-emerald-800 dark:bg-emerald-950 dark:border-emerald-800 dark:text-emerald-200',
   warning: 'border-amber-200 bg-amber-50 text-amber-800 dark:bg-amber-950 dark:border-amber-800 dark:text-amber-200',
+  info: 'border-blue-200 bg-blue-50 text-blue-800 dark:bg-blue-950 dark:border-blue-800 dark:text-blue-200',
 };
 
 function ToastItem({ toast, onDismiss }: ToastItemProps) {

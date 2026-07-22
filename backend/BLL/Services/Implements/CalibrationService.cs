@@ -98,15 +98,28 @@ namespace BusinessLogicLayer.Services.Implements
             return await MapSubmissionToDtoAsync(submission);
         }
 
-        public async Task<IEnumerable<CalibrationSubmissionDto>> GetSampleSubmissionsAsync()
+        public async Task<IEnumerable<CalibrationSubmissionDto>> GetSampleSubmissionsAsync(Guid? eventId = null, string? status = null)
         {
+            var normalizedStatus = string.IsNullOrWhiteSpace(status) ? null : status.Trim();
+            if (normalizedStatus != null &&
+                !new[] { "Pending", "InProgress", "Completed" }
+                    .Contains(normalizedStatus, StringComparer.OrdinalIgnoreCase))
+            {
+                throw new ArgumentException("Invalid calibration submission status.", nameof(status));
+            }
+
             var submissions = await _submissionRepository.FindAsync(x => x.IsCalibrationSample);
             var dtos = new List<CalibrationSubmissionDto>();
             foreach (var submission in submissions.OrderByDescending(x => x.SubmittedAt))
             {
                 dtos.Add(await MapSubmissionToDtoAsync(submission));
             }
-            return dtos.DistinctBy(x => x.SubmissionId);
+
+            return dtos
+                .Where(x => !eventId.HasValue || x.EventId == eventId.Value)
+                .Where(x => normalizedStatus == null ||
+                    string.Equals(x.Status, normalizedStatus, StringComparison.OrdinalIgnoreCase))
+                .DistinctBy(x => x.SubmissionId);
         }
 
         public async Task<CalibrationSubmissionDto?> GetSampleSubmissionByIdAsync(Guid submissionId)

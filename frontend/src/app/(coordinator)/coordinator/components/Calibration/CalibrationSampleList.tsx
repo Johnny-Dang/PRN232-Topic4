@@ -53,6 +53,29 @@ interface CalibrationSampleListProps {
   onRefresh?: () => void;
 }
 
+type CalibrationStatusFilter = CalibrationSubmission["Status"] | "all";
+
+function isCalibrationStatusFilter(
+  value: string | null,
+): value is CalibrationStatusFilter {
+  return (
+    value !== null &&
+    ["all", "Pending", "InProgress", "Completed"].includes(value)
+  );
+}
+
+function filterCalibrationSubmissions(
+  submissions: CalibrationSubmission[],
+  eventId: string,
+  status: CalibrationStatusFilter,
+): CalibrationSubmission[] {
+  return submissions.filter(
+    (submission) =>
+      (eventId === "all" || submission.EventId === eventId) &&
+      (status === "all" || submission.Status === status),
+  );
+}
+
 export default function CalibrationSampleList({
   onRefresh,
 }: CalibrationSampleListProps) {
@@ -60,7 +83,8 @@ export default function CalibrationSampleList({
   const [submissions, setSubmissions] = useState<CalibrationSubmission[]>([]);
   const [events, setEvents] = useState<Event[]>([]);
   const [selectedEventId, setSelectedEventId] = useState<string>("all");
-  const [selectedStatus, setSelectedStatus] = useState<string>("all");
+  const [selectedStatus, setSelectedStatus] =
+    useState<CalibrationStatusFilter>("all");
 
   const [selectedSubmission, setSelectedSubmission] =
     useState<CalibrationSubmission | null>(null);
@@ -88,7 +112,13 @@ export default function CalibrationSampleList({
       }
 
       const fetchedSubmissions = await getCalibrationSubmissions(filters);
-      setSubmissions(fetchedSubmissions);
+      setSubmissions(
+        filterCalibrationSubmissions(
+          fetchedSubmissions,
+          selectedEventId,
+          selectedStatus,
+        ),
+      );
     } catch (error) {
       console.error("Failed to load submissions:", error);
       toast.error("Không thể tải danh sách bài mẫu");
@@ -269,7 +299,11 @@ export default function CalibrationSampleList({
 
             <Select
               value={selectedStatus}
-              onValueChange={(value) => setSelectedStatus(value || "all")}
+              onValueChange={(value) =>
+                setSelectedStatus(
+                  isCalibrationStatusFilter(value) ? value : "all",
+                )
+              }
             >
               <SelectTrigger className="w-[150px]">
                 <SelectValue placeholder="Lọc theo trạng thái">
