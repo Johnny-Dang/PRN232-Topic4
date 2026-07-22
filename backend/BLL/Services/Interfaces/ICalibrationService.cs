@@ -9,7 +9,7 @@ namespace BusinessLogicLayer.Services.Interfaces
     public interface ICalibrationService
     {
         Task<CalibrationSubmissionDto> CreateSampleSubmissionAsync(CreateCalibrationSubmissionRequest request, Guid userId);
-        Task<IEnumerable<CalibrationSubmissionDto>> GetSampleSubmissionsAsync();
+        Task<IEnumerable<CalibrationSubmissionDto>> GetSampleSubmissionsAsync(Guid? eventId = null, string? status = null);
         Task<CalibrationSubmissionDto?> GetSampleSubmissionByIdAsync(Guid submissionId);
         Task<IEnumerable<CalibrationScoreDto>> GetScoresAsync(Guid submissionId);
         Task<(bool hasScored, IEnumerable<CalibrationScoreDto> scores)> GetMyScoresAsync(Guid submissionId, Guid judgeUserId);

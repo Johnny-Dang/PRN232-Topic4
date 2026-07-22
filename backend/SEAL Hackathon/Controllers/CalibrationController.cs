@@ -42,11 +42,11 @@ namespace SEALHackathonSystem.Controllers
 
         [Authorize(Policy = "CalibrationViewer")]
         [HttpGet("submissions")]
-        public async Task<IActionResult> GetSampleSubmissions()
+        public async Task<IActionResult> GetSampleSubmissions([FromQuery] Guid? eventId, [FromQuery] string? status)
         {
             try
             {
-                var result = await _calibrationService.GetSampleSubmissionsAsync();
+                var result = await _calibrationService.GetSampleSubmissionsAsync(eventId, status);
                 return Ok(result);
             }
             catch (Exception ex)
