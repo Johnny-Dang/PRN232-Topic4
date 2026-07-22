@@ -55,6 +55,13 @@ namespace BusinessLogicLayer.Services.Implements
             if (candidate == null)
                 throw new Exception($"User '{candidateUserId}' not found");
 
+            if (string.Equals(candidate.Role, "Mentor", StringComparison.OrdinalIgnoreCase) ||
+                string.Equals(candidate.Role, "Judge", StringComparison.OrdinalIgnoreCase) ||
+                string.Equals(candidate.Role, "Coordinator", StringComparison.OrdinalIgnoreCase))
+            {
+                throw new Exception($"Tài khoản có vai trò {candidate.Role} không được phép nộp đơn gia nhập đội thi.");
+            }
+
             // Check if user is the leader or already a member of this team
             if (recruitment.Team != null && recruitment.Team.TeamLeaderId == candidateUserId)
                 throw new Exception("You are the Team Leader of this team and cannot apply to your own recruitment post");

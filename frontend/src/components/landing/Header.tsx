@@ -33,6 +33,12 @@ export default function Header({
   const router = useRouter();
   const [isDropdownOpen, setIsDropdownOpen] = React.useState(false);
 
+  const isManagementUser = React.useMemo(() => {
+    if (!currentUser?.Role) return false;
+    const normalized = currentUser.Role.toString().trim().toLowerCase();
+    return normalized === 'mentor' || normalized === 'judge' || normalized === 'coordinator';
+  }, [currentUser]);
+
   const getDashboardPath = (role: SealUser['Role']): string => {
     switch (role) {
       case 'Coordinator':
@@ -85,14 +91,16 @@ export default function Header({
           }`}>
             Trang chủ
           </a>
-          <button
-            onClick={() => router.push('/recruitments')}
-            className={`transition-colors duration-200 cursor-pointer bg-transparent border-none font-bold text-indigo-600 dark:text-indigo-400 ${
-              isScrolled ? 'hover:text-indigo-700' : 'hover:!text-white'
-            }`}
-          >
-            🤝 Tìm đồng đội
-          </button>
+          {!isManagementUser && (
+            <button
+              onClick={() => router.push('/recruitments')}
+              className={`transition-colors duration-200 cursor-pointer bg-transparent border-none font-bold text-indigo-600 dark:text-indigo-400 ${
+                isScrolled ? 'hover:text-indigo-700' : 'hover:!text-white'
+              }`}
+            >
+              🤝 Tìm đồng đội
+            </button>
+          )}
           <button 
             onClick={() => scrollToSection(competitionsSectionRef)} 
             className={`transition-colors duration-200 cursor-pointer bg-transparent border-none ${
@@ -109,14 +117,16 @@ export default function Header({
           >
             Thông báo
           </button>
-          <button 
-            onClick={() => router.push('/my-applications')} 
-            className={`transition-colors duration-200 cursor-pointer bg-transparent border-none ${
-              isScrolled ? 'hover:text-indigo-600 dark:hover:text-indigo-400' : 'hover:!text-white'
-            }`}
-          >
-            Đơn của tôi
-          </button>
+          {!isManagementUser && (
+            <button 
+              onClick={() => router.push('/my-applications')} 
+              className={`transition-colors duration-200 cursor-pointer bg-transparent border-none ${
+                isScrolled ? 'hover:text-indigo-600 dark:hover:text-indigo-400' : 'hover:!text-white'
+              }`}
+            >
+              Đơn của tôi
+            </button>
+          )}
           <a 
             href="#footer" 
             className={`hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors duration-200 ${
@@ -155,7 +165,7 @@ export default function Header({
                       {currentUser.FullName}
                     </span>
                     <span className={`text-[9px] font-extrabold uppercase tracking-wider transition-colors duration-300 ${
-                      isScrolled ? 'text-slate-400 dark:text-slate-500' : 'text-slate-300'
+                      isScrolled ? 'text-slate-400 dark:text-slate-500' : 'text-slate-350'
                     }`}>
                       {currentUser.Role}
                     </span>
@@ -189,26 +199,30 @@ export default function Header({
                         <LayoutDashboard className="w-4 h-4 text-slate-400" />
                         Trang Quản lý ({currentUser.Role})
                       </button>
-                      <button
-                        onClick={() => {
-                          setIsDropdownOpen(false);
-                          router.push('/recruitments');
-                        }}
-                        className="w-full px-4 py-2 text-left text-xs font-bold text-slate-700 dark:text-slate-350 hover:bg-slate-50 dark:hover:bg-slate-900 hover:text-indigo-600 dark:hover:text-indigo-400 flex items-center gap-2 cursor-pointer transition-colors border-none bg-transparent"
-                      >
-                        <User className="w-4 h-4 text-indigo-500" />
-                        🤝 Tìm đồng đội
-                      </button>
-                      <button
-                        onClick={() => {
-                          setIsDropdownOpen(false);
-                          router.push('/my-applications');
-                        }}
-                        className="w-full px-4 py-2 text-left text-xs font-bold text-slate-700 dark:text-slate-350 hover:bg-slate-50 dark:hover:bg-slate-900 hover:text-indigo-600 dark:hover:text-indigo-400 flex items-center gap-2 cursor-pointer transition-colors border-none bg-transparent"
-                      >
-                        <LayoutDashboard className="w-4 h-4 text-slate-400" />
-                        📋 Đơn nộp & Kỹ năng
-                      </button>
+                      {!isManagementUser && (
+                        <>
+                          <button
+                            onClick={() => {
+                              setIsDropdownOpen(false);
+                              router.push('/recruitments');
+                            }}
+                            className="w-full px-4 py-2 text-left text-xs font-bold text-slate-700 dark:text-slate-350 hover:bg-slate-50 dark:hover:bg-slate-900 hover:text-indigo-600 dark:hover:text-indigo-400 flex items-center gap-2 cursor-pointer transition-colors border-none bg-transparent"
+                          >
+                            <User className="w-4 h-4 text-indigo-500" />
+                            🤝 Tìm đồng đội
+                          </button>
+                          <button
+                            onClick={() => {
+                              setIsDropdownOpen(false);
+                              router.push('/my-applications');
+                            }}
+                            className="w-full px-4 py-2 text-left text-xs font-bold text-slate-700 dark:text-slate-350 hover:bg-slate-50 dark:hover:bg-slate-900 hover:text-indigo-600 dark:hover:text-indigo-400 flex items-center gap-2 cursor-pointer transition-colors border-none bg-transparent"
+                          >
+                            <LayoutDashboard className="w-4 h-4 text-slate-400" />
+                            📋 Đơn nộp & Kỹ năng
+                          </button>
+                        </>
+                      )}
                       <button
                         onClick={() => {
                           setIsDropdownOpen(false);

@@ -45,6 +45,13 @@ namespace BusinessLogicLayer.Services.Implements
             if (creator == null)
                 throw new Exception($"User with id {creatorUserId} not found");
 
+            if (string.Equals(creator.Role, "Mentor", StringComparison.OrdinalIgnoreCase) ||
+                string.Equals(creator.Role, "Judge", StringComparison.OrdinalIgnoreCase) ||
+                string.Equals(creator.Role, "Coordinator", StringComparison.OrdinalIgnoreCase))
+            {
+                throw new Exception($"Tài khoản có vai trò {creator.Role} không được phép tạo đội thi đấu.");
+            }
+
             // Update user role to TeamLeader when creating a team
             if (creator.Role == "TeamMember" || string.IsNullOrWhiteSpace(creator.Role))
             {
@@ -272,6 +279,13 @@ namespace BusinessLogicLayer.Services.Implements
             var memberUser = await ResolveMemberUserAsync(request);
             if (memberUser == null)
                 throw new Exception("User not found by the provided id, email, short id, or student code.");
+
+            if (string.Equals(memberUser.Role, "Mentor", StringComparison.OrdinalIgnoreCase) ||
+                string.Equals(memberUser.Role, "Judge", StringComparison.OrdinalIgnoreCase) ||
+                string.Equals(memberUser.Role, "Coordinator", StringComparison.OrdinalIgnoreCase))
+            {
+                throw new Exception($"Tài khoản {memberUser.FullName} (vai trò {memberUser.Role}) không được phép gia nhập đội thi đấu.");
+            }
 
             await ValidateMemberEligibilityAsync(memberUser, team);
 

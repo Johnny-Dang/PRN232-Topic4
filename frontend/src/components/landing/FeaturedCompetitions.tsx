@@ -224,8 +224,11 @@ export default function FeaturedCompetitions({
                             : "text-slate-700 dark:text-slate-300"
                         }
                       >
-                        {comp.Deadline} (
-                        {comp.Status === "closed" ? "Đã kết thúc" : `Còn ${comp.DaysLeft} ngày`})
+                        {comp.Status === "closed"
+                          ? "Đã kết thúc"
+                          : comp.DaysLeft <= 0
+                            ? "Ngày cuối"
+                            : `Còn ${comp.DaysLeft} ngày`})
                       </strong>
                     </div>
                   </div>

@@ -54,7 +54,7 @@ export default function DeadlineFocus({
             >
               {/* Expiring tag highlight banner */}
               <div className="absolute right-0 top-0 bg-gradient-to-l from-amber-500 to-amber-600 text-white text-[8.5px] font-black px-3.5 py-1.2 rounded-bl-xl tracking-wider uppercase z-10 flex items-center gap-1 shadow-md shadow-amber-950/40">
-                <Clock className="w-3 h-3" /> CÒN {comp.DaysLeft} NGÀY
+                <Clock className="w-3 h-3" /> {comp.DaysLeft <= 0 ? 'NGÀY CUỐI' : `CÒN ${comp.DaysLeft} NGÀY`}
               </div>
 
               <CardHeader className="p-0 pb-4 border-b border-white/5 space-y-2">
