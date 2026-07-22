@@ -272,15 +272,12 @@ export default function EventHomeManager({
       if (exists) {
         return {
           ...prev,
-          initialCategories: prev.initialCategories.filter(
-            (c) => c.CategoryName.toLowerCase() !== categoryName.toLowerCase()
-          ),
+          initialCategories: [],
         };
       } else {
         return {
           ...prev,
           initialCategories: [
-            ...prev.initialCategories,
             { id: `cat-${Date.now()}-${Math.random()}`, CategoryName: categoryName, Description: description },
           ],
         };
@@ -973,18 +970,24 @@ export default function EventHomeManager({
               <div className="flex items-center justify-between">
                 <label className="text-xs font-bold text-slate-700 dark:text-slate-200 uppercase tracking-wider flex items-center gap-1.5">
                   <Layers className="w-4 h-4 text-indigo-500" />
-                  Hạng mục thi đấu (Categories)
+                  Hạng mục thi đấu (Category)
                 </label>
                 <span className="text-[11px] text-slate-500 font-medium">
-                  Đã chọn: <strong className="text-indigo-600 dark:text-indigo-400">{form.initialCategories.length}</strong> hạng mục
+                  {form.initialCategories.length > 0 ? (
+                    <span className="text-indigo-600 dark:text-indigo-400 font-bold">
+                      Đã chọn: {form.initialCategories[0].CategoryName}
+                    </span>
+                  ) : (
+                    <span className="text-slate-400">Chưa chọn hạng mục</span>
+                  )}
                 </span>
               </div>
 
               <p className="text-[11px] text-slate-500">
-                Nhấp vào các hạng mục dưới đây để chọn hoặc bỏ chọn hạng mục thi đấu cho sự kiện này:
+                Chọn 1 hạng mục thi đấu cho sự kiện này (mỗi sự kiện chỉ thuộc 1 hạng mục):
               </p>
 
-              {/* Selectable Categories Grid List */}
+              {/* Selectable Categories Grid List (Single Select) */}
               <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2">
                 {uniqueCategories.map((cat) => {
                   const selected = form.initialCategories.some(
@@ -1001,7 +1004,7 @@ export default function EventHomeManager({
                           : 'bg-slate-50/60 border-slate-200 text-slate-700 hover:bg-slate-100 hover:border-slate-300 dark:bg-slate-800/40 dark:border-slate-700 dark:text-slate-300'
                       }`}
                     >
-                      <div className={`w-4 h-4 rounded-md shrink-0 flex items-center justify-center mt-0.5 transition-colors ${
+                      <div className={`w-4 h-4 rounded-full shrink-0 flex items-center justify-center mt-0.5 transition-colors ${
                         selected
                           ? 'bg-indigo-600 text-white dark:bg-indigo-500'
                           : 'border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800'

@@ -31,7 +31,7 @@ namespace BusinessLogicLayer.Services.Implements
 
             var existingCategories = await _categoryRepository.FindAsync(c => c.EventId == request.EventId);
             if (existingCategories.Count > 0)
-                throw new Exception("Sự kiện này đã có hạng mục thi đấu. Không được tạo thêm hạng mục.");
+                throw new Exception("Sự kiện này đã có hạng mục thi đấu. Mỗi sự kiện chỉ được có tối đa 1 hạng mục.");
 
             var category = new Categories
             {
