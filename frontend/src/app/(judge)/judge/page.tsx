@@ -339,13 +339,18 @@ function JudgePageContent() {
                           <h4 className="text-sm font-bold text-slate-800 dark:text-slate-100">
                             {submission.teamName || 'Chưa có thông tin đội'}
                           </h4>
-                          <Badge className={`border text-[9px] font-semibold ${
-                            submission.status === 'Submitted' 
-                              ? 'border-green-200 bg-green-50 text-green-700 dark:bg-green-950/30 dark:border-green-800 dark:text-green-400' 
-                              : 'border-slate-200 bg-slate-50 text-slate-600 dark:bg-slate-800 dark:text-slate-400'
-                          }`}>
-                            {submission.status === 'Submitted' ? 'Submitted' : 'Pending'}
-                          </Badge>
+                          {(() => {
+                            const hasScores = submission.scores && submission.scores.length > 0;
+                            return (
+                              <Badge className={`border text-[9px] font-semibold ${
+                                hasScores
+                                  ? 'border-blue-200 bg-blue-50 text-blue-700 dark:bg-blue-950/30 dark:border-blue-800 dark:text-blue-400'
+                                  : 'border-amber-200 bg-amber-50 text-amber-700 dark:bg-amber-950/30 dark:border-amber-800 dark:text-amber-400'
+                              }`}>
+                                {hasScores ? 'Đã chấm' : 'Chưa chấm'}
+                              </Badge>
+                            );
+                          })()}
                         </div>
                         <p className="text-[10px] font-semibold uppercase text-slate-400">{round?.RoundName}</p>
                       </div>
