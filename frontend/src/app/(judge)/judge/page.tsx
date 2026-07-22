@@ -321,7 +321,7 @@ function JudgePageContent() {
         <div className="grid grid-cols-1 items-start gap-8 lg:grid-cols-3">
           <div className="space-y-4 lg:col-span-1">
             <h3 className="text-sm font-bold text-slate-800 dark:text-slate-200">
-              Bai nop can danh gia ({submissions.length})
+              Bài nộp cần đánh giá ({submissions.length})
             </h3>
 
             <div className="space-y-3">
@@ -404,12 +404,12 @@ function JudgePageContent() {
                 </Card>
 
                 <div className="space-y-4">
-                  <h3 className="text-sm font-bold text-slate-800 dark:text-slate-200">Criteria & Scores</h3>
+                  <h3 className="text-sm font-bold text-slate-800 dark:text-slate-200">Tiêu chí & Điểm số (Criteria & Scores)</h3>
 
                   {criteria.length === 0 ? (
                     <Card className="border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900">
                       <CardContent className="p-6 text-xs text-slate-500">
-                        Chưa có criteria được cấu hình cho Event của bài nộp này.
+                        Chưa có tiêu chí (criteria) được cấu hình cho Sự kiện này.
                       </CardContent>
                     </Card>
                   ) : (
@@ -421,7 +421,7 @@ function JudgePageContent() {
                               <div className="flex items-center gap-2">
                                 <h4 className="text-sm font-bold text-slate-800 dark:text-slate-100">{item.CriteriaName}</h4>
                                 <Badge className="border border-indigo-100 bg-indigo-50 text-[9px] font-bold text-indigo-600 dark:bg-indigo-950/20 dark:text-indigo-400">
-                                  Weight: {item.Weight}
+                                  Trọng số: {item.Weight}
                                 </Badge>
                               </div>
                             </div>
@@ -448,7 +448,7 @@ function JudgePageContent() {
 
                           <div className="mt-4 space-y-1.5 border-t border-slate-100 pt-4 dark:border-slate-800">
                             <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-400">
-                              Comment
+                              Nhận xét / Đánh giá
                             </label>
                             <textarea
                               className="w-full rounded-xl border border-slate-200 bg-slate-50 p-2.5 text-xs font-medium focus:outline-none dark:border-slate-700 dark:bg-slate-800"
