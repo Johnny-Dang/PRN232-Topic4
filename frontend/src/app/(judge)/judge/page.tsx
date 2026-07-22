@@ -177,6 +177,24 @@ function JudgePageContent() {
     }
   }, [selectedRoundId]);
 
+  const refreshRankings = async (): Promise<void> => {
+    if (selectedRoundId) {
+      await loadRankings(selectedRoundId);
+    }
+  };
+
+  const handleRefresh = async (): Promise<void> => {
+    await Promise.all([loadData(), refreshRankings()]);
+  };
+
+  const handleTabChange = (tab: TabType): void => {
+    setActiveTab(tab);
+
+    if (tab === 'ranking') {
+      void refreshRankings();
+    }
+  };
+
   const calculateWeightedTotal = (): number => {
     return criteria.reduce((total, item) => total + (scores[item.CriteriaID] || 0) * item.Weight, 0);
   };
@@ -202,7 +220,12 @@ function JudgePageContent() {
         await submitScores(activeSubmission.submissionId, scoreData);
         showToast(`Đã lưu điểm cho đội ${activeSubmission.teamName}.`, 'success');
       }
-      void loadData();
+      await Promise.all([
+        loadData(),
+        selectedRoundId === activeSubmission.roundId
+          ? loadRankings(selectedRoundId)
+          : Promise.resolve(),
+      ]);
     } catch (error) {
       console.error(error);
       const { message, type } = parseApiError(error);
@@ -225,7 +248,7 @@ function JudgePageContent() {
         <div className="flex items-center gap-3">
           <div className="flex rounded-xl border border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900">
             <button
-              onClick={() => setActiveTab('scoring')}
+              onClick={() => handleTabChange('scoring')}
               className={`flex items-center gap-1.5 rounded-l-xl px-3 py-2 text-xs font-semibold transition-colors ${
                 activeTab === 'scoring'
                   ? 'bg-emerald-600 text-white'
@@ -236,7 +259,7 @@ function JudgePageContent() {
               Chấm điểm
             </button>
             <button
-              onClick={() => setActiveTab('ranking')}
+              onClick={() => handleTabChange('ranking')}
               className={`flex items-center gap-1.5 rounded-r-xl px-3 py-2 text-xs font-semibold transition-colors ${
                 activeTab === 'ranking'
                   ? 'bg-emerald-600 text-white'
@@ -247,7 +270,7 @@ function JudgePageContent() {
               Bảng xếp hạng
             </button>
             <button
-              onClick={() => setActiveTab('calibration')}
+              onClick={() => handleTabChange('calibration')}
               className={`flex items-center gap-1.5 rounded-r-xl px-3 py-2 text-xs font-semibold transition-colors ${
                 activeTab === 'calibration'
                   ? 'bg-emerald-600 text-white'
@@ -259,8 +282,14 @@ function JudgePageContent() {
             </button>
           </div>
 
-          <Button variant="outline" size="sm" className="h-9 rounded-xl border-slate-200 text-xs font-semibold" onClick={loadData} disabled={loading}>
-            <RefreshCw className={`mr-1.5 h-3.5 w-3.5 ${loading ? 'animate-spin' : ''}`} />
+          <Button
+            variant="outline"
+            size="sm"
+            className="h-9 rounded-xl border-slate-200 text-xs font-semibold"
+            onClick={() => void handleRefresh()}
+            disabled={loading || loadingRankings || submitting}
+          >
+            <RefreshCw className={`mr-1.5 h-3.5 w-3.5 ${loading || loadingRankings ? 'animate-spin' : ''}`} />
             Tải lại
           </Button>
         </div>
