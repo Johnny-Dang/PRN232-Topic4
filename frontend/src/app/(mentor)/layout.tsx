@@ -18,6 +18,7 @@ import {
 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
+import NotificationBell from '@/components/NotificationBell';
 import { cn } from '@/lib/utils';
 
 function hasAccessToken(user: Record<string, unknown>): boolean {
@@ -229,6 +230,11 @@ function MentorLayoutContent({ children }: { children: React.ReactNode }) {
           )}
         </div>
       </main>
+
+      {/* Fixed notification bell - always visible in top right */}
+      <div className="fixed top-6 right-6 z-[100]">
+        <NotificationBell />
+      </div>
     </div>
   );
 }

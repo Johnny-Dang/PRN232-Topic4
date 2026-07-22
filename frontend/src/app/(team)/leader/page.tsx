@@ -1,6 +1,9 @@
 'use client';
 
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+/* eslint-disable react/no-unescaped-entities */
+
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useSearchParams, useRouter } from 'next/navigation';
 import {
   CalendarClock,
   CheckCircle,
@@ -11,7 +14,6 @@ import {
   RefreshCw,
   Send,
   Upload,
-  Users,
   Video,
   UserPlus,
   PlusCircle,
@@ -28,6 +30,8 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { useToast } from '@/contexts/ToastContext';
 import {
+  addTeamMember,
+  removeTeamMember,
   createSubmissionLinks,
   deleteSubmission,
   getCategories,
@@ -53,6 +57,7 @@ import {
 import CreateRecruitmentModal from '@/components/recruitment/CreateRecruitmentModal';
 import ApplicantListModal from '@/components/application/ApplicantListModal';
 import MentoringBookingPanel from './components/MentoringBookingPanel';
+import { TeamMembersCard } from '@/components/team/TeamMembersCard';
 import SubmissionDetailModal from './components/SubmissionDetailModal';
 
 type TeamMemberWithProfile = Awaited<ReturnType<typeof getTeamMembers>>[number];
@@ -162,6 +167,13 @@ const sortRounds = (rounds: ApiRound[]): ApiRound[] => [...rounds].sort((a, b) =
 
 export default function LeaderPage() {
   const { showToast } = useToast();
+  const searchParams = useSearchParams();
+  const router = useRouter();
+  const requestedEventId = searchParams.get('eventId') ?? '';
+  const requestedEventIdRef = useRef(requestedEventId);
+  useEffect(() => {
+    requestedEventIdRef.current = requestedEventId;
+  }, [requestedEventId]);
   const [loading, setLoading] = useState(true);
   const [updating, setUpdating] = useState(false);
   const [successMessage, setSuccessMessage] = useState('');
@@ -194,6 +206,52 @@ export default function LeaderPage() {
   const [selectedDetailSubmission, setSelectedDetailSubmission] = useState<SubmissionWithTeam | null>(null);
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
 
+  const [newMemberId, setNewMemberId] = useState('');
+  const [addingMember, setAddingMember] = useState(false);
+  const [addErrorMessage, setAddErrorMessage] = useState('');
+  const [addSuccessMessage, setAddSuccessMessage] = useState('');
+
+  const handleAddMemberSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newMemberId.trim() || !team) return;
+
+    setAddingMember(true);
+    setAddErrorMessage('');
+    setAddSuccessMessage('');
+
+    try {
+      await addTeamMember(team.TeamID, newMemberId.trim());
+      setAddSuccessMessage('Đã thêm thành viên mới thành công!');
+      setNewMemberId('');
+      const updatedMembers = await getTeamMembers(team.TeamID);
+      setMembers(updatedMembers);
+      showToast('Đã thêm thành viên thành công!', 'success');
+    } catch (err: unknown) {
+      console.error(err);
+      const axiosError = err as { response?: { data?: { message?: string } } };
+      const msg = axiosError.response?.data?.message || (err instanceof Error ? err.message : '') || 'Không thể thêm thành viên.';
+      setAddErrorMessage(msg);
+      showToast(msg, 'error');
+    } finally {
+      setAddingMember(false);
+    }
+  };
+
+  const handleRemoveLeaderMember = async (teamMemberId: string) => {
+    if (!team) return;
+    try {
+      await removeTeamMember(team.TeamID, teamMemberId);
+      setMembers((prev) => prev.filter((m) => m.TeamMemberId !== teamMemberId));
+      showToast('Đã xóa thành viên khỏi nhóm.', 'success');
+    } catch (err: unknown) {
+      console.error(err);
+      const axiosError = err as { response?: { data?: { message?: string } }; message?: string };
+      const msg = axiosError.response?.data?.message || axiosError.message || 'Không thể xóa thành viên.';
+      showToast(msg, 'error');
+      throw new Error(msg);
+    }
+  };
+
   const resetSubmissionForm = useCallback(() => {
     setCurrentSubmission(null);
     setRepoUrl('');
@@ -218,12 +276,26 @@ export default function LeaderPage() {
 
   // Lọc events theo team (theo EventID hoặc Category)
   const teamEvents = useMemo(() => {
-    if (!team) return allEvents;
-    const category = allCategories.find((c) => c.CategoryID === team.CategoryID);
-    const teamEventId = team.EventID || category?.EventID || '';
-    const filtered = allEvents.filter((ev) => ev.EventID === teamEventId);
-    return filtered.length > 0 ? filtered : allEvents;
-  }, [allCategories, allEvents, team]);
+    // Xây dựng danh sách các event mà user hiện đang tham gia (qua tất cả các team)
+    const eventIdSet = new Set<string>();
+    for (const t of myLeaderTeams) {
+      const cat = allCategories.find((c) => c.CategoryID === t.CategoryID);
+      const evId = t.EventID || cat?.EventID;
+      if (evId) eventIdSet.add(evId);
+    }
+
+    if (eventIdSet.size === 0) {
+      // Nếu user chưa có team nào gắn với event, fallback về team hiện tại
+      if (!team) return allEvents;
+      const category = allCategories.find((c) => c.CategoryID === team.CategoryID);
+      const teamEventId = team.EventID || category?.EventID || '';
+      const filtered = allEvents.filter((ev) => ev.EventID === teamEventId);
+      return filtered.length > 0 ? filtered : allEvents;
+    }
+
+    // Hiển thị tất cả event mà user có team, sắp xếp theo tên
+    return allEvents.filter((ev) => eventIdSet.has(ev.EventID));
+  }, [allCategories, allEvents, myLeaderTeams, team]);
 
   const orderedRounds = useMemo(() => {
     return sortRounds(rounds);
@@ -302,8 +374,33 @@ export default function LeaderPage() {
 
       setMyLeaderTeams(userTeams);
 
+      // Ưu tiên chọn team theo eventId trên URL (deep-link từ /my-events)
+      const targetRequestedEventId = requestedEventIdRef.current;
+      const findTeamForEvent = (eventId: string): Team | null => {
+        if (!eventId) return null;
+        // Tìm team trực tiếp có EventID khớp
+        const directMatch = userTeams.find(
+          (t) => (t.EventID || '').toLowerCase() === eventId.toLowerCase()
+        );
+        if (directMatch) return directMatch;
+        // Nếu không thấy, tìm qua Category
+        const catForEvent = categoriesData.find(
+          (c) => (c.EventID || '').toLowerCase() === eventId.toLowerCase()
+        );
+        if (catForEvent) {
+          const teamByCat = userTeams.find((t) => t.CategoryID === catForEvent.CategoryID);
+          if (teamByCat) return teamByCat;
+        }
+        return null;
+      };
+
       const targetTeamId = teamId || selectedTeamId;
-      const activeTeam = userTeams.find((t) => t.TeamID === targetTeamId) || userTeams[0] || null;
+      const teamFromQuery = targetRequestedEventId ? findTeamForEvent(targetRequestedEventId) : null;
+      const activeTeam =
+        teamFromQuery ||
+        userTeams.find((t) => t.TeamID === targetTeamId) ||
+        userTeams[0] ||
+        null;
 
       if (activeTeam) {
         setSelectedTeamId(activeTeam.TeamID);
@@ -369,6 +466,23 @@ export default function LeaderPage() {
     }, 0);
     return () => clearTimeout(timer);
   }, [loadData]);
+
+  // Theo dõi URL: nếu user back/forward tới ?eventId=xxx khác, tự load lại đúng team
+  useEffect(() => {
+    if (!requestedEventId) return;
+    // Chỉ re-load khi team hiện tại không khớp eventId trên URL
+    const currentTeamEvent = team
+      ? team.EventID ||
+        allCategories.find((c) => c.CategoryID === team.CategoryID)?.EventID ||
+        ''
+      : '';
+    if (currentTeamEvent.toLowerCase() === requestedEventId.toLowerCase()) return;
+    const timer = setTimeout(() => {
+      void loadData();
+    }, 0);
+    return () => clearTimeout(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [requestedEventId]);
 
   const handleTeamChange = useCallback(
     async (teamId: string) => {
@@ -437,25 +551,45 @@ export default function LeaderPage() {
       applySubmissionToForm(null);
       setErrorMessage('');
 
-      if (eventId) {
-        const foundEvent = events.find((ev) => ev.EventID === eventId) || null;
-        setEvent(foundEvent);
-        try {
-          const eventRounds = await getRounds(eventId);
-          setRounds(eventRounds);
-          if (eventRounds.length > 0) {
-            const defaultRoundId = chooseDefaultRound(eventRounds, submissions);
-            setSelectedRoundId(defaultRoundId);
-            const matchingSub = submissions.find((s) => s.RoundID === defaultRoundId) || null;
-            applySubmissionToForm(matchingSub);
-          }
-        } catch (error) {
-          console.error('Cannot load rounds:', error);
-          showToast('Không thể tải danh sách vòng thi.', 'error');
+      if (!eventId) {
+        setEvent(null);
+        return;
+      }
+
+      // Tìm team của user tương ứng với event đã chọn để auto switch team
+      const matchingTeam =
+        myLeaderTeams.find((t) => (t.EventID || '').toLowerCase() === eventId.toLowerCase()) ||
+        myLeaderTeams.find((t) => {
+          const cat = allCategories.find((c) => c.CategoryID === t.CategoryID);
+          return cat && (cat.EventID || '').toLowerCase() === eventId.toLowerCase();
+        });
+
+      if (matchingTeam && (!team || matchingTeam.TeamID !== team.TeamID)) {
+        // Cập nhật URL để đồng bộ query và chuyển team
+        if (requestedEventId !== eventId) {
+          router.replace(`/leader?eventId=${encodeURIComponent(eventId)}`);
         }
+        await handleTeamChange(matchingTeam.TeamID);
+        return;
+      }
+
+      const foundEvent = events.find((ev) => ev.EventID === eventId) || null;
+      setEvent(foundEvent);
+      try {
+        const eventRounds = await getRounds(eventId);
+        setRounds(eventRounds);
+        if (eventRounds.length > 0) {
+          const defaultRoundId = chooseDefaultRound(eventRounds, submissions);
+          setSelectedRoundId(defaultRoundId);
+          const matchingSub = submissions.find((s) => s.RoundID === defaultRoundId) || null;
+          applySubmissionToForm(matchingSub);
+        }
+      } catch (error) {
+        console.error('Cannot load rounds:', error);
+        showToast('Không thể tải danh sách vòng thi.', 'error');
       }
     },
-    [applySubmissionToForm, chooseDefaultRound, events, submissions, showToast]
+    [applySubmissionToForm, chooseDefaultRound, events, submissions, showToast, myLeaderTeams, allCategories, team, requestedEventId, router, handleTeamChange]
   );
 
   const handleDeleteClick = useCallback(
@@ -711,9 +845,21 @@ export default function LeaderPage() {
                     </CardDescription>
                   </div>
                   {currentSubmission && (
-                    <Badge className="w-fit border border-blue-100 bg-blue-50 text-blue-600 dark:bg-blue-950/20 dark:text-blue-400">
-                      {getSubmissionStatusLabel(currentSubmission.Status)}
-                    </Badge>
+                    <div className="flex items-center gap-2">
+                      <Badge className="w-fit border border-blue-100 bg-blue-50 text-blue-600 dark:bg-blue-950/20 dark:text-blue-400">
+                        {getSubmissionStatusLabel(currentSubmission.Status)}
+                      </Badge>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={resetSubmissionForm}
+                        className="h-7 text-[11px] font-semibold rounded-lg border-slate-200"
+                        title="Xóa trắng các ô nhập để nộp bài mới"
+                      >
+                        <RefreshCw className="mr-1 h-3 w-3" /> Làm mới form
+                      </Button>
+                    </div>
                   )}
                 </div>
               </CardHeader>
@@ -1012,19 +1158,31 @@ export default function LeaderPage() {
                     </div>
                   )}
 
-                  <div className="flex justify-end pt-2">
+                  <div className="flex justify-end gap-2 pt-2">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={resetSubmissionForm}
+                      className="h-10 rounded-xl border-slate-200 text-xs font-semibold hover:bg-slate-100 dark:border-slate-800 dark:hover:bg-slate-800"
+                    >
+                      <RefreshCw className="mr-2 h-3.5 w-3.5" />
+                      Xóa trắng / Nộp mới
+                    </Button>
                     <Button
                       type="submit"
                       className="h-10 rounded-xl bg-indigo-600 px-5 text-xs font-bold text-white transition-colors hover:bg-indigo-700"
                       disabled={updating || uploadingAssetType !== null || !team || !selectedRound || deadlinePassed || beforeStartDate}
                     >
                       <Send className="mr-2 h-3.5 w-3.5" />
-                      {updating ? 'Đang gửi...' : 'Nộp bài'}
+                      {updating ? 'Đang gửi...' : currentSubmission ? 'Cập nhật bài nộp' : 'Nộp bài'}
                     </Button>
                   </div>
                 </form>
               </CardContent>
             </Card>
+
+            {/* Mentoring Booking Section */}
+            <MentoringBookingPanel categoryId={team?.CategoryID} teamId={team?.TeamID} />
 
             <Card className="border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900" id="submission-history-card">
               <CardHeader>
@@ -1218,37 +1376,20 @@ export default function LeaderPage() {
               </CardContent>
             </Card>
 
-            <Card className="border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900">
-              <CardHeader className="pb-3">
-                <CardTitle className="flex items-center gap-2 text-base font-bold">
-                  <Users className="h-5 w-5 text-indigo-600 dark:text-indigo-400" /> Thành viên nhóm ({members.length})
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-3 p-6 pt-0">
-                {members.length === 0 ? (
-                  <div className="rounded-xl bg-slate-50 p-3 text-xs font-medium text-slate-500 dark:bg-slate-950">
-                    Chưa có API trả về danh sách thành viên.
-                  </div>
-                ) : (
-                  members.map((member) => (
-                    <div
-                      key={member.TeamMemberId}
-                      className="flex items-center justify-between rounded-xl border border-slate-100 bg-slate-50/50 p-3 dark:border-slate-800 dark:bg-slate-900/50"
-                    >
-                      <div>
-                        <span className="text-xs font-bold text-slate-800 dark:text-slate-200">
-                          {member.User.FullName}
-                        </span>
-                        <p className="text-[10px] text-slate-400">{member.User.Email}</p>
-                      </div>
-                      {member.User.UserID === team?.TeamLeaderId && (
-                        <Badge className="bg-indigo-600 px-1.5 py-0 text-[8px] font-bold text-white">Lead</Badge>
-                      )}
-                    </div>
-                  ))
-                )}
-              </CardContent>
-            </Card>
+            {team && (
+              <TeamMembersCard
+                team={team}
+                members={members}
+                isLeader={true}
+                newMemberId={newMemberId}
+                setNewMemberId={setNewMemberId}
+                addingMember={addingMember}
+                addErrorMessage={addErrorMessage}
+                addSuccessMessage={addSuccessMessage}
+                onSubmit={handleAddMemberSubmit}
+                onRemoveMember={handleRemoveLeaderMember}
+              />
+            )}
 
             {/* Tuyển dụng & Ứng viên Card */}
             <Card className="border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900">

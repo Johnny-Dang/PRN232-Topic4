@@ -1,5 +1,5 @@
 import React from 'react';
-import { Users } from 'lucide-react';
+import { Users, Trash2 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -20,6 +20,7 @@ interface TeamMembersCardProps {
   addErrorMessage: string;
   addSuccessMessage: string;
   onSubmit: (e: React.FormEvent) => void;
+  onRemoveMember?: (teamMemberId: string) => Promise<void>;
 }
 
 export const TeamMembersCard: React.FC<TeamMembersCardProps> = ({
@@ -32,6 +33,7 @@ export const TeamMembersCard: React.FC<TeamMembersCardProps> = ({
   addErrorMessage,
   addSuccessMessage,
   onSubmit,
+  onRemoveMember,
 }) => {
   return (
     <Card className="border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900">
@@ -51,26 +53,56 @@ export const TeamMembersCard: React.FC<TeamMembersCardProps> = ({
         ) : (
           members.map((member) => {
             const isFpt = member.StudentProfile?.StudentType === 'FPT';
+            const isMemberLeader = member.User?.UserID === team.TeamLeaderId || member.UserId === team.TeamLeaderId;
             return (
               <div
                 key={member.TeamMemberId}
                 className="flex items-center justify-between gap-4 rounded-xl border border-slate-100 bg-slate-50/50 p-3 dark:border-slate-800 dark:bg-slate-900/50"
               >
                 <div>
-                  <span className="text-xs font-bold text-slate-800 dark:text-slate-200">
-                    {member.User.FullName}
-                  </span>
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs font-bold text-slate-800 dark:text-slate-200">
+                      {member.User.FullName}
+                    </span>
+                    {isMemberLeader && (
+                      <Badge className="bg-indigo-600 px-1.5 py-0 text-[8px] font-bold text-white">Lead</Badge>
+                    )}
+                  </div>
                   <p className="text-[9px] font-semibold uppercase text-slate-400">
-                    {member.StudentProfile?.UniversityName || 'Đại học'}
+                    {member.User.Email || member.StudentProfile?.UniversityName || 'Đại học'}
                   </p>
                 </div>
-                <div className="flex flex-col items-end gap-1 text-right">
-                  <span className="font-mono text-xs font-bold text-slate-700">
-                    {member.User.ShortId || member.StudentProfile?.StudentCode || '-'}
-                  </span>
-                  <Badge className="border border-blue-100 bg-blue-50 text-[8px] font-extrabold text-blue-600">
-                    {isFpt ? 'SINH VIÊN FPT' : 'SINH VIÊN NGOÀI'}
-                  </Badge>
+                <div className="flex items-center gap-2">
+                  <div className="flex flex-col items-end gap-1 text-right">
+                    <span className="font-mono text-xs font-bold text-slate-700 dark:text-slate-300">
+                      {member.User.ShortId || member.StudentProfile?.StudentCode || '-'}
+                    </span>
+                    <Badge className="border border-blue-100 bg-blue-50 text-[8px] font-extrabold text-blue-600 dark:bg-blue-950/20 dark:text-blue-400">
+                      {isFpt ? 'SINH VIÊN FPT' : 'SINH VIÊN NGOÀI'}
+                    </Badge>
+                  </div>
+                  {isLeader && onRemoveMember && !isMemberLeader && (
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      title="Xóa thành viên khỏi nhóm"
+                      className="h-8 w-8 text-slate-400 hover:bg-rose-50 hover:text-rose-600 dark:hover:bg-rose-950/30"
+                      onClick={async () => {
+                        if (window.confirm(`Bạn có chắc chắn muốn xóa thành viên "${member.User.FullName}" khỏi nhóm?`)) {
+                          try {
+                            await onRemoveMember(member.TeamMemberId);
+                          } catch (err: unknown) {
+                            const axiosError = err as { response?: { data?: { message?: string } } };
+                            const msg = axiosError.response?.data?.message || (err instanceof Error ? err.message : '') || 'Không thể xóa thành viên.';
+                            alert(msg);
+                          }
+                        }
+                      }}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  )}
                 </div>
               </div>
             );

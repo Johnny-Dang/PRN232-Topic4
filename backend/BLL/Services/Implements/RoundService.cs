@@ -27,7 +27,7 @@ namespace BusinessLogicLayer.Services.Implements
         {
             var eventEntity = await _eventRepository.GetByIdAsync(eventId);
             if (eventEntity == null)
-                throw new Exception($"Event with id {eventId} not found");
+                throw new Exception($"Không tìm thấy sự kiện với id: {eventId}");
 
             var round = new Rounds
             {
@@ -88,7 +88,7 @@ namespace BusinessLogicLayer.Services.Implements
 
             var eventEntity = await _eventRepository.GetByIdAsync(round.EventId);
             if (eventEntity == null)
-                throw new Exception($"Event with id {round.EventId} not found");
+                throw new Exception($"Không tìm thấy sự kiện với id: {round.EventId}");
 
             if (request.StartDate < eventEntity.StartDate || request.EndDate > eventEntity.EndDate)
                 throw new Exception("Thời gian vòng thi phải nằm trong thời gian diễn ra event.");
@@ -115,7 +115,7 @@ namespace BusinessLogicLayer.Services.Implements
         {
             var round = await _roundRepository.GetByIdAsync(roundId);
             if (round == null)
-                throw new Exception($"Round with id {roundId} not found");
+                throw new Exception($"Không tìm thấy vòng thi với id: {roundId}");
 
             _roundRepository.Delete(round);
             await _unitOfWork.SaveChangesAsync();

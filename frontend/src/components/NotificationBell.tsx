@@ -40,23 +40,72 @@ const getNotificationConfig = (message: string, notificationId: string): ParsedN
   
   // Parse message format: [TYPE] Content with optional {data}
   const matchResult = message.match(/^\[([^\]]+)\]\s*(.+)/);
-  const type = matchResult ? matchResult[1].toUpperCase() : "GENERAL";
+  const rawType = matchResult ? matchResult[1].toUpperCase() : "GENERAL";
   const content = matchResult ? matchResult[2] : message;
+
+  // Auto-translate English notification messages to Vietnamese if needed
+  let translatedContent = content;
+
+  // Pattern: Coordinator {Name} proposed Mentor {Name} for Category {Cat}
+  const proposeMatch = content.match(/Coordinator\s+(.+?)\s+proposed\s+Mentor\s+(.+?)\s+for\s+Category\s+(.+)/i);
+  if (proposeMatch) {
+    const [, coordName, mentorName, catName] = proposeMatch;
+    translatedContent = `Coordinator ${coordName} đã đề xuất Mentor ${mentorName} phụ trách Category ${catName}.`;
+  } else {
+    translatedContent = translatedContent
+      .replace(/proposed Mentor/gi, "đã đề xuất Mentor")
+      .replace(/for Category/gi, "phụ trách Category")
+      .replace(/accepted Category/gi, "đã chấp nhận Category")
+      .replace(/rejected Category/gi, "đã từ chối Category");
+  }
 
   // Default config
   let config: ParsedNotification = {
     id,
     message,
-    displayMessage: content,
+    displayMessage: translatedContent,
     type: "GENERAL",
     typeLabel: "Thông báo",
     typeColor: "bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400",
   };
 
+  const lowerContent = content.toLowerCase();
+  const isMentorProposal =
+    lowerContent.includes("proposed mentor") ||
+    lowerContent.includes("đề xuất mentor") ||
+    lowerContent.includes("phụ trách category") ||
+    lowerContent.includes("phân công mentor") ||
+    rawType.includes("MENTOR");
+
+  if (isMentorProposal) {
+    return {
+      ...config,
+      type: "ADMIN",
+      typeLabel: "Yêu cầu phân công",
+      typeColor: "bg-sky-100 dark:bg-sky-900/30 text-sky-600 dark:text-sky-400",
+      navigateTo: "/mentor?tab=assignments",
+    };
+  }
+
+  const isBookingNotification =
+    lowerContent.includes("booked mentoring") ||
+    lowerContent.includes("lịch hẹn") ||
+    lowerContent.includes("đặt lịch");
+
+  if (isBookingNotification) {
+    return {
+      ...config,
+      type: "EVENT",
+      typeLabel: "Lịch hẹn Mentoring",
+      typeColor: "bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400",
+      navigateTo: "/mentor?tab=bookings",
+    };
+  }
+
   // Parse content for specific info (e.g., team name)
   const teamMatch = content.match(/đội\s+([^.]+)/i);
 
-  if (type.includes("THÔNG BÁO")) {
+  if (rawType.includes("THÔNG BÁO") || rawType.includes("NOTIFICATION")) {
     if (content.includes("ứng tuyển")) {
       config = {
         ...config,
@@ -77,20 +126,12 @@ const getNotificationConfig = (message: string, notificationId: string): ParsedN
         navigateTo: "/my-applications",
       };
     }
-  } else if (type.includes("ADMIN")) {
+  } else if (rawType.includes("ADMIN")) {
     config = {
       ...config,
       type: "ADMIN",
       typeLabel: "Quản trị",
       typeColor: "bg-amber-100 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400",
-      navigateTo: "/",
-    };
-  } else if (type.includes("NOTIFICATION")) {
-    config = {
-      ...config,
-      type: "GENERAL",
-      typeLabel: "Thông báo",
-      typeColor: "bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400",
       navigateTo: "/",
     };
   }

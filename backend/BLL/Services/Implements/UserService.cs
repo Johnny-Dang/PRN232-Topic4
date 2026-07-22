@@ -38,7 +38,7 @@ namespace BusinessLogicLayer.Services.Implements
         {
             var existing = (await _userRepository.FindAsync(u => u.Email == request.Email)).FirstOrDefault();
             if (existing != null)
-                throw new Exception("Email already registered");
+                throw new Exception("Email đã được đăng ký");
 
             var user = new Users
             {
@@ -62,11 +62,11 @@ namespace BusinessLogicLayer.Services.Implements
         public async Task<UserDto> CreateByCoordinatorAsync(CreateUserRequest request)
         {
             if (!CoordinatorAllowedRoles.Contains(request.Role))
-                throw new Exception("Role not allowed for coordinator creation");
+                throw new Exception("Vai trò không được phép tạo bởi người điều phối");
 
             var existing = (await _userRepository.FindAsync(u => u.Email == request.Email)).FirstOrDefault();
             if (existing != null)
-                throw new Exception("Email already registered");
+                throw new Exception("Email đã được đăng ký");
 
             var user = new Users
             {
@@ -90,8 +90,8 @@ namespace BusinessLogicLayer.Services.Implements
         public async Task<AuthResponse> LoginAsync(LoginRequest request)
         {
             var user = (await _userRepository.FindAsync(u => u.Email == request.Email)).FirstOrDefault();
-            if (user == null) throw new Exception("Invalid credentials");
-            if (!PasswordHasher.Verify(request.Password, user.Password)) throw new Exception("Invalid credentials");
+            if (user == null) throw new Exception("Thông tin đăng nhập không hợp lệ");
+            if (!PasswordHasher.Verify(request.Password, user.Password)) throw new Exception("Thông tin đăng nhập không hợp lệ");
 
             if (string.IsNullOrWhiteSpace(user.ShortId))
             {
@@ -154,10 +154,10 @@ namespace BusinessLogicLayer.Services.Implements
                 .FirstOrDefault();
 
             if (refreshToken == null || !refreshToken.IsActive)
-                throw new Exception("Invalid or expired refresh token");
+                throw new Exception("Token làm mới không hợp lệ hoặc đã hết hạn");
 
             var user = await _userRepository.GetByIdAsync(refreshToken.UserId);
-            if (user == null) throw new Exception("User not found");
+            if (user == null) throw new Exception("Không tìm thấy người dùng");
 
             // Revoke the used refresh token
             refreshToken.RevokedAt = DateTime.UtcNow;
@@ -197,7 +197,7 @@ namespace BusinessLogicLayer.Services.Implements
         private string GenerateJwtToken(Users user, out DateTime expiresAt)
         {
             var jwt = _configuration.GetSection("Jwt");
-            var secret = jwt["Secret"] ?? throw new Exception("JWT Secret not configured");
+            var secret = jwt["Secret"] ?? throw new Exception("JWT Secret chưa được cấu hình");
             var issuer = jwt["Issuer"] ?? "seal";
             var audience = jwt["Audience"] ?? "seal_audience";
 
@@ -303,7 +303,7 @@ namespace BusinessLogicLayer.Services.Implements
                     return candidate;
             }
 
-            throw new Exception("Could not generate a unique short user id. Please try again.");
+            throw new Exception("Không thể tạo mã người dùng ngắn duy nhất. Vui lòng thử lại.");
         }
 
         private static string GetShortIdPrefix(string role)

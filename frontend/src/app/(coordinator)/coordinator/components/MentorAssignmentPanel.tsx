@@ -6,6 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { createCategoryMentorApi } from '@/services/api/mentor';
+import { useAutoDismissState } from '@/hooks/useAutoDismiss';
 import { getApiErrorMessage, getAssignmentStatusClass, getCategoryName } from './helpers';
 import type { CoordinatorCategory, CoordinatorMentorAssignment, CoordinatorMentorUser } from './types';
 
@@ -30,8 +31,8 @@ export default function MentorAssignmentPanel({
 }: MentorAssignmentPanelProps) {
   const [mentorUserId, setMentorUserId] = useState('');
   const [assigning, setAssigning] = useState(false);
-  const [success, setSuccess] = useState('');
-  const [error, setError] = useState('');
+  const [success, setSuccess] = useAutoDismissState('');
+  const [error, setError] = useAutoDismissState('');
 
   const mentorById = useMemo(() => {
     return new Map(mentors.map((mentor) => [mentor.UserId, mentor]));

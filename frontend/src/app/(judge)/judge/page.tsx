@@ -27,6 +27,7 @@ import {
   updateScores,
   JudgeAssignedSubmission,
 } from '@/lib/api';
+import { useAutoDismissState } from '@/hooks/useAutoDismiss';
 import { JudgeCalibrationList } from './components';
 
 type TabType = 'scoring' | 'ranking' | 'calibration';
@@ -44,7 +45,7 @@ function JudgePageContent() {
   const [activeTab, setActiveTab] = useState<TabType>('scoring');
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
-  const [message, setMessage] = useState('');
+  const [message, setMessage] = useAutoDismissState('');
   const [selectedSubId, setSelectedSubId] = useState('');
   const [scores, setScores] = useState<Record<string, number>>({});
   const [comments, setComments] = useState<Record<string, string>>({});

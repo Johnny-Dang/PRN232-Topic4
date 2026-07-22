@@ -43,14 +43,14 @@ namespace BusinessLogicLayer.Services.Implements
         public async Task<MentorScheduleDto> CreateScheduleAsync(Guid mentorUserId, CreateScheduleDto dto)
         {
             if (dto.StartTime >= dto.EndTime)
-                throw new Exception("StartTime must be earlier than EndTime");
+                throw new Exception("Thời gian bắt đầu phải sớm hơn thời gian kết thúc");
 
             if (dto.StartTime < DateTime.UtcNow)
-                throw new Exception("Cannot create schedule slot in the past");
+                throw new Exception("Không thể tạo lịch hẹn trong quá khứ");
 
             var mentorUser = await _userRepository.GetByIdAsync(mentorUserId);
             if (mentorUser == null)
-                throw new Exception("Mentor user not found");
+                throw new Exception("Không tìm thấy người dùng mentor");
 
             var schedule = new MentorSchedules
             {
@@ -116,13 +116,13 @@ namespace BusinessLogicLayer.Services.Implements
         {
             var schedule = await _scheduleRepository.GetByIdAsync(scheduleId);
             if (schedule == null)
-                throw new Exception("Schedule slot not found");
+                throw new Exception("Không tìm thấy lịch hẹn");
 
             if (schedule.MentorUserId != mentorUserId)
-                throw new Exception("You are not authorized to delete this schedule slot");
+                throw new Exception("Bạn không có quyền xóa lịch hẹn này");
 
             if (schedule.IsBooked)
-                throw new Exception("Cannot delete a schedule slot that has already been booked");
+                throw new Exception("Không thể xóa lịch hẹn đã được đặt");
 
             _scheduleRepository.Delete(schedule);
 
@@ -177,17 +177,17 @@ namespace BusinessLogicLayer.Services.Implements
             var leaderTeams = await _teamRepository.FindAsync(t => t.TeamLeaderId == teamLeaderUserId);
             var team = leaderTeams.FirstOrDefault();
             if (team == null)
-                throw new Exception("You are not the leader of any team");
+                throw new Exception("Bạn không phải là trưởng nhóm của bất kỳ đội nào");
 
             var schedule = await _scheduleRepository.GetByIdAsync(dto.ScheduleId);
             if (schedule == null)
-                throw new Exception("Schedule slot not found");
+                throw new Exception("Không tìm thấy lịch hẹn");
 
             if (schedule.IsBooked)
-                throw new Exception("This schedule slot has already been booked");
+                throw new Exception("Lịch hẹn này đã được đặt");
 
             if (schedule.StartTime < DateTime.UtcNow)
-                throw new Exception("Cannot book a schedule slot in the past");
+                throw new Exception("Không thể đặt lịch hẹn trong quá khứ");
 
             schedule.IsBooked = true;
             _scheduleRepository.Update(schedule);
@@ -306,10 +306,10 @@ namespace BusinessLogicLayer.Services.Implements
         {
             var booking = await _bookingRepository.GetByIdAsync(bookingId);
             if (booking == null)
-                throw new Exception("Booking not found");
+                throw new Exception("Không tìm thấy đặt lịch");
 
             if (booking.MentorUserId != mentorUserId)
-                throw new Exception("You are not authorized to update this booking");
+                throw new Exception("Bạn không có quyền cập nhật đặt lịch này");
 
             var oldStatus = booking.Status;
             booking.Status = dto.Status.ToUpper();
@@ -382,14 +382,14 @@ namespace BusinessLogicLayer.Services.Implements
         {
             var booking = await _bookingRepository.GetByIdAsync(dto.BookingId);
             if (booking == null)
-                throw new Exception("Booking not found");
+                throw new Exception("Không tìm thấy đặt lịch");
 
             if (booking.MentorUserId != mentorUserId)
-                throw new Exception("Only the assigned Mentor can provide feedback for this session");
+                throw new Exception("Chỉ mentor được chỉ định mới có thể cung cấp phản hồi cho buổi này");
 
             var team = await _teamRepository.GetByIdAsync(booking.TeamId);
             if (team == null)
-                throw new Exception("Team not found");
+                throw new Exception("Không tìm thấy đội");
 
             var feedback = new MentoringFeedbacks
             {

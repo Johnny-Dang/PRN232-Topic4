@@ -27,7 +27,7 @@ namespace BusinessLogicLayer.Services.Implements
         {
             var eventEntity = await _eventRepository.GetByIdAsync(request.EventId);
             if (eventEntity == null)
-                throw new Exception($"Event with id {request.EventId} not found");
+                throw new Exception($"Không tìm thấy sự kiện với id: {request.EventId}");
 
             var existingCategories = await _categoryRepository.FindAsync(c => c.EventId == request.EventId);
             if (existingCategories.Count > 0)
@@ -82,11 +82,11 @@ namespace BusinessLogicLayer.Services.Implements
         {
             var category = await _categoryRepository.GetByIdAsync(request.CategoryId);
             if (category == null)
-                throw new Exception($"Category with id {request.CategoryId} not found");
+                throw new Exception($"Không tìm thấy hạng mục với id: {request.CategoryId}");
 
             var eventEntity = await _eventRepository.GetByIdAsync(request.EventId);
             if (eventEntity == null)
-                throw new Exception($"Event with id {request.EventId} not found");
+                throw new Exception($"Không tìm thấy sự kiện với id: {request.EventId}");
 
             category.EventId = request.EventId;
             category.CategoryName = request.CategoryName;
@@ -102,7 +102,7 @@ namespace BusinessLogicLayer.Services.Implements
         {
             var category = await _categoryRepository.GetByIdAsync(categoryId);
             if (category == null)
-                throw new Exception($"Category with id {categoryId} not found");
+                throw new Exception($"Không tìm thấy hạng mục với id: {categoryId}");
 
             _categoryRepository.Delete(category);
             await _unitOfWork.SaveChangesAsync();

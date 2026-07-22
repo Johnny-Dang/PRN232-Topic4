@@ -442,6 +442,5 @@ SELECT 'MentoringFeedbacks Count', COUNT(*) FROM MentoringFeedbacks;
 select * from Events
 select * from Users
 select * from Teams
-select * from TeamMembers
+select * from TeamMembers where TeamId = 'B40B7B29-577D-4330-8F88-0779FC2AFD82'
 select * from Notifications
-Delete Teams where TeamId = 'B22AA831-593B-45FB-80F7-ABE38BB984AF'

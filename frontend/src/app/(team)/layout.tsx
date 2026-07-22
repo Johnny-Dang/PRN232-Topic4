@@ -1,10 +1,11 @@
-﻿'use client';
+'use client';
 
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import {
   CalendarDays,
+  CalendarCheck,
   ChevronLeft,
   ChevronRight,
   HelpCircle,
@@ -42,12 +43,13 @@ export default function TeamLayout({ children }: { children: React.ReactNode }) 
     }
 
     try {
-      const user = JSON.parse(session) as { Role?: string };
-      const isAuthorized = user.Role === 'Leader' || user.Role === 'Member';
-      if (!isAuthorized) {
-        router.push('/');
+      const user = JSON.parse(session) as Record<string, unknown>;
+      if (!user.UserID && !user.userId) {
+        localStorage.removeItem('seal_user');
+        router.push('/login');
+        return;
       }
-      setAuthorized(isAuthorized);
+      setAuthorized(true);
     } catch {
       localStorage.removeItem('seal_user');
       router.push('/login');
@@ -60,6 +62,12 @@ export default function TeamLayout({ children }: { children: React.ReactNode }) 
       href: '/leader',
       icon: UserCheck,
       description: 'Nộp bài & quản lý repo dự án',
+    },
+    {
+      label: 'Hẹn lịch Mentoring',
+      href: '/mentoring',
+      icon: CalendarCheck,
+      description: 'Hẹn lịch tư vấn với Mentor & xem feedback',
     },
     {
       label: 'Cổng Thành viên',

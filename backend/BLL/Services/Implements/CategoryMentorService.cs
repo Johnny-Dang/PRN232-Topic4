@@ -45,7 +45,7 @@ namespace BusinessLogicLayer.Services.Implements
 
             if (existingAssignments.Any())
                 throw new Exception(
-                    "This Mentor already has an active assignment for the selected Category."
+                    "Mentor này đã có một phân công đang hoạt động cho hạng mục đã chọn."
                 );
 
             var categoryMentor = new CategoryMentors
@@ -130,7 +130,7 @@ namespace BusinessLogicLayer.Services.Implements
         {
             var category = await _categoryRepository.GetByIdAsync(categoryId);
             if (category == null)
-                throw new Exception($"Category with id {categoryId} not found");
+                throw new Exception($"Không tìm thấy hạng mục với id: {categoryId}");
 
             var categoryMentors = await _categoryMentorRepository.FindAsync(assignment =>
                 assignment.CategoryId == categoryId
@@ -161,7 +161,7 @@ namespace BusinessLogicLayer.Services.Implements
                 request.CategoryMentorId
             );
             if (categoryMentor == null)
-                throw new Exception($"CategoryMentor with id {request.CategoryMentorId} not found");
+                throw new Exception($"Không tìm thấy mentor hạng mục với id: {request.CategoryMentorId}");
 
             await ValidateForeignKeysAsync(request.CategoryId, request.UserId);
 
@@ -178,7 +178,7 @@ namespace BusinessLogicLayer.Services.Implements
         {
             var categoryMentor = await _categoryMentorRepository.GetByIdAsync(categoryMentorId);
             if (categoryMentor == null)
-                throw new Exception($"CategoryMentor with id {categoryMentorId} not found");
+                throw new Exception($"Không tìm thấy mentor hạng mục với id: {categoryMentorId}");
 
             _categoryMentorRepository.Delete(categoryMentor);
             await _unitOfWork.SaveChangesAsync();
@@ -189,15 +189,15 @@ namespace BusinessLogicLayer.Services.Implements
             var categoryMentor = await _categoryMentorRepository.GetByIdAsync(categoryMentorId);
             if (categoryMentor == null)
                 throw new Exception(
-                    $"CategoryMentor assignment with id {categoryMentorId} not found"
+                    $"Không tìm thấy phân công mentor hạng mục với id: {categoryMentorId}"
                 );
 
             if (categoryMentor.UserId != mentorUserId)
-                throw new Exception("You are not authorized to approve this mentor assignment.");
+                throw new Exception("Bạn không có quyền phê duyệt phân công mentor này.");
 
             if (categoryMentor.Status != "Pending")
                 throw new Exception(
-                    $"Assignment status is '{categoryMentor.Status}', but only 'Pending' assignments can be approved."
+                    $"Trạng thái phân công là '{categoryMentor.Status}', nhưng chỉ có phân công đang 'Chờ duyệt' mới có thể được phê duyệt."
                 );
 
             categoryMentor.Status = "Approved";
@@ -249,15 +249,15 @@ namespace BusinessLogicLayer.Services.Implements
             var categoryMentor = await _categoryMentorRepository.GetByIdAsync(categoryMentorId);
             if (categoryMentor == null)
                 throw new Exception(
-                    $"CategoryMentor assignment with id {categoryMentorId} not found"
+                    $"Không tìm thấy phân công mentor hạng mục với id: {categoryMentorId}"
                 );
 
             if (categoryMentor.UserId != mentorUserId)
-                throw new Exception("You are not authorized to reject this mentor assignment.");
+                throw new Exception("Bạn không có quyền từ chối phân công mentor này.");
 
             if (categoryMentor.Status != "Pending")
                 throw new Exception(
-                    $"Assignment status is '{categoryMentor.Status}', but only 'Pending' assignments can be rejected."
+                    $"Trạng thái phân công là '{categoryMentor.Status}', nhưng chỉ có phân công đang 'Chờ duyệt' mới có thể được từ chối."
                 );
 
             categoryMentor.Status = "Rejected";
@@ -308,15 +308,15 @@ namespace BusinessLogicLayer.Services.Implements
         {
             var category = await _categoryRepository.GetByIdAsync(categoryId);
             if (category == null)
-                throw new Exception($"Category with id {categoryId} not found");
+                throw new Exception($"Không tìm thấy hạng mục với id: {categoryId}");
 
             var user = await _userRepository.GetByIdAsync(userId);
             if (user == null)
-                throw new Exception($"User with id {userId} not found");
+                throw new Exception($"Không tìm thấy người dùng với id: {userId}");
 
             if (user.Role != "Mentor")
                 throw new Exception(
-                    $"User with id {userId} is not a Mentor. Only users with Mentor role can be assigned."
+                    $"Người dùng với id: {userId} không phải là Mentor. Chỉ có người dùng có vai trò Mentor mới có thể được phân công."
                 );
         }
 

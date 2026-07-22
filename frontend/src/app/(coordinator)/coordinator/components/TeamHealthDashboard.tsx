@@ -7,11 +7,12 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { getCoordinatorHealthOverviewApi } from '@/services/api/mentorship';
 import type { CoordinatorHealthOverview } from '@/services/types/mentorship';
+import { useAutoDismissState } from '@/hooks/useAutoDismiss';
 
 export default function TeamHealthDashboard() {
   const [loading, setLoading] = useState(true);
   const [data, setData] = useState<CoordinatorHealthOverview | null>(null);
-  const [error, setError] = useState('');
+  const [error, setError] = useAutoDismissState('');
   const [filter, setFilter] = useState<'ALL' | 'RED' | 'YELLOW' | 'GREEN' | 'ZERO_BOOKINGS'>('ALL');
 
   const fetchHealthOverview = useCallback(async () => {
@@ -21,7 +22,6 @@ export default function TeamHealthDashboard() {
       const res = await getCoordinatorHealthOverviewApi();
       setData(res);
     } catch (err: unknown) {
-      console.error(err);
       setError('Không thể tải dữ liệu tiến độ & sức khỏe các đội thi.');
     } finally {
       setLoading(false);

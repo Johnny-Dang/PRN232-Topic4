@@ -1287,6 +1287,22 @@ export async function createTeam(teamName: string): Promise<Team | null> {
   }
 }
 
+export async function updateTeamName(
+  teamId: string,
+  teamName: string,
+): Promise<Team | null> {
+  if (!useLiveApi || !teamId || !teamName.trim()) return null;
+  try {
+    const response = await apiClient.put<BackendTeam>(`/Teams/${teamId}`, {
+      TeamName: teamName.trim(),
+    });
+    return mapTeam(response.data);
+  } catch (error: unknown) {
+    logApiError("updateTeamName", error);
+    throw error;
+  }
+}
+
 export async function setTeamCategory(
   teamId: string,
   categoryId: string | null | undefined,

@@ -43,7 +43,7 @@ namespace BusinessLogicLayer.Services.Implements
         {
             var creator = await _userRepository.GetByIdAsync(creatorUserId);
             if (creator == null)
-                throw new Exception($"User with id {creatorUserId} not found");
+                throw new Exception($"Không tìm thấy người dùng với id: {creatorUserId}");
 
             if (string.Equals(creator.Role, "Mentor", StringComparison.OrdinalIgnoreCase) ||
                 string.Equals(creator.Role, "Judge", StringComparison.OrdinalIgnoreCase) ||
@@ -119,11 +119,11 @@ namespace BusinessLogicLayer.Services.Implements
         {
             var team = await _teamRepository.GetByIdAsync(request.TeamId);
             if (team == null)
-                throw new Exception($"Team with id {request.TeamId} not found");
+                throw new Exception($"Không tìm thấy đội với id: {request.TeamId}");
 
             var category = await _categoryRepository.GetByIdAsync(request.CategoryId);
             if (category == null)
-                throw new Exception($"Category with id {request.CategoryId} not found");
+                throw new Exception($"Không tìm thấy hạng mục với id: {request.CategoryId}");
 
             var eventId = request.EventId;
             if (!eventId.HasValue)
@@ -151,12 +151,12 @@ namespace BusinessLogicLayer.Services.Implements
         {
             var team = await _teamRepository.GetByIdAsync(teamId);
             if (team == null)
-                throw new Exception($"Team with id {teamId} not found");
+                throw new Exception($"Không tìm thấy đội với id: {teamId}");
 
             var teamMembers = await _teamMemberRepository.FindAsync(x => x.TeamId == teamId);
             var isMember = teamMembers.Any(m => m.UserId == requesterUserId);
             if (team.TeamLeaderId != requesterUserId && !isMember)
-                throw new Exception("Only the team leader or team members can choose or change the category");
+                throw new Exception("Chỉ trưởng nhóm hoặc thành viên mới có thể chọn hoặc thay đổi hạng mục");
 
             // Look up the first category of the event if request.CategoryId is not specified
             Guid categoryId = request.CategoryId ?? Guid.Empty;
@@ -164,7 +164,7 @@ namespace BusinessLogicLayer.Services.Implements
             {
                 var eventCategory = await _categoryRepository.FirstOrDefaultAsync(c => c.EventId == request.EventId);
                 if (eventCategory == null)
-                    throw new Exception("No categories found for this event");
+                    throw new Exception("Không tìm thấy hạng mục nào cho sự kiện này");
                 categoryId = eventCategory.CategoryId;
             }
 
@@ -207,7 +207,7 @@ namespace BusinessLogicLayer.Services.Implements
                 await _unitOfWork.SaveChangesAsync();
  
                 var cat = await _categoryRepository.GetByIdAsync(categoryId);
-                var catName = cat?.CategoryName ?? "Unknown Category";
+                var catName = cat?.CategoryName ?? "Không xác định";
                 await RegisterTeamMembersAsEventParticipantsAsync(teamMembers, request.EventId);
                 await _unitOfWork.SaveChangesAsync();
  
@@ -234,7 +234,7 @@ namespace BusinessLogicLayer.Services.Implements
                 await _unitOfWork.SaveChangesAsync();
  
                 var category = await _categoryRepository.GetByIdAsync(categoryId);
-                var categoryName = category?.CategoryName ?? "Unknown Category";
+                var categoryName = category?.CategoryName ?? "Không xác định";
                 await RegisterTeamMembersAsEventParticipantsAsync(teamMembers, request.EventId);
                 await _unitOfWork.SaveChangesAsync();
  
@@ -253,7 +253,7 @@ namespace BusinessLogicLayer.Services.Implements
         {
             var team = await _teamRepository.GetByIdAsync(teamId);
             if (team == null)
-                throw new Exception($"Team with id {teamId} not found");
+                throw new Exception($"Không tìm thấy đội với id: {teamId}");
 
             _teamRepository.Delete(team);
             await _unitOfWork.SaveChangesAsync();
@@ -267,18 +267,18 @@ namespace BusinessLogicLayer.Services.Implements
         {
             var team = await _teamRepository.GetByIdAsync(teamId);
             if (team == null)
-                throw new Exception($"Team with id {teamId} not found");
+                throw new Exception($"Không tìm thấy đội với id: {teamId}");
 
             if (team.TeamLeaderId != requesterUserId)
-                throw new Exception("Only the team leader can add members");
+                throw new Exception("Chỉ trưởng nhóm mới có thể thêm thành viên");
 
             var currentMembers = await _teamMemberRepository.FindAsync(x => x.TeamId == teamId);
             if (currentMembers.Count >= 5)
-                throw new Exception("The team has already reached the maximum limit of 5 members.");
+                throw new Exception("Đội đã đạt giới hạn tối đa 5 thành viên.");
 
             var memberUser = await ResolveMemberUserAsync(request);
             if (memberUser == null)
-                throw new Exception("User not found by the provided id, email, short id, or student code.");
+                throw new Exception("Không tìm thấy người dùng qua id, email, mã, hoặc mã sinh viên đã cung cấp.");
 
             if (string.Equals(memberUser.Role, "Mentor", StringComparison.OrdinalIgnoreCase) ||
                 string.Equals(memberUser.Role, "Judge", StringComparison.OrdinalIgnoreCase) ||
@@ -363,7 +363,7 @@ namespace BusinessLogicLayer.Services.Implements
                     return userByStudentCode;
             }
 
-            throw new Exception("Please provide UserId, Email, ShortId, or StudentCode to add a team member.");
+            throw new Exception("Vui lòng cung cấp UserId, Email, ShortId, hoặc StudentCode để thêm thành viên vào nhóm.");
         }
 
         private async Task<Users?> ResolveMemberUserByStudentCodeAsync(string studentCode)
@@ -379,37 +379,37 @@ namespace BusinessLogicLayer.Services.Implements
         {
             var category = await _categoryRepository.GetByIdAsync(categoryId);
             if (category == null)
-                throw new Exception($"Category with id {categoryId} not found");
+                throw new Exception($"Không tìm thấy hạng mục với id: {categoryId}");
 
             if (category.EventId != eventId)
-                throw new Exception("The selected category does not belong to the selected event.");
+                throw new Exception("Hạng mục đã chọn không thuộc sự kiện đã chọn.");
 
             // Bypassed: A team can reuse its profile and register for a new event even if the current event hasn't ended.
 
             var teamMembers = await _teamMemberRepository.FindAsync(x => x.TeamId == team.TeamId);
             if (teamMembers.Count < 3)
                 throw new Exception(
-                    "The team must have at least 3 members before choosing a category."
+                    "Đội phải có ít nhất 3 thành viên trước khi chọn hạng mục."
                 );
 
             if (teamMembers.Count > 5)
-                throw new Exception("The team cannot have more than 5 members.");
+                throw new Exception("Đội không thể có quá 5 thành viên.");
 
             var eventData = await _eventRepository.GetByIdAsync(eventId);
             if (eventData == null)
-                throw new Exception("The event associated with this category does not exist.");
+                throw new Exception("Sự kiện liên kết với hạng mục này không tồn tại.");
 
             if (!eventData.IsPublished || !string.Equals(eventData.Status, "Published", StringComparison.OrdinalIgnoreCase))
-                throw new Exception("The selected event is not published for registration.");
+                throw new Exception("Sự kiện đã chọn chưa được công bố để đăng ký.");
 
             if (DateTime.UtcNow >= eventData.EndDate)
-                throw new Exception("Registration for this event is already closed.");
+                throw new Exception("Đăng ký cho sự kiện này đã đóng.");
 
             if (
                 DateTime.UtcNow < eventData.EndDate
                 && string.Equals(team.TeamStatus, "Closed", StringComparison.OrdinalIgnoreCase)
             )
-                throw new Exception("The category is not open for team selection.");
+                throw new Exception("Hạng mục chưa mở để đội chọn.");
 
             await ValidateTeamMembersConcurrentEventLimitAsync(teamMembers, eventData);
             await ValidateTeamMembersEligibleForEventAsync(team, teamMembers, eventId);
@@ -443,8 +443,8 @@ namespace BusinessLogicLayer.Services.Implements
                 if (concurrentEvents >= MaxConcurrentEventsPerUser)
                 {
                     throw new Exception(
-                        $"A team member is already registered for {MaxConcurrentEventsPerUser} concurrent events. "
-                        + "Each participant can join at most 3 events at the same time."
+                        $"Một thành viên đã đăng ký {MaxConcurrentEventsPerUser} sự kiện trùng lặp. "
+                        + "Mỗi người tham gia có thể tham gia tối đa 3 sự kiện cùng lúc."
                     );
                 }
             }
@@ -477,11 +477,11 @@ namespace BusinessLogicLayer.Services.Implements
             foreach (var membership in joinedMemberships)
             {
                 if (membership.TeamId == team.TeamId)
-                    throw new Exception("The user is already a member of this team.");
+                    throw new Exception("Người dùng đã là thành viên của đội này.");
 
                 var joinedTeam = await _teamRepository.GetByIdAsync(membership.TeamId);
                 if (joinedTeam?.EventId == null)
-                    throw new Exception("The user already belongs to another team that has not registered an event yet.");
+                    throw new Exception("Người dùng đã thuộc về một đội khác chưa đăng ký sự kiện.");
             }
         }
 
@@ -496,7 +496,7 @@ namespace BusinessLogicLayer.Services.Implements
 
                 var joinedTeam = await _teamRepository.GetByIdAsync(membership.TeamId);
                 if (joinedTeam?.EventId == eventId)
-                    throw new Exception("The user already belongs to another team in this event.");
+                    throw new Exception("Người dùng đã thuộc về một đội khác trong sự kiện này.");
             }
 
             // Bypassed: A user is allowed to register their team to the event even if they have already registered individually.

@@ -32,7 +32,7 @@ namespace BusinessLogicLayer.Services.Implements
         {
             var eventEntity = await _eventRepository.GetByIdAsync(eventId);
             if (eventEntity == null)
-                throw new Exception($"Event with id {eventId} not found");
+                throw new Exception($"Không tìm thấy sự kiện với id: {eventId}");
 
             var duplicateCriteria = request.Criteria
                 .GroupBy(x => x.CriteriaId)
@@ -41,7 +41,7 @@ namespace BusinessLogicLayer.Services.Implements
                 .ToList();
 
             if (duplicateCriteria.Any())
-                throw new Exception("Duplicate criteria found in request");
+                throw new Exception("Phát hiện tiêu chí trùng lặp trong yêu cầu");
 
             var existingEventCriteria = await _eventCriteriaRepository.FindAsync(x => x.EventId == eventId);
             var requestedCriteriaIds = request.Criteria.Select(x => x.CriteriaId).ToHashSet();

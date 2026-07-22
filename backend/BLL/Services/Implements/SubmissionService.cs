@@ -36,27 +36,27 @@ namespace BusinessLogicLayer.Services.Implements
         {
             var team = await _teamRepository.GetByIdAsync(request.TeamId);
             if (team == null)
-                throw new Exception($"Team with id {request.TeamId} not found");
+                throw new Exception($"Không tìm thấy đội với id: {request.TeamId}");
 
             if (team.TeamLeaderId != userId)
-                throw new Exception("Only the team leader can submit the project.");
+                throw new Exception("Chỉ trưởng nhóm mới có thể nộp bài dự án.");
 
             var round = await _roundRepository.GetByIdAsync(request.RoundId);
             if (round == null)
-                throw new Exception($"Round with id {request.RoundId} not found");
+                throw new Exception($"Không tìm thấy vòng thi với id: {request.RoundId}");
 
             if (team.EventId != null && team.EventId != round.EventId)
-                throw new Exception("Round does not belong to the team's event.");
+                throw new Exception("Vòng thi không thuộc sự kiện của đội.");
 
             var now = DateTime.UtcNow;
             if (now < round.StartDate)
-                throw new Exception($"Submission is not yet open. Submissions will be accepted starting from {round.StartDate:yyyy-MM-dd HH:mm:ss} UTC.");
+                throw new Exception($"Vòng thi chưa mở. Bài nộp sẽ được chấp nhận từ {round.StartDate:yyyy-MM-dd HH:mm:ss} UTC.");
             if (now > round.SubmissionDeadline)
-                throw new Exception("Submission deadline has passed. You cannot create a new submission.");
+                throw new Exception("Đã quá hạn nộp bài. Bạn không thể tạo bài nộp mới.");
 
             var existingSubmission = await _submissionRepository.FirstOrDefaultAsync(x => x.TeamId == request.TeamId && x.RoundId == request.RoundId);
             if (existingSubmission != null)
-                throw new Exception("This team already has a submission for this round. Use update instead.");
+                throw new Exception("Đội này đã có bài nộp cho vòng này. Vui lòng sử dụng chức năng cập nhật.");
 
             var submission = new Submissions
             {
@@ -130,26 +130,26 @@ namespace BusinessLogicLayer.Services.Implements
         {
             var submission = await _submissionRepository.GetByIdAsync(request.SubmissionId);
             if (submission == null)
-                throw new Exception($"Submission with id {request.SubmissionId} not found");
+                throw new Exception($"Không tìm thấy bài nộp với id: {request.SubmissionId}");
 
             if (!submission.TeamId.HasValue)
-                throw new Exception("Calibration samples cannot be updated through this endpoint");
+                throw new Exception("Mẫu calibration không thể cập nhật qua endpoint này");
 
             var updatedTeam = await _teamRepository.GetByIdAsync(submission.TeamId.Value);
             if (updatedTeam == null)
-                throw new Exception($"Team with id {submission.TeamId} not found");
+                throw new Exception($"Không tìm thấy đội với id: {submission.TeamId}");
 
             if (updatedTeam.TeamLeaderId != userId)
-                throw new Exception("Only the team leader can update the submission.");
+                throw new Exception("Chỉ trưởng nhóm mới có thể cập nhật bài nộp.");
 
             var round = await _roundRepository.GetByIdAsync(submission.RoundId);
             if (round == null)
-                throw new Exception($"Round with id {submission.RoundId} not found");
+                throw new Exception($"Không tìm thấy vòng thi với id: {submission.RoundId}");
 
             if (DateTime.UtcNow < round.StartDate)
-                throw new Exception($"Submission is not yet open. Submissions will be accepted starting from {round.StartDate:yyyy-MM-dd HH:mm:ss} UTC.");
+                throw new Exception($"Vòng thi chưa mở. Bài nộp sẽ được chấp nhận từ {round.StartDate:yyyy-MM-dd HH:mm:ss} UTC.");
             if (DateTime.UtcNow > round.SubmissionDeadline)
-                throw new Exception("Submission deadline has passed. You cannot update this submission.");
+                throw new Exception("Đã quá hạn nộp bài. Bạn không thể cập nhật bài nộp này.");
 
             var oldValue = JsonSerializer.Serialize(new
             {
@@ -199,17 +199,17 @@ namespace BusinessLogicLayer.Services.Implements
         {
             var submission = await _submissionRepository.GetByIdAsync(submissionId);
             if (submission == null)
-                throw new Exception($"Submission with id {submissionId} not found");
+                throw new Exception($"Không tìm thấy bài nộp với id: {submissionId}");
 
             if (!submission.TeamId.HasValue)
-                throw new Exception("Calibration samples cannot be deleted through this endpoint");
+                throw new Exception("Mẫu calibration không thể xóa qua endpoint này");
 
             var team = await _teamRepository.GetByIdAsync(submission.TeamId.Value);
             if (team == null)
-                throw new Exception($"Team with id {submission.TeamId} not found");
+                throw new Exception($"Không tìm thấy đội với id: {submission.TeamId}");
 
             if (team.TeamLeaderId != userId)
-                throw new Exception("Only the team leader can delete the submission.");
+                throw new Exception("Chỉ trưởng nhóm mới có thể xóa bài nộp.");
 
             _submissionRepository.Delete(submission);
             await _unitOfWork.SaveChangesAsync();

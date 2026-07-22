@@ -41,10 +41,10 @@ namespace BusinessLogicLayer.Services.Implements
         {
             var notification = await _notificationRepository.GetByIdAsync(notificationId);
             if (notification == null)
-                throw new Exception("Notification not found");
+                throw new Exception("Không tìm thấy thông báo");
 
             if (notification.UserId != userId)
-                throw new Exception("Unauthorized to modify this notification");
+                throw new Exception("Không có quyền sửa thông báo này");
 
             notification.IsRead = true;
             _notificationRepository.Update(notification);

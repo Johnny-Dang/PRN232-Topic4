@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect, useMemo, useState } from 'react';
-import { CalendarPlus, ChevronDown, ChevronUp, CirclePlus, Globe2, ImageUp, Pencil, Star, Trash2, Plus, X, Layers, Check, Calendar } from 'lucide-react';
+import { CalendarPlus, ChevronDown, ChevronUp, CirclePlus, Globe2, ImageUp, Pencil, Star, Trash2, Plus, X, Layers, Check, Calendar, Users } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -24,8 +24,10 @@ import {
   getEventByIdApi,
   type UpdateEventRequest,
 } from '@/services/api/competition';
-import { getTeams, type Team } from '@/lib/api';
+import { getTeams, getTeamMembers, type Team, type TeamMember, type User, type StudentProfile } from '@/lib/api';
 import type { Category } from '@/services/types/competition';
+import { useAutoDismissState } from '@/hooks/useAutoDismiss';
+import { cn } from '@/lib/utils';
 import type { CoordinatorEvent } from './types';
 import { formatDate, getApiErrorMessage, toDateInputValue } from './helpers';
 
@@ -50,6 +52,11 @@ export interface FormRoundItem {
   EndDate: string;
   SubmissionDeadline: string;
 }
+
+const EVENTS_PER_PAGE = 2;
+
+type EventContentSection = 'details' | 'categories' | 'rounds' | 'teams';
+type TeamMemberWithUser = Awaited<ReturnType<typeof getTeamMembers>>[number];
 
 const createInitialForm = () => {
   const now = new Date();
@@ -110,9 +117,6 @@ const createInitialCategoryForm = (eventId: string) => ({
   Description: '',
 });
 
-const EVENTS_PER_PAGE = 2;
-type EventContentSection = 'details' | 'categories' | 'rounds' | '';
-
 export default function EventHomeManager({
   events,
   onEventCreated,
@@ -124,39 +128,71 @@ export default function EventHomeManager({
   const [eventActionId, setEventActionId] = useState<string>('');
   const [roundEventId, setRoundEventId] = useState<string>('');
   const [expandedEventId, setExpandedEventId] = useState<string>('');
-  const [expandedSection, setExpandedSection] = useState<EventContentSection>('');
+  const [expandedSection, setExpandedSection] = useState<EventContentSection>('details');
   const [roundForm, setRoundForm] = useState<ReturnType<typeof createInitialRoundForm> | null>(null);
   const [creatingRound, setCreatingRound] = useState(false);
   const [editingRoundId, setEditingRoundId] = useState<string>('');
-  const [roundFormError, setRoundFormError] = useState<string>('');
+  const [roundFormError, setRoundFormError] = useAutoDismissState('');
   const [categories, setCategories] = useState<Category[]>([]);
   const [categoryEventId, setCategoryEventId] = useState<string>('');
   const [categoryForm, setCategoryForm] = useState<ReturnType<typeof createInitialCategoryForm> | null>(null);
   const [editingCategoryId, setEditingCategoryId] = useState<string>('');
   const [savingCategory, setSavingCategory] = useState(false);
-  const [categoryError, setCategoryError] = useState('');
+  const [categoryError, setCategoryError] = useAutoDismissState('');
   const [eventSearch, setEventSearch] = useState('');
   const [eventStatusFilter, setEventStatusFilter] = useState<'all' | 'published' | 'draft'>('all');
   const [eventPage, setEventPage] = useState(1);
-  const [message, setMessage] = useState<string>('');
-  const [error, setError] = useState<string>('');
+  const [message, setMessage] = useAutoDismissState('');
+  const [error, setError] = useAutoDismissState('');
 
   const [editingEventId, setEditingEventId] = useState<string | null>(null);
   const [editEventForm, setEditEventForm] = useState<UpdateEventRequest | null>(null);
   const [savingEvent, setSavingEvent] = useState(false);
-  const [editEventError, setEditEventError] = useState('');
+  const [editEventError, setEditEventError] = useAutoDismissState('');
   const [teams, setTeams] = useState<Team[]>([]);
+  const [teamMembersMap, setTeamMembersMap] = useState<Record<string, TeamMemberWithUser[]>>({});
+  const [selectedTeamForDetail, setSelectedTeamForDetail] = useState<Team | null>(null);
+  const [selectedTeamMembers, setSelectedTeamMembers] = useState<TeamMemberWithUser[]>([]);
+  const [loadingTeamDetail, setLoadingTeamDetail] = useState(false);
 
   useEffect(() => {
     void getCategoriesApi()
       .then(setCategories)
-      .catch((loadError: unknown) => {
-        console.error(loadError);
+      .catch(() => {
         setError('Không thể tải danh sách Category.');
       });
 
-    getTeams().then(setTeams).catch(console.error);
+    getTeams().then(setTeams).catch(() => {});
   }, []);
+
+  useEffect(() => {
+    if (expandedSection === 'teams' && expandedEventId) {
+      const eventTeams = getRegisteredTeamsForEvent(expandedEventId);
+      eventTeams.forEach((t) => {
+        if (!teamMembersMap[t.TeamID]) {
+          void getTeamMembers(t.TeamID)
+            .then((members) => {
+              setTeamMembersMap((prev) => ({ ...prev, [t.TeamID]: members }));
+            })
+            .catch(() => {});
+        }
+      });
+    }
+  }, [expandedSection, expandedEventId, teams, categories]);
+
+  const handleOpenTeamDetail = async (team: Team) => {
+    setSelectedTeamForDetail(team);
+    setLoadingTeamDetail(true);
+    try {
+      const members = teamMembersMap[team.TeamID] || (await getTeamMembers(team.TeamID));
+      setSelectedTeamMembers(members);
+      setTeamMembersMap((prev) => ({ ...prev, [team.TeamID]: members }));
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setLoadingTeamDetail(false);
+    }
+  };
 
   const filteredEvents = useMemo(() => {
     const search = eventSearch.trim().toLocaleLowerCase();
@@ -207,8 +243,17 @@ export default function EventHomeManager({
     }));
   };
 
+  const getRegisteredTeamsForEvent = (eventId: string) => {
+    const eventCategories = categories.filter((c) => c.EventId === eventId);
+    const eventCategoryIds = new Set(eventCategories.map((c) => c.CategoryId));
+
+    return teams.filter(
+      (t) => t.EventID === eventId || (t.CategoryID && eventCategoryIds.has(t.CategoryID)),
+    );
+  };
+
   const getRegisteredTeamsCount = (eventId: string) => {
-    return teams.filter((t) => t.EventID === eventId).length;
+    return getRegisteredTeamsForEvent(eventId).length;
   };
 
   const hasRegisteredTeams = (eventId: string) => getRegisteredTeamsCount(eventId) > 0;
@@ -537,7 +582,7 @@ export default function EventHomeManager({
   const toggleEventDetails = (eventId: string) => {
     if (expandedEventId === eventId && expandedSection === 'details') {
       setExpandedEventId('');
-      setExpandedSection('');
+      setExpandedSection('details');
       return;
     }
 
@@ -551,10 +596,10 @@ export default function EventHomeManager({
     setEditingRoundId('');
   };
 
-  const toggleEventSection = (eventId: string, section: Exclude<EventContentSection, '' | 'details'>) => {
+  const toggleEventSection = (eventId: string, section: EventContentSection) => {
     if (expandedEventId === eventId && expandedSection === section) {
       setExpandedEventId('');
-      setExpandedSection('');
+      setExpandedSection('details');
       return;
     }
 
@@ -575,7 +620,7 @@ export default function EventHomeManager({
       setEditingCategoryId('');
       setCategoryError('');
       setExpandedEventId('');
-      setExpandedSection('');
+      setExpandedSection('details');
       return;
     }
 
@@ -659,7 +704,7 @@ export default function EventHomeManager({
       setRoundForm(null);
       setEditingRoundId('');
       setExpandedEventId('');
-      setExpandedSection('');
+      setExpandedSection('details');
       return;
     }
 
@@ -1233,6 +1278,16 @@ export default function EventHomeManager({
                         Category
                         {expandedEventId === event.EventId && expandedSection === 'categories' ? <ChevronUp className="ml-1 h-3 w-3" /> : <ChevronDown className="ml-1 h-3 w-3" />}
                       </Button>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        className="h-8 rounded-lg border-0 bg-white/70 text-[10px] font-bold shadow-none hover:bg-white dark:bg-slate-900/70"
+                        onClick={() => toggleEventSection(event.EventId, 'teams')}
+                      >
+                        <Users className="mr-1 h-3.5 w-3.5 text-indigo-600 dark:text-indigo-400" />
+                        Đội thi ({getRegisteredTeamsCount(event.EventId)})
+                        {expandedEventId === event.EventId && expandedSection === 'teams' ? <ChevronUp className="ml-1 h-3 w-3" /> : <ChevronDown className="ml-1 h-3 w-3" />}
+                      </Button>
                       {event.IsPublished ? (
                         <Button
                           type="button"
@@ -1493,55 +1548,6 @@ export default function EventHomeManager({
                       </div>
                     )}
 
-                    {expandedSection === 'categories' && categoryEventId === event.EventId && categoryForm && (
-                      <form onSubmit={(submitEvent) => void handleSaveCategory(submitEvent)} className="space-y-3 rounded-xl border border-indigo-100 bg-indigo-50/50 p-3 dark:border-indigo-900/50 dark:bg-indigo-950/20">
-                        <div className="text-[10px] font-black uppercase tracking-widest text-indigo-600 dark:text-indigo-400">
-                          {editingCategoryId ? 'Chỉnh sửa Category của' : 'Thêm Category cho'} {event.EventName}
-                        </div>
-                        {categoryError && <div role="alert" className="rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-xs font-medium text-rose-700 dark:border-rose-900/60 dark:bg-rose-950/30 dark:text-rose-300">{categoryError}</div>}
-                        {!editingCategoryId ? (
-                          <div className="space-y-1.5">
-                            <label htmlFor={`category-select-${event.EventId}`} className="block text-[10px] font-bold uppercase tracking-wide text-slate-500">Tên Category (Hệ thống)</label>
-                            <select
-                              id={`category-select-${event.EventId}`}
-                              required
-                              value={categoryForm.CategoryName}
-                              className="w-full h-9 px-3 rounded-lg border border-slate-200 bg-white text-xs font-semibold focus:outline-none dark:bg-slate-900 dark:border-slate-700 dark:text-slate-200"
-                              onChange={(e) => {
-                                const val = e.target.value;
-                                const found = uniqueCategories.find((uc) => uc.name === val);
-                                if (found) {
-                                  setCategoryForm((current) => current ? { ...current, CategoryName: found.name, Description: found.description } : current);
-                                } else {
-                                  setCategoryForm((current) => current ? { ...current, CategoryName: '', Description: '' } : current);
-                                }
-                              }}
-                            >
-                              <option value="">-- Chọn Category từ hệ thống --</option>
-                              {uniqueCategories.map((uc) => (
-                                <option key={uc.name} value={uc.name}>{uc.name}</option>
-                              ))}
-                            </select>
-                          </div>
-                        ) : (
-                          <div className="space-y-1.5">
-                            <span className="block text-[10px] font-bold uppercase tracking-wide text-slate-500">Tên Category</span>
-                            <div className="h-9 px-3 flex items-center rounded-lg border border-slate-200 bg-slate-100 text-xs font-semibold text-slate-700 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-350">
-                              {categoryForm.CategoryName}
-                            </div>
-                          </div>
-                        )}
-                        <div className="space-y-1.5">
-                          <label htmlFor={`category-description-${event.EventId}`} className="block text-[10px] font-bold uppercase tracking-wide text-slate-500">Mô tả</label>
-                          <textarea id={`category-description-${event.EventId}`} rows={2} maxLength={2000} value={categoryForm.Description} onChange={(inputEvent) => setCategoryForm((current) => current ? { ...current, Description: inputEvent.target.value } : current)} placeholder="Mô tả ngắn về hạng mục thi đấu." className="w-full rounded-lg border border-slate-200 bg-white p-2 text-xs font-medium focus:outline-none dark:border-slate-700 dark:bg-slate-900" />
-                        </div>
-                        <div className="flex justify-end gap-2">
-                          <Button type="button" variant="outline" className="h-8 rounded-lg text-[10px]" onClick={() => toggleCategoryForm(event)}>Hủy</Button>
-                          <Button type="submit" disabled={savingCategory || hasRegisteredTeams(event.EventId)} className="h-8 rounded-lg bg-indigo-600 text-[10px] hover:bg-indigo-700">{savingCategory ? 'Đang lưu...' : editingCategoryId ? 'Lưu thay đổi' : 'Tạo Category'}</Button>
-                        </div>
-                      </form>
-                    )}
-
                     {(expandedSection === 'details' || expandedSection === 'rounds') && event.Rounds.length > 0 && (
                       <div className="space-y-2">
                         <div className="flex items-center justify-between gap-2">
@@ -1607,6 +1613,49 @@ export default function EventHomeManager({
                         </div>
                       </div>
                     )}
+=======
+                {expandedSection === 'categories' && categoryEventId === event.EventId && categoryForm && (
+                  <form onSubmit={(submitEvent) => void handleSaveCategory(submitEvent)} className="space-y-3 rounded-xl border border-indigo-100 bg-indigo-50/50 p-3 dark:border-indigo-900/50 dark:bg-indigo-950/20">
+                    <div className="text-[10px] font-black uppercase tracking-widest text-indigo-600 dark:text-indigo-400">
+                      {editingCategoryId ? 'Chỉnh sửa Category của' : 'Thêm Category cho'} {event.EventName}
+                    </div>
+                    {categoryError && <div role="alert" className="rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-xs font-medium text-rose-700 dark:border-rose-900/60 dark:bg-rose-950/30 dark:text-rose-300">{categoryError}</div>}
+                    <div className="space-y-1.5">
+                      <label htmlFor={`category-name-${event.EventId}`} className="block text-[10px] font-bold uppercase tracking-wide text-slate-500">Tên Category</label>
+                      <input
+                        id={`category-name-${event.EventId}`}
+                        type="text"
+                        required
+                        placeholder="Nhập tên Category (ví dụ: Software Development, AI...)"
+                        value={categoryForm.CategoryName}
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          const found = uniqueCategories.find((uc) => uc.name.toLowerCase() === val.trim().toLowerCase());
+                          setCategoryForm((current) => current ? {
+                            ...current,
+                            CategoryName: val,
+                            Description: current.Description || (found ? found.description : current.Description),
+                          } : current);
+                        }}
+                        className="w-full h-9 px-3 rounded-lg border border-slate-200 bg-white text-xs font-semibold focus:outline-none dark:bg-slate-900 dark:border-slate-700 dark:text-slate-200"
+                        list={`category-suggestions-${event.EventId}`}
+                      />
+                      <datalist id={`category-suggestions-${event.EventId}`}>
+                        {uniqueCategories.map((uc) => (
+                          <option key={uc.name} value={uc.name} />
+                        ))}
+                      </datalist>
+                    </div>
+                    <div className="space-y-1.5">
+                      <label htmlFor={`category-description-${event.EventId}`} className="block text-[10px] font-bold uppercase tracking-wide text-slate-500">Mô tả</label>
+                      <textarea id={`category-description-${event.EventId}`} rows={2} maxLength={2000} value={categoryForm.Description} onChange={(inputEvent) => setCategoryForm((current) => current ? { ...current, Description: inputEvent.target.value } : current)} placeholder="Mô tả ngắn về hạng mục thi đấu." className="w-full rounded-lg border border-slate-200 bg-white p-2 text-xs font-medium focus:outline-none dark:border-slate-700 dark:bg-slate-900" />
+                    </div>
+                    <div className="flex justify-end gap-2">
+                      <Button type="button" variant="outline" className="h-8 rounded-lg text-[10px]" onClick={() => toggleCategoryForm(event)}>Hủy</Button>
+                      <Button type="submit" disabled={savingCategory || hasRegisteredTeams(event.EventId)} className="h-8 rounded-lg bg-indigo-600 text-[10px] hover:bg-indigo-700">{savingCategory ? 'Đang lưu...' : editingCategoryId ? 'Lưu thay đổi' : 'Tạo Category'}</Button>
+                    </div>
+                  </form>
+                )}
 
                     {expandedSection === 'rounds' && roundEventId === event.EventId && roundForm && (
                       <form onSubmit={(submitEvent) => void handleCreateRound(submitEvent, event)} className="rounded-xl border border-indigo-100 bg-indigo-50/50 p-3 space-y-3 dark:border-indigo-900/50 dark:bg-indigo-950/20">
@@ -1666,8 +1715,89 @@ export default function EventHomeManager({
                             {creatingRound ? 'Đang lưu...' : editingRoundId ? 'Lưu thay đổi' : 'Tạo vòng thi'}
                           </Button>
                         </div>
-                      </form>
+                  </form>
+                )}
+
+                {expandedSection === 'teams' && (
+                  <div className="space-y-3 rounded-xl bg-white/80 p-4 shadow-sm dark:bg-slate-900/80">
+                    <div className="flex items-center justify-between border-b border-slate-100 pb-3 dark:border-slate-800">
+                      <div className="flex items-center gap-2">
+                        <Users className="h-4 w-4 text-indigo-600 dark:text-indigo-400" />
+                        <span className="text-xs font-bold text-slate-800 dark:text-slate-100">
+                          Danh sách Đội thi đã đăng ký ({getRegisteredTeamsCount(event.EventId)})
+                        </span>
+                      </div>
+                      <Badge className="border border-indigo-200 bg-indigo-50 text-[10px] font-extrabold text-indigo-700 dark:border-indigo-900/50 dark:bg-indigo-950/40 dark:text-indigo-300">
+                        {getRegisteredTeamsCount(event.EventId)} Đội thi
+                      </Badge>
+                    </div>
+
+                    {getRegisteredTeamsCount(event.EventId) === 0 ? (
+                      <p className="rounded-xl border border-dashed border-slate-200 p-4 text-xs font-medium text-slate-400 dark:border-slate-800">
+                        Chưa có đội thi nào đăng ký tham gia sự kiện này.
+                      </p>
+                    ) : (
+                      <div className="grid gap-3 sm:grid-cols-2">
+                        {getRegisteredTeamsForEvent(event.EventId).map((t) => {
+                          const category = categories.find((c) => c.CategoryId === t.CategoryID);
+                          const members = teamMembersMap[t.TeamID] || [];
+                          const leader = members.find(
+                            (m) =>
+                              m.UserId === t.TeamLeaderId ||
+                              m.User?.UserID === t.TeamLeaderId
+                          );
+                          const leaderName =
+                            leader?.User?.FullName ||
+                            (leader?.User?.Email
+                              ? leader.User.Email
+                              : members.length === 0
+                              ? 'Đang tải...'
+                              : t.TeamLeaderId);
+
+                          return (
+                            <div
+                              key={t.TeamID}
+                              onClick={() => void handleOpenTeamDetail(t)}
+                              className="group flex items-start justify-between gap-3 rounded-xl border border-slate-200 bg-slate-50/80 p-3.5 transition-all hover:border-indigo-300 hover:bg-indigo-50/30 hover:shadow-md cursor-pointer dark:border-slate-800 dark:bg-slate-950/40 dark:hover:border-indigo-800"
+                            >
+                              <div className="min-w-0">
+                                <div className="text-xs font-bold text-slate-800 dark:text-slate-100 truncate group-hover:text-indigo-600 dark:group-hover:text-indigo-400">
+                                  {t.TeamName}
+                                </div>
+                                <div className="mt-1 text-[10px] font-semibold uppercase tracking-wider text-indigo-600 dark:text-indigo-400">
+                                  Hạng mục: {category?.CategoryName || 'Chưa phân hạng mục'}
+                                </div>
+                                <div className="mt-1 text-[10px] font-medium text-slate-600 dark:text-slate-300 flex items-center gap-1">
+                                  <span>Trưởng nhóm:</span>
+                                  <strong className="text-slate-900 dark:text-white font-bold">{leaderName}</strong>
+                                </div>
+                                <div className="mt-1.5 inline-flex items-center text-[9px] font-bold text-indigo-600 dark:text-indigo-400">
+                                  Bấm để xem chi tiết thành viên →
+                                </div>
+                              </div>
+                              <Badge
+                                className={cn(
+                                  'shrink-0 text-[9px] font-extrabold',
+                                  t.TeamStatus === 'Active'
+                                    ? 'border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-900/50 dark:bg-emerald-950/30 dark:text-emerald-400'
+                                    : t.TeamStatus === 'Disqualified'
+                                    ? 'border-rose-200 bg-rose-50 text-rose-700 dark:border-rose-900/50 dark:bg-rose-950/30 dark:text-rose-400'
+                                    : 'border-amber-200 bg-amber-50 text-amber-700 dark:border-amber-900/50 dark:bg-amber-950/30 dark:text-amber-400'
+                                )}
+                              >
+                                {t.TeamStatus === 'Active'
+                                  ? 'Đang thi đấu'
+                                  : t.TeamStatus === 'Disqualified'
+                                  ? 'Bị loại'
+                                  : 'Chờ duyệt'}
+                              </Badge>
+                            </div>
+                          );
+                        })}
+                      </div>
                     )}
+                  </div>
+                )}
                   </div>
                 )}
               </div>
@@ -1684,6 +1814,165 @@ export default function EventHomeManager({
           )}
         </div>
       </CardContent>
+
+      {/* Team Details Modal */}
+      {selectedTeamForDetail && (
+        <div
+          className="fixed inset-0 z-[9999] flex items-center justify-center bg-slate-900/60 p-4 backdrop-blur-sm animate-in fade-in-0 duration-200"
+          onClick={() => setSelectedTeamForDetail(null)}
+        >
+          <div
+            className="relative w-full max-w-2xl max-h-[85vh] overflow-hidden flex flex-col rounded-2xl bg-white shadow-2xl dark:bg-slate-900 border border-slate-200 dark:border-slate-800"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Modal Header */}
+            <div className="flex items-center justify-between border-b border-slate-100 bg-slate-50/80 px-6 py-4 dark:border-slate-800 dark:bg-slate-950/50">
+              <div>
+                <div className="flex items-center gap-2">
+                  <Users className="h-5 w-5 text-indigo-600 dark:text-indigo-400" />
+                  <h3 className="text-lg font-black text-slate-900 dark:text-white">
+                    Chi tiết Đội thi: {selectedTeamForDetail.TeamName}
+                  </h3>
+                </div>
+                <p className="mt-0.5 text-xs text-slate-500 dark:text-slate-400">
+                  Hạng mục:{' '}
+                  <strong className="text-indigo-600 dark:text-indigo-400">
+                    {categories.find((c) => c.CategoryId === selectedTeamForDetail.CategoryID)?.CategoryName || 'Chưa phân hạng mục'}
+                  </strong>
+                </p>
+              </div>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="h-8 w-8 rounded-full p-0"
+                onClick={() => setSelectedTeamForDetail(null)}
+              >
+                <X className="h-4 w-4" />
+              </Button>
+            </div>
+
+            {/* Modal Content */}
+            <div className="flex-1 overflow-y-auto p-6 space-y-6">
+              {loadingTeamDetail ? (
+                <div className="flex items-center justify-center py-12 text-slate-400 text-xs font-semibold">
+                  Đang tải thông tin thành viên nhóm...
+                </div>
+              ) : (
+                <>
+                  {/* Leader Card */}
+                  {(() => {
+                    const leader = selectedTeamMembers.find(
+                      (m) =>
+                        m.UserId === selectedTeamForDetail.TeamLeaderId ||
+                        m.User?.UserID === selectedTeamForDetail.TeamLeaderId
+                    );
+                    return (
+                      <div className="rounded-xl border border-indigo-100 bg-indigo-50/50 p-4 dark:border-indigo-950 dark:bg-indigo-950/20">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            <Star className="h-4 w-4 text-amber-500 fill-amber-500" />
+                            <span className="text-xs font-bold text-slate-900 dark:text-white">
+                              Trưởng Nhóm
+                            </span>
+                          </div>
+                          <Badge className="bg-amber-500 text-white text-[10px] font-bold">
+                            Team Leader
+                          </Badge>
+                        </div>
+                        {leader ? (
+                          <div className="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+                            <div>
+                              <span className="text-slate-400 text-[10px] uppercase font-bold block">Họ và Tên</span>
+                              <span className="font-bold text-slate-800 dark:text-slate-100">{leader.User?.FullName || 'Chưa cập nhật'}</span>
+                            </div>
+                            <div>
+                              <span className="text-slate-400 text-[10px] uppercase font-bold block">Email</span>
+                              <span className="font-semibold text-slate-700 dark:text-slate-300">{leader.User?.Email || 'Chưa cập nhật'}</span>
+                            </div>
+                            <div>
+                              <span className="text-slate-400 text-[10px] uppercase font-bold block">Mã sinh viên</span>
+                              <span className="font-semibold text-slate-700 dark:text-slate-300">{leader.StudentProfile?.StudentCode || 'Chưa cập nhật'}</span>
+                            </div>
+                            <div>
+                              <span className="text-slate-400 text-[10px] uppercase font-bold block">Trường đại học</span>
+                              <span className="font-semibold text-slate-700 dark:text-slate-300">{leader.StudentProfile?.UniversityName || 'Chưa cập nhật'}</span>
+                            </div>
+                          </div>
+                        ) : (
+                          <p className="mt-2 text-xs text-slate-500">ID Trưởng nhóm: {selectedTeamForDetail.TeamLeaderId}</p>
+                        )}
+                      </div>
+                    );
+                  })()}
+
+                  {/* Members List */}
+                  <div className="space-y-3">
+                    <h4 className="text-xs font-bold text-slate-700 dark:text-slate-200 uppercase tracking-wider">
+                      Danh sách Thành viên ({selectedTeamMembers.length})
+                    </h4>
+                    {selectedTeamMembers.length === 0 ? (
+                      <p className="text-xs text-slate-400 italic">Chưa có thông tin thành viên.</p>
+                    ) : (
+                      <div className="space-y-2">
+                        {selectedTeamMembers.map((member, index) => {
+                          const isLeader =
+                            member.UserId === selectedTeamForDetail.TeamLeaderId ||
+                            member.User?.UserID === selectedTeamForDetail.TeamLeaderId;
+                          return (
+                            <div
+                              key={member.TeamMemberId || index}
+                              className="flex items-center justify-between rounded-xl border border-slate-200 bg-slate-50 p-3 dark:border-slate-800 dark:bg-slate-950/40"
+                            >
+                              <div className="flex items-center gap-3">
+                                <div className="flex h-9 w-9 items-center justify-center rounded-full bg-indigo-100 text-indigo-700 font-bold text-xs dark:bg-indigo-950 dark:text-indigo-300">
+                                  {member.User?.FullName ? member.User.FullName.charAt(0).toUpperCase() : 'U'}
+                                </div>
+                                <div>
+                                  <div className="flex items-center gap-2">
+                                    <span className="text-xs font-bold text-slate-800 dark:text-slate-100">
+                                      {member.User?.FullName || member.User?.Email || 'Thành viên'}
+                                    </span>
+                                    {isLeader && (
+                                      <Badge className="bg-amber-100 text-amber-700 border-amber-200 text-[9px]">
+                                        Trưởng nhóm
+                                      </Badge>
+                                    )}
+                                  </div>
+                                  <div className="text-[10px] text-slate-400 mt-0.5">
+                                    {member.User?.Email} {member.StudentProfile?.StudentCode ? `· MSSV: ${member.StudentProfile.StudentCode}` : ''}
+                                  </div>
+                                </div>
+                              </div>
+                              {member.StudentProfile?.UniversityName && (
+                                <span className="text-[10px] font-semibold text-slate-500 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 px-2 py-1 rounded-md">
+                                  {member.StudentProfile.UniversityName}
+                                </span>
+                              )}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+                </>
+              )}
+            </div>
+
+            {/* Modal Footer */}
+            <div className="flex justify-end border-t border-slate-100 bg-slate-50/80 px-6 py-3 dark:border-slate-800 dark:bg-slate-950/50">
+              <Button
+                type="button"
+                variant="outline"
+                className="h-8 rounded-lg text-xs font-semibold"
+                onClick={() => setSelectedTeamForDetail(null)}
+              >
+                Đóng
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </Card>
   );
 }

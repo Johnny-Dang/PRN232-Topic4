@@ -33,35 +33,35 @@ namespace BusinessLogicLayer.Services.Implements
         {
             var user = await _userRepository.GetByIdAsync(request.UserId);
             if (user == null)
-                throw new Exception($"User with id {request.UserId} not found");
+                throw new Exception($"Không tìm thấy người dùng với id: {request.UserId}");
 
             if (user.Role != "Judge")
-                throw new Exception("Only users with Judge role can be assigned as judges");
+                throw new Exception("Chỉ người dùng có vai trò Giám khảo mới có thể được phân công làm giám khảo");
 
             if (!string.Equals(user.AccountStatus, "Active", StringComparison.OrdinalIgnoreCase))
-                throw new Exception("Cannot assign judge with inactive account status");
+                throw new Exception("Không thể phân công giám khảo có trạng thái tài khoản không hoạt động");
 
             var round = await _roundRepository.FirstOrDefaultWithIncludeAsync(
                 x => x.RoundId == request.RoundId, x => x.Event);
             if (round == null)
-                throw new Exception($"Round with id {request.RoundId} not found");
+                throw new Exception($"Không tìm thấy vòng thi với id: {request.RoundId}");
 
             if (round.EndDate < DateTime.UtcNow)
-                throw new Exception("Cannot assign judge to a round that has already ended");
+                throw new Exception("Không thể phân công giám khảo cho vòng thi đã kết thúc");
 
             if (round.Event != null && round.Event.EndDate < DateTime.UtcNow)
-                throw new Exception($"Cannot assign judge: the event '{round.Event.EventName}' has already ended");
+                throw new Exception($"Không thể phân công giám khảo: sự kiện '{round.Event.EventName}' đã kết thúc");
 
             if (round.Event != null && !string.Equals(round.Event.Status, "Active", StringComparison.OrdinalIgnoreCase) 
                 && !string.Equals(round.Event.Status, "Ongoing", StringComparison.OrdinalIgnoreCase)
                 && !string.Equals(round.Event.Status, "Published", StringComparison.OrdinalIgnoreCase))
-                throw new Exception($"Cannot assign judge: the event '{round.Event.EventName}' is not active");
+                throw new Exception($"Không thể phân công giám khảo: sự kiện '{round.Event.EventName}' không hoạt động");
 
             var existingAssignment = await _assignmentRepository.FirstOrDefaultAsync(x =>
                 x.UserId == request.UserId && x.RoundId == request.RoundId);
 
             if (existingAssignment != null)
-                throw new Exception("Judge is already assigned to this round");
+                throw new Exception("Giám khảo đã được phân công cho vòng thi này");
 
             var assignment = new JudgeAssignments
             {
@@ -101,33 +101,33 @@ namespace BusinessLogicLayer.Services.Implements
             var assignment = await _assignmentRepository.FirstOrDefaultWithIncludeAsync(
                 x => x.AssignmentId == request.AssignmentId, x => x.User);
             if (assignment == null)
-                throw new Exception($"Judge Assignment with id {request.AssignmentId} not found");
+                throw new Exception($"Không tìm thấy phân công giám khảo với id: {request.AssignmentId}");
 
             var user = await _userRepository.GetByIdAsync(request.UserId);
             if (user == null)
-                throw new Exception($"User with id {request.UserId} not found");
+                throw new Exception($"Không tìm thấy người dùng với id: {request.UserId}");
 
             if (user.Role != "Judge")
-                throw new Exception("Only users with Judge role can be assigned as judges");
+                throw new Exception("Chỉ người dùng có vai trò Giám khảo mới có thể được phân công làm giám khảo");
 
             if (!string.Equals(user.AccountStatus, "Active", StringComparison.OrdinalIgnoreCase))
-                throw new Exception("Cannot assign judge with inactive account status");
+                throw new Exception("Không thể phân công giám khảo có trạng thái tài khoản không hoạt động");
 
             var round = await _roundRepository.FirstOrDefaultWithIncludeAsync(
                 x => x.RoundId == request.RoundId, x => x.Event);
             if (round == null)
-                throw new Exception($"Round with id {request.RoundId} not found");
+                throw new Exception($"Không tìm thấy vòng thi với id: {request.RoundId}");
 
             if (round.EndDate < DateTime.UtcNow)
-                throw new Exception("Cannot assign judge to a round that has already ended");
+                throw new Exception("Không thể phân công giám khảo cho vòng thi đã kết thúc");
 
             if (round.Event != null && round.Event.EndDate < DateTime.UtcNow)
-                throw new Exception($"Cannot assign judge: the event '{round.Event.EventName}' has already ended");
+                throw new Exception($"Không thể phân công giám khảo: sự kiện '{round.Event.EventName}' đã kết thúc");
 
             if (round.Event != null && !string.Equals(round.Event.Status, "Active", StringComparison.OrdinalIgnoreCase) 
                 && !string.Equals(round.Event.Status, "Ongoing", StringComparison.OrdinalIgnoreCase)
                 && !string.Equals(round.Event.Status, "Published", StringComparison.OrdinalIgnoreCase))
-                throw new Exception($"Cannot assign judge: the event '{round.Event.EventName}' is not active");
+                throw new Exception($"Không thể phân công giám khảo: sự kiện '{round.Event.EventName}' không hoạt động");
 
             var existingAssignment = await _assignmentRepository.FirstOrDefaultAsync(x =>
                 x.AssignmentId != request.AssignmentId &&
@@ -135,7 +135,7 @@ namespace BusinessLogicLayer.Services.Implements
                 x.RoundId == request.RoundId);
 
             if (existingAssignment != null)
-                throw new Exception("Judge is already assigned to this round");
+                throw new Exception("Giám khảo đã được phân công cho vòng thi này");
 
             assignment.UserId = request.UserId;
             assignment.RoundId = request.RoundId;
@@ -157,7 +157,7 @@ namespace BusinessLogicLayer.Services.Implements
             var assignment = await _assignmentRepository.FirstOrDefaultWithIncludeAsync(
                 x => x.AssignmentId == assignmentId, x => x.User);
             if (assignment == null)
-                throw new Exception($"Judge Assignment with id {assignmentId} not found");
+                throw new Exception($"Không tìm thấy phân công giám khảo với id: {assignmentId}");
 
             // Delete related Scores first
             var relatedScores = await _scoreRepository.GetAllAsync();

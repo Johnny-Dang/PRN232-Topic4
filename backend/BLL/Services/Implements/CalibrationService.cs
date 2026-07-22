@@ -49,23 +49,23 @@ namespace BusinessLogicLayer.Services.Implements
         {
             var round = await _roundRepository.GetByIdAsync(request.RoundId);
             if (round == null)
-                throw new Exception($"Round with id {request.RoundId} not found");
+                throw new Exception($"Không tìm thấy vòng với id: {request.RoundId}");
 
             if (request.TeamId.HasValue && request.TeamId != Guid.Empty)
             {
                 var team = await _teamRepository.GetByIdAsync(request.TeamId.Value);
                 if (team == null)
-                    throw new Exception($"Team with id {request.TeamId} not found");
+                    throw new Exception($"Không tìm thấy đội với id: {request.TeamId}");
             }
 
             var eventCriteria = await _eventCriteriaRepository.FindAsync(x => x.EventId == round.EventId);
             if (!eventCriteria.Any())
-                throw new Exception("No criteria configured for this round event");
+                throw new Exception("Không có tiêu chí nào được cấu hình cho sự kiện vòng này");
 
             if (string.IsNullOrWhiteSpace(request.RepositoryURL) &&
                 string.IsNullOrWhiteSpace(request.DemoURL) &&
                 string.IsNullOrWhiteSpace(request.SlideURL))
-                throw new Exception("At least one sample artifact URL must be provided");
+                throw new Exception("Phải cung cấp ít nhất một URL mẫu artifact");
 
             var submission = new Submissions
             {
@@ -178,7 +178,7 @@ namespace BusinessLogicLayer.Services.Implements
                     x.CriteriaId == item.CriteriaId);
 
                 if (existingScore != null)
-                    throw new Exception("Calibration score already exists for this criteria. Use PUT to update it.");
+                    throw new Exception("Điểm calibration đã tồn tại cho tiêu chí này. Sử dụng PUT để cập nhật.");
 
                 var score = new CalibrationScores
                 {
@@ -220,7 +220,7 @@ namespace BusinessLogicLayer.Services.Implements
                     x.CriteriaId == item.CriteriaId);
 
                 if (existingScore == null)
-                    throw new Exception("Calibration score does not exist for this criteria. Use POST to submit it first.");
+                    throw new Exception("Điểm calibration không tồn tại cho tiêu chí này. Sử dụng POST để nộp trước.");
 
                 existingScore.ScoreValue = item.ScoreValue;
                 existingScore.Comment = item.Comment;
@@ -378,10 +378,10 @@ namespace BusinessLogicLayer.Services.Implements
         {
             var submission = await _submissionRepository.GetByIdAsync(submissionId);
             if (submission == null)
-                throw new Exception($"Submission with id {submissionId} not found");
+                throw new Exception($"Không tìm thấy bài nộp với id: {submissionId}");
 
             if (!submission.IsCalibrationSample)
-                throw new Exception("Submission is not a calibration sample");
+                throw new Exception("Bài nộp này không phải là mẫu calibration");
 
             return submission;
         }
@@ -390,19 +390,19 @@ namespace BusinessLogicLayer.Services.Implements
         {
             var judge = await _userRepository.GetByIdAsync(judgeUserId);
             if (judge == null)
-                throw new Exception($"Judge with id {judgeUserId} not found");
+                throw new Exception($"Không tìm thấy giám khảo với id: {judgeUserId}");
 
             if (!string.Equals(judge.Role, "Judge", StringComparison.OrdinalIgnoreCase))
-                throw new Exception("Only users with Judge role can submit calibration scores");
+                throw new Exception("Chỉ người dùng có vai trò Giám khảo mới có thể nộp điểm calibration");
 
             if (!string.Equals(judge.AccountStatus, "Active", StringComparison.OrdinalIgnoreCase))
-                throw new Exception("Only active judges can submit calibration scores");
+                throw new Exception("Chỉ các giám khảo đang hoạt động mới có thể nộp điểm calibration");
         }
 
         private static void ValidateDuplicateCriteria(SubmitScoresRequest request)
         {
             if (request.Scores == null || !request.Scores.Any())
-                throw new Exception("Score request must include at least one score");
+                throw new Exception("Yêu cầu chấm điểm phải bao gồm ít nhất một điểm");
 
             var duplicateCriteria = request.Scores
                 .GroupBy(x => x.CriteriaId)
@@ -411,40 +411,40 @@ namespace BusinessLogicLayer.Services.Implements
                 .ToList();
 
             if (duplicateCriteria.Any())
-                throw new Exception("Duplicate criteria found in score request");
+                throw new Exception("Tìm thấy tiêu chí trùng lặp trong yêu cầu chấm điểm");
         }
 
         private static void ValidateScoreValues(SubmitScoresRequest request)
         {
             if (request.Scores.Any(x => x.ScoreValue < 0 || x.ScoreValue > 100))
-                throw new Exception("Score value must be between 0 and 100");
+                throw new Exception("Giá trị điểm phải nằm trong khoảng từ 0 đến 100");
         }
 
         private static void ValidateAnalysisDataset(List<CalibrationScores> scores)
         {
             if (!scores.Any())
-                throw new Exception("Calibration analysis requires submitted calibration scores");
+                throw new Exception("Phân tích calibration yêu cầu các điểm calibration đã được nộp");
 
             var judgeCount = scores.Select(x => x.JudgeId).Distinct().Count();
             if (judgeCount < 2)
-                throw new Exception("Calibration analysis requires scores from at least two judges");
+                throw new Exception("Phân tích calibration yêu cầu điểm từ ít nhất hai giám khảo");
         }
 
         private async Task ValidateSubmittedCriteriaSetAsync(Guid roundId, SubmitScoresRequest request)
         {
             var round = await _roundRepository.GetByIdAsync(roundId);
             if (round == null)
-                throw new Exception($"Round with id {roundId} not found");
+                throw new Exception($"Không tìm thấy vòng với id: {roundId}");
 
             var eventCriteria = await _eventCriteriaRepository.FindAsync(x => x.EventId == round.EventId);
             if (!eventCriteria.Any())
-                throw new Exception("No criteria configured for this round event");
+                throw new Exception("Không có tiêu chí nào được cấu hình cho sự kiện vòng này");
 
             var expectedCriteriaIds = eventCriteria.Select(x => x.CriteriaId).ToHashSet();
             var submittedCriteriaIds = request.Scores.Select(x => x.CriteriaId).ToHashSet();
 
             if (!expectedCriteriaIds.SetEquals(submittedCriteriaIds))
-                throw new Exception("Score request must include exactly all criteria configured for this event");
+                throw new Exception("Yêu cầu chấm điểm phải bao gồm chính xác tất cả các tiêu chí được cấu hình cho sự kiện này");
         }
 
         private async Task WriteAuditLogAsync(Guid userId, string actionType, string? oldValue, string newValue)

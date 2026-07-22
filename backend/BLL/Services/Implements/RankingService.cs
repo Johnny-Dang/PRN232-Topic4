@@ -36,11 +36,11 @@ namespace BusinessLogicLayer.Services.Implements
         {
             var round = await _roundRepository.GetByIdAsync(roundId);
             if (round == null)
-                throw new Exception($"Round with id {roundId} not found");
+                throw new Exception($"Không tìm thấy vòng thi với id: {roundId}");
 
             var eventCriteria = await _eventCriteriaRepository.FindAsync(x => x.EventId == round.EventId);
             if (!eventCriteria.Any())
-                throw new Exception("No criteria configured for this round event");
+                throw new Exception("Không có tiêu chí được cấu hình cho sự kiện vòng thi này");
 
             var submissions = await _submissionRepository.FindAsync(x =>
                 x.RoundId == roundId &&

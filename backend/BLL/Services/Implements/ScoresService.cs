@@ -61,7 +61,7 @@ namespace BusinessLogicLayer.Services.Implements
             {
                 var criteria = await _criteriaRepository.GetByIdAsync(item.CriteriaId);
                 if (criteria == null)
-                    throw new Exception($"Criteria with id {item.CriteriaId} not found");
+                    throw new Exception($"Không tìm thấy tiêu chí với id: {item.CriteriaId}");
 
                 var existingScore = await _scoreRepository.FirstOrDefaultAsync(x =>
                     x.SubmissionId == submissionId &&
@@ -69,7 +69,7 @@ namespace BusinessLogicLayer.Services.Implements
                     x.CriteriaId == item.CriteriaId);
 
                 if (existingScore != null)
-                    throw new Exception("Score already exists for this criteria. Use PUT to update it.");
+                    throw new Exception("Điểm đã tồn tại cho tiêu chí này. Sử dụng PUT để cập nhật.");
 
                 var score = new Scores
                 {
@@ -121,7 +121,7 @@ namespace BusinessLogicLayer.Services.Implements
             {
                 var criteria = await _criteriaRepository.GetByIdAsync(item.CriteriaId);
                 if (criteria == null)
-                    throw new Exception($"Criteria with id {item.CriteriaId} not found");
+                    throw new Exception($"Không tìm thấy tiêu chí với id: {item.CriteriaId}");
 
                 var existingScore = await _scoreRepository.FirstOrDefaultAsync(x =>
                     x.SubmissionId == submissionId &&
@@ -129,7 +129,7 @@ namespace BusinessLogicLayer.Services.Implements
                     x.CriteriaId == item.CriteriaId);
 
                 if (existingScore == null)
-                    throw new Exception("Score does not exist for this criteria. Use POST to submit it first.");
+                    throw new Exception("Điểm không tồn tại cho tiêu chí này. Sử dụng POST để nộp trước.");
 
                 var oldValue = new
                 {
@@ -251,18 +251,18 @@ namespace BusinessLogicLayer.Services.Implements
         {
             var submission = await _submissionRepository.GetByIdAsync(submissionId);
             if (submission == null)
-                throw new Exception($"Submission with id {submissionId} not found");
+                throw new Exception($"Không tìm thấy bài nộp với id: {submissionId}");
 
             if (!submission.TeamId.HasValue)
-                throw new Exception("Submission is not associated with any team");
+                throw new Exception("Bài nộp không liên kết với bất kỳ đội nào");
 
             var team = await _teamRepository.GetByIdAsync(submission.TeamId.Value);
             if (team == null)
-                throw new Exception($"Team with id {submission.TeamId} not found");
+                throw new Exception($"Không tìm thấy đội với id: {submission.TeamId}");
 
             var viewer = await _userRepository.GetByIdAsync(viewerUserId);
             if (viewer == null)
-                throw new Exception($"Viewer with id {viewerUserId} not found");
+                throw new Exception($"Không tìm thấy người xem với id: {viewerUserId}");
 
             var role = viewer.Role ?? string.Empty;
             var isTeamViewer = string.Equals(role, "TeamLeader", StringComparison.OrdinalIgnoreCase)
@@ -276,14 +276,14 @@ namespace BusinessLogicLayer.Services.Implements
                     var membership = await _teamMemberRepository.FirstOrDefaultAsync(x =>
                         x.TeamId == team.TeamId && x.UserId == viewerUserId);
                     if (membership == null)
-                        throw new Exception("You do not have access to view this submission's scores");
+                        throw new Exception("Bạn không có quyền xem điểm của bài nộp này");
                 }
             }
             else if (!string.Equals(role, "Judge", StringComparison.OrdinalIgnoreCase)
                 && !string.Equals(role, "Coordinator", StringComparison.OrdinalIgnoreCase)
                 && !string.Equals(role, "EventCoordinator", StringComparison.OrdinalIgnoreCase))
             {
-                throw new Exception("You do not have access to view this submission's scores");
+                throw new Exception("Bạn không có quyền xem điểm của bài nộp này");
             }
 
             var scores = await _scoreRepository.FindAsync(x => x.SubmissionId == submissionId);
@@ -294,35 +294,35 @@ namespace BusinessLogicLayer.Services.Implements
         {
             var submission = await _submissionRepository.GetByIdAsync(submissionId);
             if (submission == null)
-                throw new Exception($"Submission with id {submissionId} not found");
+                throw new Exception($"Không tìm thấy bài nộp với id: {submissionId}");
 
             if (!string.Equals(submission.Status, "Submitted", StringComparison.OrdinalIgnoreCase) &&
                 !string.Equals(submission.Status, "Updated", StringComparison.OrdinalIgnoreCase))
-                throw new Exception("Only submitted submissions can be scored");
+                throw new Exception("Chỉ các bài nộp đã được nộp mới có thể được chấm điểm");
 
             if (submission.IsCalibrationSample)
-                throw new Exception("Calibration sample submissions must be scored through the calibration workflow");
+                throw new Exception("Các bài nộp mẫu calibration phải được chấm điểm thông qua quy trình calibration");
 
             if (!submission.TeamId.HasValue)
-                throw new Exception("Submission must have a team to be scored");
+                throw new Exception("Bài nộp phải có đội để được chấm điểm");
 
             var round = await _roundRepository.GetByIdAsync(submission.RoundId);
             if (round == null)
-                throw new Exception($"Round with id {submission.RoundId} not found");
+                throw new Exception($"Không tìm thấy vòng với id: {submission.RoundId}");
 
             var team = await _teamRepository.GetByIdAsync(submission.TeamId.Value);
             if (team == null)
-                throw new Exception($"Team with id {submission.TeamId} not found");
+                throw new Exception($"Không tìm thấy đội với id: {submission.TeamId}");
 
             if (team.CategoryId == null)
-                throw new Exception("Submission team must have a category before it can be scored");
+                throw new Exception("Đội của bài nộp phải có danh mục trước khi có thể chấm điểm");
 
             var now = DateTime.UtcNow;
             if (now < round.StartDate)
-                throw new Exception("Scoring has not started for this round");
+                throw new Exception("Chấm điểm chưa bắt đầu cho vòng này");
 
             if (now > round.EndDate)
-                throw new Exception("Scoring period for this round has ended");
+                throw new Exception("Thời gian chấm điểm cho vòng này đã kết thúc");
 
             return submission;
         }
@@ -331,13 +331,13 @@ namespace BusinessLogicLayer.Services.Implements
         {
             var judge = await _userRepository.GetByIdAsync(judgeUserId);
             if (judge == null)
-                throw new Exception($"Judge with id {judgeUserId} not found");
+                throw new Exception($"Không tìm thấy giám khảo với id: {judgeUserId}");
 
             if (!string.Equals(judge.Role, "Judge", StringComparison.OrdinalIgnoreCase))
-                throw new Exception("Only users with Judge role can score submissions");
+                throw new Exception("Chỉ người dùng có vai trò Giám khảo mới có thể chấm điểm bài nộp");
 
             if (!string.Equals(judge.AccountStatus, "Active", StringComparison.OrdinalIgnoreCase))
-                throw new Exception("Only active judges can score submissions");
+                throw new Exception("Chỉ các giám khảo đang hoạt động mới có thể chấm điểm bài nộp");
         }
 
         private async Task<JudgeAssignments> GetJudgeAssignmentAsync(Guid judgeUserId, Guid roundId)
@@ -346,7 +346,7 @@ namespace BusinessLogicLayer.Services.Implements
                 x.UserId == judgeUserId && x.RoundId == roundId);
 
             if (assignment == null)
-                throw new Exception("Judge is not assigned to this submission round");
+                throw new Exception("Giám khảo chưa được phân công cho vòng nộp bài này");
 
             return assignment;
         }
@@ -354,7 +354,7 @@ namespace BusinessLogicLayer.Services.Implements
         private static void ValidateDuplicateCriteria(SubmitScoresRequest request)
         {
             if (request.Scores == null || !request.Scores.Any())
-                throw new Exception("Score request must include at least one score");
+                throw new Exception("Yêu cầu chấm điểm phải bao gồm ít nhất một điểm");
 
             var duplicateCriteria = request.Scores
                 .GroupBy(x => x.CriteriaId)
@@ -363,30 +363,30 @@ namespace BusinessLogicLayer.Services.Implements
                 .ToList();
 
             if (duplicateCriteria.Any())
-                throw new Exception("Duplicate criteria found in score request");
+                throw new Exception("Tìm thấy tiêu chí trùng lặp trong yêu cầu chấm điểm");
         }
 
         private static void ValidateScoreValues(SubmitScoresRequest request)
         {
             if (request.Scores.Any(x => x.ScoreValue < 0 || x.ScoreValue > 100))
-                throw new Exception("Score value must be between 0 and 100");
+                throw new Exception("Giá trị điểm phải nằm trong khoảng từ 0 đến 100");
         }
 
         private async Task ValidateSubmittedCriteriaSetAsync(Guid roundId, SubmitScoresRequest request)
         {
             var round = await _roundRepository.GetByIdAsync(roundId);
             if (round == null)
-                throw new Exception($"Round with id {roundId} not found");
+                throw new Exception($"Không tìm thấy vòng với id: {roundId}");
 
             var eventCriteria = await _eventCriteriaRepository.FindAsync(x => x.EventId == round.EventId);
             if (!eventCriteria.Any())
-                throw new Exception("No criteria configured for this round event");
+                throw new Exception("Không có tiêu chí nào được cấu hình cho sự kiện vòng này");
 
             var expectedCriteriaIds = eventCriteria.Select(x => x.CriteriaId).ToHashSet();
             var submittedCriteriaIds = request.Scores.Select(x => x.CriteriaId).ToHashSet();
 
             if (!expectedCriteriaIds.SetEquals(submittedCriteriaIds))
-                throw new Exception("Score request must include exactly all criteria configured for this event");
+                throw new Exception("Yêu cầu chấm điểm phải bao gồm chính xác tất cả các tiêu chí được cấu hình cho sự kiện này");
         }
 
         private static ScoreDto MapToDto(Scores score)

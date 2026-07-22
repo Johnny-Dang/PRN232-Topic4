@@ -31,6 +31,7 @@ import {
   getTeamMembers,
   getTeams,
   setTeamCategory,
+  updateTeamName,
 } from "@/lib/api";
 
 type TeamMemberWithProfile = Awaited<ReturnType<typeof getTeamMembers>>[number];
@@ -133,13 +134,28 @@ export default function MyEventsPage() {
     useState<AvailableTeam | null>(null);
   const [availableTeams, setAvailableTeams] = useState<AvailableTeam[]>([]);
   const [availableEvents, setAvailableEvents] = useState<Event[]>([]);
+  const [allCategories, setAllCategories] = useState<Category[]>([]);
   const [selectedEventId, setSelectedEventId] = useState(() => requestedEventId);
   const [selectedTeamId, setSelectedTeamId] = useState<string>('');
+  const [customTeamName, setCustomTeamName] = useState<string>('');
   const [registering, setRegistering] = useState(false);
   const [registrationMessage, setRegistrationMessage] = useState("");
   const [showTeamChoice, setShowTeamChoice] = useState(() =>
     Boolean(requestedEventId),
   );
+
+  const handleSelectTeam = useCallback((teamId: string) => {
+    setSelectedTeamId(teamId);
+    setAvailableTeams((currentTeams) => {
+      const found = currentTeams.find((t) => t.team.TeamID === teamId);
+      if (found) {
+        setCustomTeamName(found.team.TeamName);
+      } else {
+        setCustomTeamName('');
+      }
+      return currentTeams;
+    });
+  }, []);
 
   const loadData = useCallback(async () => {
     setLoading(true);
@@ -147,7 +163,6 @@ export default function MyEventsPage() {
 
     try {
       const userId = getStoredUserId();
-      console.log('[MyEvents] UserId from localStorage:', userId);
       if (!userId) {
         setRows([]);
         setLoadedAt(Date.now());
@@ -159,44 +174,25 @@ export default function MyEventsPage() {
         getEvents(),
         getCategories(),
       ]);
-      console.log('[MyEvents] Total teams:', teams.length);
-      console.log('[MyEvents] UserId:', userId);
+
+      setAllCategories(categories);
 
       const myRows: MyEventRow[] = [];
-      let defaultPendingTeam: AvailableTeam | null = null;
       const allAvailableTeams: AvailableTeam[] = [];
-      const now = Date.now();
+      let defaultPendingTeam: AvailableTeam | null = null;
 
       for (const team of teams) {
         const members = await getTeamMembers(team.TeamID);
-        // Normalize for comparison (handle different ID formats)
-        const leaderId = (team.TeamLeaderId || '').toLowerCase().trim();
-        const normalizedUserId = (userId || '').toLowerCase().trim();
-        const isLeader = leaderId === normalizedUserId;
         const isMember = members.some(
-          (member) => (member.UserId || '').toLowerCase().trim() === normalizedUserId,
+          (m) => (m.UserId || '').toLowerCase() === (userId || '').toLowerCase(),
         );
+        const isLeader =
+          (team.TeamLeaderId || '').toLowerCase() === (userId || '').toLowerCase();
 
-        console.log(`[MyEvents] Team: ${team.TeamName}, LeaderId: "${team.TeamLeaderId}", isLeader: ${isLeader}, isMember: ${isMember}`);
+        if (!isMember && !isLeader) continue;
 
-        if (!isLeader && !isMember) continue;
-
-        // Check team event status
-        let teamEvent: Event | undefined;
-        if (team.CategoryID) {
-          const category = categories.find(
-            (item) => item.CategoryID === team.CategoryID,
-          );
-          if (category) {
-            teamEvent = events.find((e) => e.EventID === category.EventID);
-          }
-        }
-
-        const eventEnded = teamEvent ? new Date(teamEvent.EndDate).getTime() < now : true;
-        const isTeamPending = !team.CategoryID;
-        const canRegister = (isLeader || isMember) && (isTeamPending || team.EventID !== requestedEventId);
-
-        console.log(`[MyEvents] Team: ${team.TeamName}, CategoryID: ${team.CategoryID}, EventEnded: ${eventEnded}, CanRegister: ${canRegister}`);
+        const isTeamPending = !team.CategoryID && !team.EventID;
+        const canRegister = isLeader && (isTeamPending || team.EventID !== requestedEventId);
 
         if (canRegister) {
           const teamData: AvailableTeam = { team, members, isLeader, canRegister };
@@ -206,20 +202,18 @@ export default function MyEventsPage() {
           }
         }
 
-        if (!team.CategoryID) continue;
+        if (!team.CategoryID && !team.EventID) continue;
 
         const category = categories.find(
           (item) => item.CategoryID === team.CategoryID,
-        );
+        ) || null;
         const eventId = team.EventID || category?.EventID || "";
         const event = events.find((item) => item.EventID === eventId);
 
         if (!event) continue;
 
-        myRows.push({ event, team, category, members, isLeader });
+        myRows.push({ event, team, category: category ?? undefined, members, isLeader });
       }
-
-      console.log('[MyEvents] Available teams for registration:', allAvailableTeams.length);
 
       const rowsByEvent = new Map<string, MyEventRow>();
       myRows.forEach((row) => {
@@ -232,9 +226,10 @@ export default function MyEventsPage() {
       setAvailableTeams(allAvailableTeams);
       setPendingRegistrationTeam(defaultPendingTeam);
       setAvailableEvents(events);
-      // Initialize selectedTeamId with the first team if available
+      // Initialize selectedTeamId and customTeamName with the first team if available
       if (defaultPendingTeam && !selectedTeamId) {
         setSelectedTeamId(defaultPendingTeam.team.TeamID);
+        setCustomTeamName(defaultPendingTeam.team.TeamName);
       }
       setLoadedAt(Date.now());
     } catch (error) {
@@ -252,14 +247,24 @@ export default function MyEventsPage() {
     setRegistering(true);
     setRegistrationMessage("");
     try {
+      // If Leader typed a new team name, update it via API
+      const newName = customTeamName.trim();
+      if (newName && newName !== teamToUse.team.TeamName) {
+        await updateTeamName(teamToUse.team.TeamID, newName).catch((err) => {
+          console.warn("Could not update team name via API:", err);
+        });
+      }
+
+      const cat = allCategories.find((c) => c.EventID === selectedEventId);
       await setTeamCategory(
         teamToUse.team.TeamID,
-        null,
+        cat?.CategoryID || null,
         selectedEventId,
       );
       setRegistrationMessage("Đăng ký sự kiện thành công.");
       setSelectedEventId("");
       setSelectedTeamId("");
+      setCustomTeamName("");
       await loadData();
     } catch (registrationError) {
       console.error(registrationError);
@@ -284,14 +289,24 @@ export default function MyEventsPage() {
         setRegistrationMessage("");
         setShowTeamChoice(false);
         try {
+          // If Leader typed a new team name, update it via API
+          const newName = customTeamName.trim();
+          if (newName && newName !== teamToUse.team.TeamName) {
+            await updateTeamName(teamToUse.team.TeamID, newName).catch((err) => {
+              console.warn("Could not update team name via API:", err);
+            });
+          }
+
+          const cat = allCategories.find((c) => c.EventID === requestedEventId);
           await setTeamCategory(
             teamToUse.team.TeamID,
-            null,
+            cat?.CategoryID || null,
             requestedEventId,
           );
           setRegistrationMessage("Đăng ký sự kiện thành công.");
           setSelectedEventId("");
           setSelectedTeamId("");
+          setCustomTeamName("");
           // Clear URL query parameters to avoid showing the choice dialog again
           router.replace("/my-events");
           await loadData();
@@ -397,7 +412,7 @@ export default function MyEventsPage() {
                     </label>
                     <select
                       value={selectedTeamId}
-                      onChange={(e) => setSelectedTeamId(e.target.value)}
+                      onChange={(e) => handleSelectTeam(e.target.value)}
                       className="h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-xs font-semibold text-slate-700 focus:outline-none dark:border-slate-800 dark:bg-slate-900 dark:text-slate-300"
                     >
                       <option value="">-- Chọn Đội thi --</option>
@@ -414,20 +429,76 @@ export default function MyEventsPage() {
                     if (!selectedTeam) return null;
                     if (selectedTeam.members.length < 3) {
                       return (
-                        <p className="rounded-xl bg-amber-50 px-3 py-2 text-xs font-medium text-amber-700 dark:bg-amber-950/30 dark:text-amber-300">
-                          Đội này chưa đủ 3 thành viên. Vui lòng thêm thành viên trước.
-                        </p>
+                        <div className="rounded-xl bg-amber-50 p-3 text-xs font-medium text-amber-800 dark:bg-amber-950/30 dark:text-amber-300 space-y-2">
+                          <p>Đội này hiện có {selectedTeam.members.length} thành viên. Cần đủ 3 người để đăng ký.</p>
+                          <Link
+                            href={`/member?teamId=${selectedTeam.team.TeamID}${requestedEventId ? `&eventId=${encodeURIComponent(requestedEventId)}` : ''}`}
+                            className="inline-flex items-center rounded-lg bg-amber-600 px-3 py-1.5 text-xs font-bold text-white hover:bg-amber-700"
+                          >
+                            + Thêm thành viên cho đội này ({selectedTeam.members.length}/3)
+                          </Link>
+                        </div>
                       );
                     }
                     return (
-                      <Button
-                        type="button"
-                        onClick={handleContinueWithOldTeam}
-                        disabled={registering}
-                        className="h-10 w-full rounded-xl bg-indigo-600 px-4 text-xs font-bold text-white hover:bg-indigo-750"
-                      >
-                        {registering ? "Đang đăng ký..." : `Đăng ký bằng ${selectedTeam.team.TeamName}`}
-                      </Button>
+                      <div className="space-y-3 pt-2 border-t border-slate-100 dark:border-slate-800">
+                        {/* Editable Team Name Input */}
+                        <div className="space-y-1.5">
+                          <div className="flex items-center justify-between text-[10px] font-semibold text-slate-500 uppercase">
+                            <span>Tên đội thi (Sửa nếu muốn đổi tên mới):</span>
+                            {customTeamName.trim() && customTeamName.trim() !== selectedTeam.team.TeamName && (
+                              <span className="text-indigo-600 font-extrabold text-[9px] dark:text-indigo-400">
+                                (Đã đổi tên)
+                              </span>
+                            )}
+                          </div>
+                          <input
+                            type="text"
+                            value={customTeamName}
+                            onChange={(e) => setCustomTeamName(e.target.value)}
+                            placeholder="Nhập tên đội thi..."
+                            className="h-10 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 text-xs font-bold text-slate-800 outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-100"
+                          />
+                        </div>
+
+                        {/* Current Members & Add/Manage Link */}
+                        <div className="space-y-1.5">
+                          <div className="flex items-center justify-between">
+                            <span className="text-[10px] font-semibold text-slate-500 uppercase">
+                              Thành viên hiện tại ({selectedTeam.members.length}):
+                            </span>
+                            <Link
+                              href={`/member?teamId=${selectedTeam.team.TeamID}${requestedEventId ? `&eventId=${encodeURIComponent(requestedEventId)}` : ''}`}
+                              className="text-[10px] font-bold text-indigo-600 hover:underline dark:text-indigo-400"
+                            >
+                              + Quản lý / Thêm thành viên mới
+                            </Link>
+                          </div>
+                          <div className="flex flex-wrap gap-1.5 rounded-xl border border-slate-100 bg-slate-50 p-2.5 dark:border-slate-800 dark:bg-slate-950/40">
+                            {selectedTeam.members.map((m) => (
+                              <Badge
+                                key={m.User?.UserID || m.TeamMemberId}
+                                className="border border-slate-200 bg-white text-slate-700 text-[10px] font-semibold dark:border-slate-800 dark:bg-slate-900 dark:text-slate-300"
+                              >
+                                {m.User?.FullName || 'Thành viên'}
+                              </Badge>
+                            ))}
+                          </div>
+                        </div>
+
+                        <Button
+                          type="button"
+                          onClick={handleContinueWithOldTeam}
+                          disabled={registering || !customTeamName.trim()}
+                          className="h-10 w-full rounded-xl bg-indigo-600 px-4 text-xs font-bold text-white hover:bg-indigo-750"
+                        >
+                          {registering
+                            ? "Đang đăng ký..."
+                            : customTeamName.trim() !== selectedTeam.team.TeamName
+                            ? `Đổi tên thành "${customTeamName.trim()}" & Đăng ký`
+                            : `Giữ tên & Đăng ký bằng ${selectedTeam.team.TeamName}`}
+                        </Button>
+                      </div>
                     );
                   })()}
                 </div>
@@ -626,8 +697,16 @@ export default function MyEventsPage() {
                   return (
                     <Card
                       key={`${team.TeamID}-${event.EventID}`}
-                      className="border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900"
+                      className="group relative border-slate-200 bg-white shadow-sm transition-all hover:-translate-y-0.5 hover:border-indigo-200 hover:shadow-md dark:border-slate-800 dark:bg-slate-900 dark:hover:border-indigo-700"
                     >
+                      {isLeader && (
+                        <Link
+                          href={`/leader?eventId=${encodeURIComponent(event.EventID)}`}
+                          aria-label={`Mở cổng trưởng nhóm cho sự kiện ${event.EventName}`}
+                          title={`Mở cổng trưởng nhóm cho sự kiện ${event.EventName}`}
+                          className="absolute inset-0 z-10 rounded-2xl focus:outline-none focus:ring-2 focus:ring-indigo-300"
+                        />
+                      )}
                       <CardHeader className="space-y-3">
                         <div className="flex items-start justify-between gap-4">
                           <div>
@@ -691,6 +770,16 @@ export default function MyEventsPage() {
                             Kết thúc: {formatDate(event.EndDate)}
                           </span>
                         </div>
+                        {isLeader && (
+                          <div className="relative z-20 flex items-center justify-end pt-1">
+                            <Link
+                              href={`/leader?eventId=${encodeURIComponent(event.EventID)}`}
+                              className="inline-flex items-center gap-1.5 rounded-lg bg-indigo-600 px-3 py-1.5 text-[11px] font-bold text-white opacity-0 transition-opacity group-hover:opacity-100 focus-visible:opacity-100 hover:bg-indigo-700"
+                            >
+                              Mở cổng nộp bài
+                            </Link>
+                          </div>
+                        )}
                       </CardContent>
                     </Card>
                   );

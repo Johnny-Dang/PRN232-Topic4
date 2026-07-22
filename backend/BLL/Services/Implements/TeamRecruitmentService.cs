@@ -30,13 +30,13 @@ namespace BusinessLogicLayer.Services.Implements
         {
             var team = await _teamRepository.GetByIdAsync(teamId);
             if (team == null)
-                throw new Exception($"Team with id '{teamId}' not found");
+                throw new Exception($"Không tìm thấy đội với id: {teamId}");
 
             if (team.TeamLeaderId != leaderUserId)
-                throw new Exception("Only the Team Leader can create recruitment posts");
+                throw new Exception("Chỉ trưởng nhóm mới có thể tạo bài tuyển dụng");
 
             if (request.Quantity <= 0)
-                throw new Exception("Quantity must be greater than 0");
+                throw new Exception("Số lượng phải lớn hơn 0");
 
             var recruitment = new TeamRecruitments
             {
@@ -113,10 +113,10 @@ namespace BusinessLogicLayer.Services.Implements
             );
 
             if (recruitment == null)
-                throw new Exception($"Recruitment with id '{recruitmentId}' not found");
+                throw new Exception($"Không tìm thấy tin tuyển dụng với id: {recruitmentId}");
 
             if (recruitment.Team != null && recruitment.Team.TeamLeaderId != leaderUserId)
-                throw new Exception("Only the Team Leader can close recruitment posts");
+                throw new Exception("Chỉ trưởng nhóm mới có thể đóng tin tuyển dụng");
 
             recruitment.Status = "CLOSED";
             recruitment.UpdatedAt = DateTime.UtcNow;

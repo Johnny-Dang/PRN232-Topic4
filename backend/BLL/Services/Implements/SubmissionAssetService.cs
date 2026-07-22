@@ -125,7 +125,7 @@ namespace BusinessLogicLayer.Services.Implements
         {
             var asset = await _assetRepository.GetByIdAsync(request.SubmissionAssetId);
             if (asset == null)
-                throw new Exception($"Submission asset with id {request.SubmissionAssetId} not found");
+                throw new Exception($"Không tìm thấy file đính kèm với id: {request.SubmissionAssetId}");
 
             await GetLeaderTeamAsync(asset.TeamId, userId);
             ValidateCompletedAsset(asset, request);
@@ -163,7 +163,7 @@ namespace BusinessLogicLayer.Services.Implements
             await GetLeaderTeamAsync(teamId, userId);
             var submission = await _submissionRepository.GetByIdAsync(submissionId);
             if (submission == null)
-                throw new Exception($"Submission with id {submissionId} not found");
+                throw new Exception($"Không tìm thấy bài nộp với id: {submissionId}");
 
             var existingAssets = await _assetRepository.FindAsync(x => x.SubmissionId == submissionId);
 
@@ -212,16 +212,16 @@ namespace BusinessLogicLayer.Services.Implements
         {
             var asset = await _assetRepository.GetByIdAsync(assetId);
             if (asset == null)
-                throw new Exception($"Submission asset with id {assetId} not found");
+                throw new Exception($"Không tìm thấy file đính kèm với id: {assetId}");
 
             if (asset.TeamId != teamId || asset.RoundId != roundId)
-                throw new Exception("Uploaded asset does not belong to this team and round.");
+                throw new Exception("File upload không thuộc về đội và vòng thi này.");
 
             if (!string.Equals(asset.AssetType, expectedAssetType, StringComparison.OrdinalIgnoreCase))
-                throw new Exception($"Uploaded asset must be {expectedAssetType}.");
+                throw new Exception($"File upload phải là loại: {expectedAssetType}.");
 
             if (!string.Equals(asset.UploadStatus, UploadedStatus, StringComparison.OrdinalIgnoreCase))
-                throw new Exception("Uploaded asset has not been completed.");
+                throw new Exception("File upload chưa hoàn tất.");
 
             asset.SubmissionId = submissionId;
             _assetRepository.Update(asset);
@@ -231,10 +231,10 @@ namespace BusinessLogicLayer.Services.Implements
         {
             var team = await _teamRepository.GetByIdAsync(teamId);
             if (team == null)
-                throw new Exception($"Team with id {teamId} not found");
+                throw new Exception($"Không tìm thấy đội với id: {teamId}");
 
             if (team.TeamLeaderId != userId)
-                throw new Exception("Only the team leader can upload submission assets.");
+                throw new Exception("Chỉ trưởng nhóm mới có thể upload file bài nộp.");
 
             return team;
         }
@@ -243,15 +243,15 @@ namespace BusinessLogicLayer.Services.Implements
         {
             var round = await _roundRepository.GetByIdAsync(roundId);
             if (round == null)
-                throw new Exception($"Round with id {roundId} not found");
+                throw new Exception($"Không tìm thấy vòng thi với id: {roundId}");
 
             if (team.EventId != null && team.EventId != round.EventId)
-                throw new Exception("Round does not belong to the team's event.");
+                throw new Exception("Vòng thi không thuộc sự kiện của đội.");
 
             if (DateTime.UtcNow < round.StartDate)
-                throw new Exception($"Submission is not yet open. Uploads will be accepted starting from {round.StartDate:yyyy-MM-dd HH:mm:ss} UTC.");
+                throw new Exception($"Vòng thi chưa mở. Upload file sẽ được chấp nhận từ {round.StartDate:yyyy-MM-dd HH:mm:ss} UTC.");
             if (DateTime.UtcNow > round.SubmissionDeadline)
-                throw new Exception("Submission deadline has passed. You cannot upload files for this round.");
+                throw new Exception("Đã quá hạn nộp bài. Bạn không thể upload file cho vòng thi này.");
 
             return round;
         }
@@ -260,7 +260,7 @@ namespace BusinessLogicLayer.Services.Implements
         {
             var assetType = NormalizeAssetType(request.AssetType);
             if (request.FileSize > maxFileSize)
-                throw new Exception($"File size exceeds the limit of {maxFileSize} bytes.");
+                throw new Exception($"Dung lượng file vượt quá giới hạn cho phép: {maxFileSize} bytes.");
 
             if (assetType == VideoAssetType)
             {
@@ -271,7 +271,7 @@ namespace BusinessLogicLayer.Services.Implements
                                     string.IsNullOrWhiteSpace(request.ContentType);
 
                 if (!isAllowedExt && !isAllowedMime)
-                    throw new Exception("Video demo must be mp4, webm, or mov.");
+                    throw new Exception("Video demo phải có định dạng mp4, webm, hoặc mov.");
                 return;
             }
 
@@ -279,28 +279,28 @@ namespace BusinessLogicLayer.Services.Implements
             {
                 var extension = Path.GetExtension(request.FileName);
                 var isAllowedExt = SlideExtensions.Contains(extension);
-                var isAllowedMime = SlideContentTypes.Contains(request.ContentType) || 
+                var isAllowedMime = SlideContentTypes.Contains(request.ContentType) ||
                                     string.Equals(request.ContentType, "application/octet-stream", StringComparison.OrdinalIgnoreCase) ||
                                     string.IsNullOrWhiteSpace(request.ContentType);
 
                 if (!isAllowedExt && !isAllowedMime)
-                    throw new Exception("Slide document must be ppt, pptx, doc, or docx.");
+                    throw new Exception("Slide tài liệu phải có định dạng ppt, pptx, doc, hoặc docx.");
                 return;
             }
 
-            throw new Exception("Unsupported asset type.");
+            throw new Exception("Loại file không được hỗ trợ.");
         }
 
         private static void ValidateCompletedAsset(SubmissionAssets asset, CompleteSubmissionAssetUploadRequest request)
         {
             if (!string.Equals(asset.ResourceType, request.ResourceType, StringComparison.OrdinalIgnoreCase))
-                throw new Exception("Cloudinary resource type does not match the signed upload.");
+                throw new Exception("Loại file Cloudinary không khớp với upload đã ký.");
 
             if (string.IsNullOrWhiteSpace(request.PublicId) || !request.PublicId.StartsWith(asset.PublicId, StringComparison.OrdinalIgnoreCase))
-                throw new Exception("Cloudinary public id does not match the signed upload.");
+                throw new Exception("Public ID Cloudinary không khớp với upload đã ký.");
 
             if (request.FileSize <= 0)
-                throw new Exception("Cloudinary file size is invalid.");
+                throw new Exception("Dung lượng file Cloudinary không hợp lệ.");
         }
 
         private string GetRequiredCloudinarySetting(string key)
@@ -315,7 +315,7 @@ namespace BusinessLogicLayer.Services.Implements
         {
             var cloudName = GetRequiredCloudinarySetting("CloudName").ToLowerInvariant();
             if (!cloudName.All(c => char.IsLetterOrDigit(c) || c == '-' || c == '_'))
-                throw new Exception("Cloudinary:CloudName must contain only letters, numbers, hyphen, or underscore.");
+                throw new Exception("Cloudinary:CloudName chỉ được chứa chữ cái, số, gạch ngang, hoặc gạch dưới.");
 
             return cloudName;
         }
@@ -346,7 +346,7 @@ namespace BusinessLogicLayer.Services.Implements
         {
             if (string.Equals(assetType, VideoAssetType, StringComparison.OrdinalIgnoreCase)) return VideoAssetType;
             if (string.Equals(assetType, SlideAssetType, StringComparison.OrdinalIgnoreCase)) return SlideAssetType;
-            throw new Exception("AssetType must be VideoDemo or SlideDocument.");
+            throw new Exception("AssetType phải là VideoDemo hoặc SlideDocument.");
         }
 
         private static string GenerateSignature(Dictionary<string, string> parameters, string apiSecret)

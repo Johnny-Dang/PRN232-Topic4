@@ -46,14 +46,14 @@ namespace BusinessLogicLayer.Services.Implements
             );
 
             if (recruitment == null)
-                throw new Exception($"Recruitment post '{recruitmentId}' not found");
+                throw new Exception($"Tin tuyển dụng với id '{recruitmentId}' không tìm thấy");
 
             if (recruitment.Status != "OPEN" || recruitment.Quantity <= 0)
-                throw new Exception("This recruitment post is closed or full");
+                throw new Exception("Tin tuyển dụng này đã đóng hoặc đã tuyển đủ");
 
             var candidate = await _userRepository.GetByIdAsync(candidateUserId);
             if (candidate == null)
-                throw new Exception($"User '{candidateUserId}' not found");
+                throw new Exception($"Không tìm thấy người dùng với id: {candidateUserId}");
 
             if (string.Equals(candidate.Role, "Mentor", StringComparison.OrdinalIgnoreCase) ||
                 string.Equals(candidate.Role, "Judge", StringComparison.OrdinalIgnoreCase) ||
@@ -64,18 +64,18 @@ namespace BusinessLogicLayer.Services.Implements
 
             // Check if user is the leader or already a member of this team
             if (recruitment.Team != null && recruitment.Team.TeamLeaderId == candidateUserId)
-                throw new Exception("You are the Team Leader of this team and cannot apply to your own recruitment post");
+                throw new Exception("Bạn là trưởng nhóm của đội này và không thể nộp đơn ứng tuyển vào tin tuyển dụng của chính mình");
 
             var existingMembers = await _teamMemberRepository.FindAsync(m => m.TeamId == recruitment.TeamId && m.UserId == candidateUserId);
             if (existingMembers.Any())
-                throw new Exception("You are already a member of this team");
+                throw new Exception("Bạn đã là thành viên của đội này");
 
             // Check if user has already applied and is pending/accepted
             var existingApps = await _applicationRepository.FindAsync(
                 a => a.RecruitmentId == recruitmentId && a.UserId == candidateUserId && (a.Status == "PENDING" || a.Status == "ACCEPTED")
             );
             if (existingApps.Any())
-                throw new Exception("You have already applied to this recruitment post");
+                throw new Exception("Bạn đã nộp đơn ứng tuyển vào tin tuyển dụng này");
 
             var application = new TeamApplications
             {
@@ -119,10 +119,10 @@ namespace BusinessLogicLayer.Services.Implements
         {
             var team = await _teamRepository.GetByIdAsync(teamId);
             if (team == null)
-                throw new Exception($"Team '{teamId}' not found");
+                throw new Exception($"Không tìm thấy đội với id: {teamId}");
 
             if (team.TeamLeaderId != leaderUserId)
-                throw new Exception("Only the Team Leader can view applications");
+                throw new Exception("Chỉ trưởng nhóm mới có thể xem đơn ứng tuyển");
 
             var apps = await _applicationRepository.GetAllWithIncludeAsync(a => a.Team, a => a.User);
             var teamApps = apps.Where(a => a.TeamId == teamId).ToList();
@@ -141,7 +141,7 @@ namespace BusinessLogicLayer.Services.Implements
         {
             var candidate = await _userRepository.GetByIdAsync(candidateUserId);
             if (candidate == null)
-                throw new Exception($"User '{candidateUserId}' not found");
+                throw new Exception($"Không tìm thấy người dùng với id: {candidateUserId}");
 
             var apps = await _applicationRepository.GetAllWithIncludeAsync(a => a.Team, a => a.User);
             var userApps = apps.Where(a => a.UserId == candidateUserId).ToList();
@@ -161,20 +161,20 @@ namespace BusinessLogicLayer.Services.Implements
             );
 
             if (application == null)
-                throw new Exception($"Application '{applicationId}' not found");
+                throw new Exception($"Không tìm thấy đơn ứng tuyển với id: {applicationId}");
 
             if (application.Team != null && application.Team.TeamLeaderId != leaderUserId)
-                throw new Exception("Only the Team Leader can process applications");
+                throw new Exception("Chỉ trưởng nhóm mới có thể xử lý đơn ứng tuyển");
 
             if (application.Status != "PENDING")
-                throw new Exception($"Application is already processed with status '{application.Status}'");
+                throw new Exception($"Đơn ứng tuyển đã được xử lý với trạng thái '{application.Status}'");
 
             if (request.Accept)
             {
                 // Validate team member limit
                 var currentMembers = await _teamMemberRepository.FindAsync(m => m.TeamId == application.TeamId);
                 if (currentMembers.Count >= MAX_TEAM_MEMBERS)
-                    throw new Exception($"Team member limit reached. Maximum allowed is {MAX_TEAM_MEMBERS} members.");
+                    throw new Exception($"Đã đạt giới hạn thành viên. Tối đa cho phép là {MAX_TEAM_MEMBERS} thành viên.");
 
                 application.Status = "ACCEPTED";
                 application.UpdatedAt = DateTime.UtcNow;

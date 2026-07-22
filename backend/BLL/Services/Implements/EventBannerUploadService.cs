@@ -57,7 +57,7 @@ namespace BusinessLogicLayer.Services.Implements
 
         private string GetRequiredSetting(string key) =>
             _configuration[$"Cloudinary:{key}"]?.Trim()
-            ?? throw new Exception($"Cloudinary:{key} is not configured.");
+            ?? throw new Exception($"Cloudinary:{key} chưa được cấu hình.");
 
         private static string GenerateSignature(string folder, string publicId, long timestamp, string apiSecret)
         {

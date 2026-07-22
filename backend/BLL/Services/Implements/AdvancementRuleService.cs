@@ -96,7 +96,7 @@ namespace BusinessLogicLayer.Services.Implements
         {
             var rule = await _advancementRuleRepository.GetByIdAsync(request.RuleId);
             if (rule == null)
-                throw new Exception($"AdvancementRule with id {request.RuleId} not found");
+                throw new Exception($"Không tìm thấy quy tắc thăng hạng với id: {request.RuleId}");
 
             await ValidateForeignKeysAsync(request.RoundId, request.CategoryId);
 
@@ -124,7 +124,7 @@ namespace BusinessLogicLayer.Services.Implements
         {
             var rule = await _advancementRuleRepository.GetByIdAsync(ruleId);
             if (rule == null)
-                throw new Exception($"AdvancementRule with id {ruleId} not found");
+                throw new Exception($"Không tìm thấy quy tắc thăng hạng với id: {ruleId}");
 
             _advancementRuleRepository.Delete(rule);
             await _unitOfWork.SaveChangesAsync();
@@ -134,14 +134,14 @@ namespace BusinessLogicLayer.Services.Implements
         {
             var round = await _roundRepository.GetByIdAsync(roundId);
             if (round == null)
-                throw new Exception($"Round with id {roundId} not found");
+                throw new Exception($"Không tìm thấy vòng với id: {roundId}");
 
             var category = await _categoryRepository.GetByIdAsync(categoryId);
             if (category == null)
-                throw new Exception($"Category with id {categoryId} not found");
+                throw new Exception($"Không tìm thấy danh mục với id: {categoryId}");
 
             if (category.EventId != round.EventId)
-                throw new Exception("Category does not belong to the selected round event");
+                throw new Exception("Danh mục không thuộc về sự kiện của vòng đã chọn");
         }
 
         private static AdvancementRuleDto MapToDto(AdvancementRules rule)

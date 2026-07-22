@@ -131,7 +131,7 @@ namespace BusinessLogicLayer.Services.Implements
                 x.EventId == request.EventId
             );
             if (eventEntity == null)
-                throw new Exception($"Event with id {request.EventId} not found");
+                throw new Exception($"Không tìm thấy sự kiện với id: {request.EventId}");
 
             var teamsRepository = _unitOfWork.GetRepository<Teams>();
             var registeredTeams = await teamsRepository.FindAsync(t => t.EventId == request.EventId);
@@ -162,7 +162,7 @@ namespace BusinessLogicLayer.Services.Implements
         {
             var eventEntity = await _eventRepository.GetByIdAsync(eventId);
             if (eventEntity == null)
-                throw new Exception($"Event with id {eventId} not found");
+                throw new Exception($"Không tìm thấy sự kiện với id: {eventId}");
 
             return MapToDto(eventEntity);
         }
@@ -189,7 +189,7 @@ namespace BusinessLogicLayer.Services.Implements
         {
             var eventEntity = await _eventRepository.GetByIdAsync(eventId);
             if (eventEntity == null)
-                throw new Exception($"Event with id {eventId} not found");
+                throw new Exception($"Không tìm thấy sự kiện với id: {eventId}");
 
             if (!eventEntity.Categories.Any())
             {
@@ -230,7 +230,7 @@ namespace BusinessLogicLayer.Services.Implements
         {
             var eventEntity = await _eventRepository.GetByIdAsync(eventId);
             if (eventEntity == null)
-                throw new Exception($"Event with id {eventId} not found");
+                throw new Exception($"Không tìm thấy sự kiện với id: {eventId}");
 
             eventEntity.IsPublished = false;
             eventEntity.IsFeatured = false;
@@ -262,10 +262,10 @@ namespace BusinessLogicLayer.Services.Implements
         {
             var eventEntity = await _eventRepository.GetByIdAsync(eventId);
             if (eventEntity == null)
-                throw new Exception($"Event with id {eventId} not found");
+                throw new Exception($"Không tìm thấy sự kiện với id: {eventId}");
 
             if (isFeatured && !eventEntity.IsPublished)
-                throw new Exception("Only published events can be featured on the home page.");
+                throw new Exception("Chỉ các sự kiện đã được công bố mới có thể được đề xuất trên trang chủ.");
 
             eventEntity.IsFeatured = isFeatured;
 
@@ -295,7 +295,7 @@ namespace BusinessLogicLayer.Services.Implements
         {
             var eventEntity = await _eventRepository.GetByIdAsync(eventId);
             if (eventEntity == null)
-                throw new Exception($"Event with id {eventId} not found");
+                throw new Exception($"Không tìm thấy sự kiện với id: {eventId}");
 
             if (request.StartDate < eventEntity.StartDate || request.EndDate > eventEntity.EndDate)
                 throw new Exception("Thời gian vòng thi phải nằm trong thời gian diễn ra event.");
@@ -352,16 +352,14 @@ namespace BusinessLogicLayer.Services.Implements
         {
             var eventEntity = await _eventRepository.GetByIdAsync(eventId);
             if (eventEntity == null)
-                throw new Exception($"Event with id {eventId} not found");
+                throw new Exception($"Không tìm thấy sự kiện với id: {eventId}");
 
             var round = await _roundRepository.GetByIdAsync(roundId);
             if (round == null)
-                throw new Exception($"Round with id {roundId} not found");
+                throw new Exception($"Không tìm thấy vòng thi với id: {roundId}");
 
             if (round.EventId != eventId)
-                throw new Exception(
-                    $"Round with id {roundId} does not belong to event with id {eventId}"
-                );
+                throw new Exception($"Vòng thi với id: {roundId} không thuộc về sự kiện với id: {eventId}");
 
             _roundRepository.Delete(round);
             await _unitOfWork.SaveChangesAsync();
@@ -375,7 +373,7 @@ namespace BusinessLogicLayer.Services.Implements
         {
             var eventEntity = await _eventRepository.GetByIdAsync(eventId);
             if (eventEntity == null)
-                throw new Exception($"Event with id {eventId} not found");
+                throw new Exception($"Không tìm thấy sự kiện với id: {eventId}");
 
             eventEntity.IsDeleted = true;
             _eventRepository.Update(eventEntity);
