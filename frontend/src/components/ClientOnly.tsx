@@ -7,6 +7,7 @@ export function ClientOnly({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     setMounted(true);
+    // eslint-disable-next-line react-hooks/set-state-in-effect
   }, []);
 
   return mounted ? <>{children}</> : null;

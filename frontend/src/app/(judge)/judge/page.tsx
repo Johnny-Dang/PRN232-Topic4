@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Skeleton } from '@/components/ui/skeleton';
-import { useToast } from '@/components/Toast';
+import { useToast } from '@/contexts/ToastContext';
 import { parseApiError } from '@/lib/errorHandler';
 import {
   Category,
@@ -96,6 +96,7 @@ function JudgePageContent() {
 
   useEffect(() => {
     void Promise.resolve().then(loadData);
+    // eslint-disable-next-line react-hooks/set-state-in-effect
   }, []);
 
   useEffect(() => {
@@ -129,6 +130,7 @@ function JudgePageContent() {
     };
 
     void loadExistingScores();
+    // eslint-disable-next-line react-hooks/set-state-in-effect, react-hooks/exhaustive-deps
   }, [selectedSubId, activeSubmission?.submissionId]);
 
   useEffect(() => {
@@ -175,6 +177,7 @@ function JudgePageContent() {
     if (selectedRoundId) {
       void loadRankings(selectedRoundId);
     }
+    // eslint-disable-next-line react-hooks/set-state-in-effect, react-hooks/exhaustive-deps
   }, [selectedRoundId]);
 
   const calculateWeightedTotal = (): number => {

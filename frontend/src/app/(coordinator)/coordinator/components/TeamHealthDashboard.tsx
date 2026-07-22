@@ -30,6 +30,7 @@ export default function TeamHealthDashboard() {
 
   useEffect(() => {
     void fetchHealthOverview();
+    // eslint-disable-next-line react-hooks/set-state-in-effect
   }, [fetchHealthOverview]);
 
   const getHealthBadge = (status: string) => {

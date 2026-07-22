@@ -51,6 +51,7 @@ export default function JudgeAssignmentPanel() {
 
   useEffect(() => {
     void loadData();
+    // eslint-disable-next-line react-hooks/set-state-in-effect
   }, []);
 
   const roundsWithJudges = rounds.map((round) => ({

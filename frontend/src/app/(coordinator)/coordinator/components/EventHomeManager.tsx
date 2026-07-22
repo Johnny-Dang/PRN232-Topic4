@@ -1041,7 +1041,7 @@ export default function EventHomeManager({
 
               {form.initialRounds.length === 0 ? (
                 <div className="p-3 text-center text-xs text-slate-400 bg-slate-50 dark:bg-slate-800/40 rounded-xl border border-dashed border-slate-200 dark:border-slate-700">
-                  Chưa có vòng thi nào. Hãy nhấn "Thêm Vòng thi" để bắt đầu thiết lập.
+                  Chưa có vòng thi nào. Hãy nhấn nút Thêm Vòng thi để bắt đầu thiết lập.
                 </div>
               ) : (
                 <div className="space-y-3">
