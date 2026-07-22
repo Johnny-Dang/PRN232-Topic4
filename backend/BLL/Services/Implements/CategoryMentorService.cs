@@ -91,7 +91,7 @@ namespace BusinessLogicLayer.Services.Implements
 
             await _unitOfWork.SaveChangesAsync();
 
-            return MapToDto(created);
+            return await MapToDtoAsync(created, _categoryRepository, _userRepository);
         }
 
         public async Task<CategoryMentorDto?> GetByIdAsync(Guid categoryMentorId)
@@ -99,13 +99,18 @@ namespace BusinessLogicLayer.Services.Implements
             var categoryMentor = await _categoryMentorRepository.GetByIdAsync(categoryMentorId);
             if (categoryMentor == null)
                 return null;
-            return MapToDto(categoryMentor);
+            return await MapToDtoAsync(categoryMentor, _categoryRepository, _userRepository);
         }
 
         public async Task<List<CategoryMentorDto>> GetAllAsync()
         {
             var categoryMentors = await _categoryMentorRepository.GetAllAsync();
-            return categoryMentors.Select(MapToDto).ToList();
+            var result = new List<CategoryMentorDto>();
+            foreach (var cm in categoryMentors)
+            {
+                result.Add(await MapToDtoAsync(cm, _categoryRepository, _userRepository));
+            }
+            return result;
         }
 
         public async Task<List<CategoryMentorDto>> GetByMentorUserIdAsync(Guid mentorUserId)
@@ -113,7 +118,12 @@ namespace BusinessLogicLayer.Services.Implements
             var categoryMentors = await _categoryMentorRepository.FindAsync(assignment =>
                 assignment.UserId == mentorUserId
             );
-            return categoryMentors.Select(MapToDto).ToList();
+            var result = new List<CategoryMentorDto>();
+            foreach (var cm in categoryMentors)
+            {
+                result.Add(await MapToDtoAsync(cm, _categoryRepository, _userRepository));
+            }
+            return result;
         }
 
         public async Task<List<CategoryMentorDetailDto>> GetByCategoryIdAsync(Guid categoryId)
@@ -161,7 +171,7 @@ namespace BusinessLogicLayer.Services.Implements
             _categoryMentorRepository.Update(categoryMentor);
             await _unitOfWork.SaveChangesAsync();
 
-            return MapToDto(categoryMentor);
+            return await MapToDtoAsync(categoryMentor, _categoryRepository, _userRepository);
         }
 
         public async Task DeleteAsync(Guid categoryMentorId)
@@ -231,7 +241,7 @@ namespace BusinessLogicLayer.Services.Implements
 
             await _unitOfWork.SaveChangesAsync();
 
-            return MapToDto(categoryMentor);
+            return await MapToDtoAsync(categoryMentor, _categoryRepository, _userRepository);
         }
 
         public async Task<CategoryMentorDto> RejectAsync(Guid categoryMentorId, Guid mentorUserId)
@@ -291,7 +301,7 @@ namespace BusinessLogicLayer.Services.Implements
 
             await _unitOfWork.SaveChangesAsync();
 
-            return MapToDto(categoryMentor);
+            return await MapToDtoAsync(categoryMentor, _categoryRepository, _userRepository);
         }
 
         private async Task ValidateForeignKeysAsync(Guid categoryId, Guid userId)
@@ -310,13 +320,29 @@ namespace BusinessLogicLayer.Services.Implements
                 );
         }
 
+        private static async Task<CategoryMentorDto> MapToDtoAsync(CategoryMentors categoryMentor, IGenericRepository<Categories> categoryRepository, IGenericRepository<Users> userRepository)
+        {
+            var category = await categoryRepository.GetByIdAsync(categoryMentor.CategoryId);
+            var mentor = await userRepository.GetByIdAsync(categoryMentor.UserId);
+
+            return new CategoryMentorDto
+            {
+                CategoryMentorId = categoryMentor.CategoryMentorId,
+                CategoryId = categoryMentor.CategoryId,
+                CategoryName = category?.CategoryName ?? string.Empty,
+                UserId = categoryMentor.UserId,
+                MentorFullName = mentor?.FullName ?? string.Empty,
+                MentorEmail = mentor?.Email ?? string.Empty,
+                Status = categoryMentor.Status,
+            };
+        }
+
         private static CategoryMentorDto MapToDto(CategoryMentors categoryMentor)
         {
             return new CategoryMentorDto
             {
                 CategoryMentorId = categoryMentor.CategoryMentorId,
                 CategoryId = categoryMentor.CategoryId,
-                UserId = categoryMentor.UserId,
                 Status = categoryMentor.Status,
             };
         }

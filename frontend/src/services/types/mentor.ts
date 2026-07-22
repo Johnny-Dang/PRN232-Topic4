@@ -2,6 +2,15 @@ import { z } from 'zod';
 
 const idSchema = z.string().min(1);
 
+const normalizeStatus = (status: string | undefined): 'Pending' | 'Approved' | 'Rejected' => {
+  if (!status) return 'Pending';
+  const normalized = status.charAt(0).toUpperCase() + status.slice(1).toLowerCase();
+  if (normalized === 'Pending' || normalized === 'Approved' || normalized === 'Rejected') {
+    return normalized as 'Pending' | 'Approved' | 'Rejected';
+  }
+  return 'Pending';
+};
+
 export const categoryMentorStatusSchema = z.enum(['Pending', 'Approved', 'Rejected']);
 
 const normalizedCategoryMentorSchema = z.object({
@@ -22,8 +31,8 @@ export const categoryMentorSchema = z
     categoryId: idSchema.optional(),
     UserId: idSchema.optional(),
     userId: idSchema.optional(),
-    Status: categoryMentorStatusSchema.optional(),
-    status: categoryMentorStatusSchema.optional(),
+    Status: z.string().optional(),
+    status: z.string().optional(),
     CategoryName: z.string().optional(),
     categoryName: z.string().optional(),
     MentorFullName: z.string().optional(),
@@ -36,7 +45,7 @@ export const categoryMentorSchema = z
     CategoryMentorId: assignment.CategoryMentorId ?? assignment.categoryMentorId ?? '',
     CategoryId: assignment.CategoryId ?? assignment.categoryId ?? '',
     UserId: assignment.UserId ?? assignment.userId ?? '',
-    Status: assignment.Status ?? assignment.status ?? 'Pending',
+    Status: normalizeStatus(assignment.Status ?? assignment.status),
     CategoryName: assignment.CategoryName ?? assignment.categoryName ?? '',
     MentorFullName: assignment.MentorFullName ?? assignment.mentorFullName ?? '',
     MentorEmail: assignment.MentorEmail ?? assignment.mentorEmail ?? '',
