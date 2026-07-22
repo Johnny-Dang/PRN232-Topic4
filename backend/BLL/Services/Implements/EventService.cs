@@ -191,6 +191,16 @@ namespace BusinessLogicLayer.Services.Implements
             if (eventEntity == null)
                 throw new Exception($"Event with id {eventId} not found");
 
+            if (!eventEntity.Categories.Any())
+            {
+                throw new Exception("Sự kiện chưa có Hạng mục (Category) nào. Vui lòng thêm ít nhất 1 Hạng mục trước khi Publish.");
+            }
+
+            if (!eventEntity.Rounds.Any())
+            {
+                throw new Exception("Sự kiện chưa có Vòng thi (Round) nào. Vui lòng thêm ít nhất 1 Vòng thi trước khi Publish.");
+            }
+
             eventEntity.IsPublished = true;
             eventEntity.Status = "Published";
             eventEntity.PublishedAt = DateTime.UtcNow;

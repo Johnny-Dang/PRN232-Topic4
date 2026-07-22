@@ -481,6 +481,23 @@ export default function EventHomeManager({
     setMessage('');
     setError('');
 
+    if (action === 'publish') {
+      const targetEvent = events.find((e) => e.EventId === eventId);
+      const targetCategories = categories.filter((c) => c.EventId === eventId);
+      const hasCategories = targetCategories.length > 0;
+      const hasRounds = targetEvent && targetEvent.Rounds && targetEvent.Rounds.length > 0;
+
+      if (!hasCategories || !hasRounds) {
+        const missing: string[] = [];
+        if (!hasCategories) missing.push('Hạng mục (Category)');
+        if (!hasRounds) missing.push('Vòng thi (Round)');
+
+        setError(`Không thể Publish: Sự kiện cần có ít nhất ${missing.join(' và ')} trước khi đưa lên Home page.`);
+        setEventActionId('');
+        return;
+      }
+    }
+
     try {
       const updatedEvent =
         action === 'publish'
@@ -1178,80 +1195,97 @@ export default function EventHomeManager({
                   </div>
                 </div>
 
-                <div className="grid grid-cols-2 gap-2 md:grid-cols-3 xl:grid-cols-6">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    className="h-8 rounded-lg border-0 bg-white/70 text-[10px] font-bold shadow-none hover:bg-white dark:bg-slate-900/70"
-                    onClick={() => toggleEventDetails(event.EventId)}
-                  >
-                    Chi tiết
-                    {expandedEventId === event.EventId && expandedSection === 'details' ? <ChevronUp className="ml-1 h-3 w-3" /> : <ChevronDown className="ml-1 h-3 w-3" />}
-                  </Button>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    className="h-8 rounded-lg border-0 bg-white/70 text-[10px] font-bold shadow-none hover:bg-white dark:bg-slate-900/70"
-                    disabled={creatingRound && roundEventId === event.EventId}
-                    onClick={() => toggleEventSection(event.EventId, 'rounds')}
-                  >
-                    <CirclePlus className="w-3.5 h-3.5 mr-1" />
-                    Vòng thi
-                    {expandedEventId === event.EventId && expandedSection === 'rounds' ? <ChevronUp className="w-3 h-3 ml-1" /> : <ChevronDown className="w-3 h-3 ml-1" />}
-                  </Button>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    className="h-8 rounded-lg border-0 bg-white/70 text-[10px] font-bold shadow-none hover:bg-white dark:bg-slate-900/70"
-                    disabled={savingCategory && categoryEventId === event.EventId}
-                    onClick={() => toggleEventSection(event.EventId, 'categories')}
-                  >
-                    <CirclePlus className="mr-1 h-3.5 w-3.5" />
-                    Category
-                    {expandedEventId === event.EventId && expandedSection === 'categories' ? <ChevronUp className="ml-1 h-3 w-3" /> : <ChevronDown className="ml-1 h-3 w-3" />}
-                  </Button>
-                  {event.IsPublished ? (
-                    <Button
-                      type="button"
-                      variant="outline"
-                      className="h-8 rounded-lg border-0 bg-white/70 text-[10px] font-bold shadow-none hover:bg-white dark:bg-slate-900/70"
-                      disabled={eventActionId === event.EventId}
-                      onClick={() => void handleEventHomeAction(event.EventId, 'unpublish')}
-                    >
-                      Gỡ Home
-                    </Button>
-                  ) : (
-                    <Button
-                      type="button"
-                      className="h-8 rounded-lg text-[10px] font-bold bg-indigo-600 hover:bg-indigo-700 text-white"
-                      disabled={eventActionId === event.EventId}
-                      onClick={() => void handleEventHomeAction(event.EventId, 'publish')}
-                    >
-                      Publish
-                    </Button>
-                  )}
+                {(() => {
+                  const eventCategoriesCount = categories.filter((c) => c.EventId === event.EventId).length;
+                  const eventRoundsCount = event.Rounds ? event.Rounds.length : 0;
+                  const canPublishEvent = eventCategoriesCount > 0 && eventRoundsCount > 0;
 
-                  <Button
-                    type="button"
-                    variant="outline"
-                    className="h-8 rounded-lg border-0 bg-white/70 text-[10px] font-bold shadow-none hover:bg-white dark:bg-slate-900/70"
-                    disabled={eventActionId === event.EventId || !event.IsPublished}
-                    onClick={() => void handleEventHomeAction(event.EventId, event.IsFeatured ? 'unfeature' : 'feature')}
-                  >
-                    {event.IsFeatured ? 'Bỏ ghim' : 'Ghim'}
-                  </Button>
+                  return (
+                    <div className="grid grid-cols-2 gap-2 md:grid-cols-3 xl:grid-cols-6">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        className="h-8 rounded-lg border-0 bg-white/70 text-[10px] font-bold shadow-none hover:bg-white dark:bg-slate-900/70"
+                        onClick={() => toggleEventDetails(event.EventId)}
+                      >
+                        Chi tiết
+                        {expandedEventId === event.EventId && expandedSection === 'details' ? <ChevronUp className="ml-1 h-3 w-3" /> : <ChevronDown className="ml-1 h-3 w-3" />}
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        className="h-8 rounded-lg border-0 bg-white/70 text-[10px] font-bold shadow-none hover:bg-white dark:bg-slate-900/70"
+                        disabled={creatingRound && roundEventId === event.EventId}
+                        onClick={() => toggleEventSection(event.EventId, 'rounds')}
+                      >
+                        <CirclePlus className="w-3.5 h-3.5 mr-1" />
+                        Vòng thi
+                        {expandedEventId === event.EventId && expandedSection === 'rounds' ? <ChevronUp className="w-3 h-3 ml-1" /> : <ChevronDown className="w-3 h-3 ml-1" />}
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        className="h-8 rounded-lg border-0 bg-white/70 text-[10px] font-bold shadow-none hover:bg-white dark:bg-slate-900/70"
+                        disabled={savingCategory && categoryEventId === event.EventId}
+                        onClick={() => toggleEventSection(event.EventId, 'categories')}
+                      >
+                        <CirclePlus className="mr-1 h-3.5 w-3.5" />
+                        Category
+                        {expandedEventId === event.EventId && expandedSection === 'categories' ? <ChevronUp className="ml-1 h-3 w-3" /> : <ChevronDown className="ml-1 h-3 w-3" />}
+                      </Button>
+                      {event.IsPublished ? (
+                        <Button
+                          type="button"
+                          variant="outline"
+                          className="h-8 rounded-lg border-0 bg-white/70 text-[10px] font-bold shadow-none hover:bg-white dark:bg-slate-900/70"
+                          disabled={eventActionId === event.EventId}
+                          onClick={() => void handleEventHomeAction(event.EventId, 'unpublish')}
+                        >
+                          Gỡ Home
+                        </Button>
+                      ) : (
+                        <Button
+                          type="button"
+                          className={`h-8 rounded-lg text-[10px] font-bold transition-all ${
+                            canPublishEvent
+                              ? 'bg-indigo-600 hover:bg-indigo-700 text-white'
+                              : 'bg-slate-200 text-slate-400 dark:bg-slate-800 dark:text-slate-500 cursor-not-allowed opacity-75'
+                          }`}
+                          disabled={eventActionId === event.EventId || !canPublishEvent}
+                          title={
+                            !canPublishEvent
+                              ? `Cần có ít nhất 1 Hạng mục (hiện có ${eventCategoriesCount}) và 1 Vòng thi (hiện có ${eventRoundsCount}) mới được Publish`
+                              : 'Publish sự kiện lên Home page'
+                          }
+                          onClick={() => void handleEventHomeAction(event.EventId, 'publish')}
+                        >
+                          Publish
+                        </Button>
+                      )}
 
-                  <Button
-                    type="button"
-                    variant="outline"
-                    className="h-8 rounded-lg border-0 bg-rose-50 text-[10px] font-bold text-rose-600 shadow-none hover:bg-rose-100 dark:bg-rose-950/20 dark:text-rose-400 flex items-center justify-center gap-1 cursor-pointer"
-                    disabled={eventActionId === event.EventId}
-                    onClick={() => void handleDeleteEvent(event.EventId)}
-                  >
-                    <Trash2 className="w-3.5 h-3.5" />
-                    Xóa
-                  </Button>
-                </div>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        className="h-8 rounded-lg border-0 bg-white/70 text-[10px] font-bold shadow-none hover:bg-white dark:bg-slate-900/70"
+                        disabled={eventActionId === event.EventId || !event.IsPublished}
+                        onClick={() => void handleEventHomeAction(event.EventId, event.IsFeatured ? 'unfeature' : 'feature')}
+                      >
+                        {event.IsFeatured ? 'Bỏ ghim' : 'Ghim'}
+                      </Button>
+
+                      <Button
+                        type="button"
+                        variant="outline"
+                        className="h-8 rounded-lg border-0 bg-rose-50 text-[10px] font-bold text-rose-600 shadow-none hover:bg-rose-100 dark:bg-rose-950/20 dark:text-rose-400 flex items-center justify-center gap-1 cursor-pointer"
+                        disabled={eventActionId === event.EventId}
+                        onClick={() => void handleDeleteEvent(event.EventId)}
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                        Xóa
+                      </Button>
+                    </div>
+                  );
+                })()}
 
                 {expandedEventId === event.EventId && (
                   <div className="space-y-3 rounded-xl bg-slate-100/70 p-4 dark:bg-slate-950/30">

@@ -21,6 +21,7 @@ namespace DataAccessLayer.Repositories.Implementations
         {
             return await _dbSet
                 .Include(e => e.Rounds)
+                .Include(e => e.Categories)
                 .FirstOrDefaultAsync(e => e.EventId == id, cancellationToken);
         }
 
@@ -28,6 +29,7 @@ namespace DataAccessLayer.Repositories.Implementations
         {
             return await _dbSet
                 .Include(e => e.Rounds)
+                .Include(e => e.Categories)
                 .ToListAsync(cancellationToken);
         }
 
@@ -38,6 +40,7 @@ namespace DataAccessLayer.Repositories.Implementations
         {
             return await _dbSet
                 .Include(e => e.Rounds)
+                .Include(e => e.Categories)
                 .Where(predicate)
                 .ToListAsync(cancellationToken);
         }
