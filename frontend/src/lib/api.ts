@@ -1966,7 +1966,8 @@ export async function getRankings(
   if (!useLiveApi || !roundId) return [];
   try {
     const response = await apiClient.get<BackendRanking[]>("/Rankings", {
-      params: { roundId },
+      params: { roundId, cacheBust: Date.now() },
+      headers: { "Cache-Control": "no-cache" },
     });
     const teams = await getTeams();
     return response.data.map((ranking) => {
