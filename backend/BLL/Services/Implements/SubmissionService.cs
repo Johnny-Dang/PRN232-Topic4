@@ -45,7 +45,12 @@ namespace BusinessLogicLayer.Services.Implements
             if (round == null)
                 throw new Exception($"Round with id {request.RoundId} not found");
 
+            if (team.EventId != null && team.EventId != round.EventId)
+                throw new Exception("Round does not belong to the team's event.");
+
             var now = DateTime.UtcNow;
+            if (now < round.StartDate)
+                throw new Exception($"Submission is not yet open. Submissions will be accepted starting from {round.StartDate:yyyy-MM-dd HH:mm:ss} UTC.");
             if (now > round.SubmissionDeadline)
                 throw new Exception("Submission deadline has passed. You cannot create a new submission.");
 
@@ -141,6 +146,8 @@ namespace BusinessLogicLayer.Services.Implements
             if (round == null)
                 throw new Exception($"Round with id {submission.RoundId} not found");
 
+            if (DateTime.UtcNow < round.StartDate)
+                throw new Exception($"Submission is not yet open. Submissions will be accepted starting from {round.StartDate:yyyy-MM-dd HH:mm:ss} UTC.");
             if (DateTime.UtcNow > round.SubmissionDeadline)
                 throw new Exception("Submission deadline has passed. You cannot update this submission.");
 

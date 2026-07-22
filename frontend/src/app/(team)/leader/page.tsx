@@ -18,6 +18,7 @@ import {
   Briefcase,
   Trash2,
   Pencil,
+  Eye,
 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -25,6 +26,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Input } from '@/components/ui/input';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { useToast } from '@/contexts/ToastContext';
 import {
   createSubmissionLinks,
   deleteSubmission,
@@ -51,6 +53,7 @@ import {
 import CreateRecruitmentModal from '@/components/recruitment/CreateRecruitmentModal';
 import ApplicantListModal from '@/components/application/ApplicantListModal';
 import MentoringBookingPanel from './components/MentoringBookingPanel';
+import SubmissionDetailModal from './components/SubmissionDetailModal';
 
 type TeamMemberWithProfile = Awaited<ReturnType<typeof getTeamMembers>>[number];
 type ScoreWithDetails = Awaited<ReturnType<typeof getScores>>[number];
@@ -137,6 +140,13 @@ const isPastDeadline = (round?: ApiRound | null): boolean => {
   return !Number.isNaN(deadline.getTime()) && Date.now() > deadline.getTime();
 };
 
+const isBeforeStartDate = (round?: ApiRound | null): boolean => {
+  if (!round?.StartDate) return false;
+
+  const start = new Date(round.StartDate);
+  return !Number.isNaN(start.getTime()) && Date.now() < start.getTime();
+};
+
 const isValidHttpUrl = (value: string): boolean => {
   if (!value.trim()) return true;
 
@@ -151,6 +161,7 @@ const isValidHttpUrl = (value: string): boolean => {
 const sortRounds = (rounds: ApiRound[]): ApiRound[] => [...rounds].sort((a, b) => a.RoundOrder - b.RoundOrder);
 
 export default function LeaderPage() {
+  const { showToast } = useToast();
   const [loading, setLoading] = useState(true);
   const [updating, setUpdating] = useState(false);
   const [successMessage, setSuccessMessage] = useState('');
@@ -168,17 +179,33 @@ export default function LeaderPage() {
   const [selectedTeamId, setSelectedTeamId] = useState<string>('');
   const [allEvents, setAllEvents] = useState<ApiEvent[]>([]);
   const [allCategories, setAllCategories] = useState<Category[]>([]);
-
   const [members, setMembers] = useState<TeamMemberWithProfile[]>([]);
   const [submissions, setSubmissions] = useState<SubmissionWithTeam[]>([]);
   const [currentSubmission, setCurrentSubmission] = useState<SubmissionWithTeam | null>(null);
   const [scores, setScores] = useState<ScoreWithDetails[]>([]);
   const [event, setEvent] = useState<ApiEvent | null>(null);
+  const [events, setEvents] = useState<ApiEvent[]>([]);
   const [rounds, setRounds] = useState<ApiRound[]>([]);
+  const [selectedEventId, setSelectedEventId] = useState<string>('');
   const [selectedRoundId, setSelectedRoundId] = useState('');
   const [recruitments, setRecruitments] = useState<TeamRecruitment[]>([]);
   const [isCreateRecruitmentOpen, setIsCreateRecruitmentOpen] = useState(false);
   const [isApplicantListOpen, setIsApplicantListOpen] = useState(false);
+  const [selectedDetailSubmission, setSelectedDetailSubmission] = useState<SubmissionWithTeam | null>(null);
+  const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
+
+  const resetSubmissionForm = useCallback(() => {
+    setCurrentSubmission(null);
+    setRepoUrl('');
+    setDemoUrl('');
+    setSlideUrl('');
+    setVideoAsset(null);
+    setSlideAsset(null);
+    const demoInput = document.getElementById('leader-demo-file') as HTMLInputElement | null;
+    if (demoInput) demoInput.value = '';
+    const slideInput = document.getElementById('leader-slide-file') as HTMLInputElement | null;
+    if (slideInput) slideInput.value = '';
+  }, []);
 
   const fetchTeamRecruitments = useCallback(async (teamId: string) => {
     try {
@@ -189,12 +216,24 @@ export default function LeaderPage() {
     }
   }, []);
 
-  const orderedRounds = useMemo(() => sortRounds(rounds), [rounds]);
+  // Lọc events theo team (theo EventID hoặc Category)
+  const teamEvents = useMemo(() => {
+    if (!team) return allEvents;
+    const category = allCategories.find((c) => c.CategoryID === team.CategoryID);
+    const teamEventId = team.EventID || category?.EventID || '';
+    const filtered = allEvents.filter((ev) => ev.EventID === teamEventId);
+    return filtered.length > 0 ? filtered : allEvents;
+  }, [allCategories, allEvents, team]);
+
+  const orderedRounds = useMemo(() => {
+    return sortRounds(rounds);
+  }, [rounds]);
   const selectedRound = useMemo(
     () => orderedRounds.find((round) => round.RoundID === selectedRoundId) || null,
     [orderedRounds, selectedRoundId]
   );
   const deadlinePassed = isPastDeadline(selectedRound);
+  const beforeStartDate = isBeforeStartDate(selectedRound);
 
   const applySubmissionToForm = useCallback((submission: SubmissionWithTeam | null) => {
     setCurrentSubmission(submission);
@@ -207,7 +246,7 @@ export default function LeaderPage() {
 
   const chooseDefaultRound = useCallback((roundsData: ApiRound[], submissionData: SubmissionWithTeam[]): string => {
     const sortedRounds = sortRounds(roundsData);
-    const openRounds = sortedRounds.filter((round) => !isPastDeadline(round));
+    const openRounds = sortedRounds.filter((round) => !isPastDeadline(round) && !isBeforeStartDate(round));
     const firstOpenWithoutSubmission = openRounds.find(
       (round) => !submissionData.some((submission) => submission.RoundID === round.RoundID)
     );
@@ -224,7 +263,7 @@ export default function LeaderPage() {
     );
   }, []);
 
-  const loadData = useCallback(async () => {
+  const loadData = useCallback(async (teamId?: string) => {
     setLoading(true);
     setSuccessMessage('');
     setErrorMessage('');
@@ -238,6 +277,7 @@ export default function LeaderPage() {
       ]);
 
       setAllEvents(eventsData);
+      setEvents(eventsData);
       setAllCategories(categoriesData);
 
       let userTeams = currentUserId
@@ -262,7 +302,9 @@ export default function LeaderPage() {
 
       setMyLeaderTeams(userTeams);
 
-      const activeTeam = userTeams.find((t) => t.TeamID === selectedTeamId) || userTeams[0] || null;
+      const targetTeamId = teamId || selectedTeamId;
+      const activeTeam = userTeams.find((t) => t.TeamID === targetTeamId) || userTeams[0] || null;
+
       if (activeTeam) {
         setSelectedTeamId(activeTeam.TeamID);
       }
@@ -275,11 +317,12 @@ export default function LeaderPage() {
       setScores([]);
       setEvent(null);
       setRounds([]);
+      setSelectedEventId('');
       setSelectedRoundId('');
       applySubmissionToForm(null);
 
       if (!activeTeam) {
-        setErrorMessage('Không tìm thấy đội gắn với tài khoản hiện tại.');
+        setLoading(false);
         return;
       }
 
@@ -290,16 +333,28 @@ export default function LeaderPage() {
 
       const category = categoriesData.find((item) => item.CategoryID === activeTeam.CategoryID);
       const teamEventId = activeTeam.EventID || category?.EventID || '';
-      const myEvent = eventsData.find((item) => item.EventID === teamEventId) || null;
-      const roundsData = myEvent ? await getRounds(myEvent.EventID) : [];
-      const defaultRoundId = chooseDefaultRound(roundsData, teamSubmissions);
+      const availableEvents = eventsData.filter((ev) => ev.EventID === activeTeam.EventID || ev.EventID === teamEventId);
+      const myEvent = availableEvents[0] || eventsData[0] || null;
 
       setMembers(membersData);
       setEvent(myEvent);
-      setRounds(roundsData);
       setSubmissions(teamSubmissions);
-      setSelectedRoundId(defaultRoundId);
-      applySubmissionToForm(teamSubmissions.find((submission) => submission.RoundID === defaultRoundId) || null);
+
+      if (myEvent) {
+        setSelectedEventId(myEvent.EventID);
+        try {
+          const eventRounds = await getRounds(myEvent.EventID);
+          setRounds(eventRounds);
+          if (eventRounds.length > 0) {
+            const defaultRoundId = chooseDefaultRound(eventRounds, teamSubmissions);
+            setSelectedRoundId(defaultRoundId);
+            const matchingSub = teamSubmissions.find((s) => s.RoundID === defaultRoundId) || null;
+            applySubmissionToForm(matchingSub);
+          }
+        } catch (roundError) {
+          console.error('Cannot load initial rounds:', roundError);
+        }
+      }
     } catch (error) {
       console.error(error);
       setErrorMessage('Không thể tải dữ liệu đội từ API.');
@@ -309,20 +364,27 @@ export default function LeaderPage() {
   }, [applySubmissionToForm, chooseDefaultRound, fetchTeamRecruitments, selectedTeamId]);
 
   useEffect(() => {
-    let isSubscribed = true;
-    queueMicrotask(() => {
-      if (isSubscribed) void loadData();
-    });
-    return () => {
-      isSubscribed = false;
-    };
+    const timer = setTimeout(() => {
+      void loadData();
+    }, 0);
+    return () => clearTimeout(timer);
   }, [loadData]);
 
   const handleTeamChange = useCallback(
     async (teamId: string) => {
       setSelectedTeamId(teamId);
       const activeTeam = myLeaderTeams.find((t) => t.TeamID === teamId);
-      if (!activeTeam) return;
+      if (!activeTeam) {
+        setTeam(null);
+        setMembers([]);
+        setSubmissions([]);
+        setEvent(null);
+        setRounds([]);
+        setSelectedEventId('');
+        setSelectedRoundId('');
+        applySubmissionToForm(null);
+        return;
+      }
 
       setTeam(activeTeam);
       fetchTeamRecruitments(activeTeam.TeamID);
@@ -338,12 +400,13 @@ export default function LeaderPage() {
 
         const category = allCategories.find((item) => item.CategoryID === activeTeam.CategoryID);
         const teamEventId = activeTeam.EventID || category?.EventID || '';
-        const myEvent = allEvents.find((item) => item.EventID === teamEventId) || null;
+        const myEvent = allEvents.find((item) => item.EventID === teamEventId) || allEvents[0] || null;
         const roundsData = myEvent ? await getRounds(myEvent.EventID) : [];
         const defaultRoundId = chooseDefaultRound(roundsData, teamSubmissions);
 
         setMembers(membersData);
         setEvent(myEvent);
+        if (myEvent) setSelectedEventId(myEvent.EventID);
         setRounds(roundsData);
         setSubmissions(teamSubmissions);
         setSelectedRoundId(defaultRoundId);
@@ -366,6 +429,35 @@ export default function LeaderPage() {
     [applySubmissionToForm, submissions]
   );
 
+  const handleEventChange = useCallback(
+    async (eventId: string) => {
+      setSelectedEventId(eventId);
+      setSelectedRoundId('');
+      setRounds([]);
+      applySubmissionToForm(null);
+      setErrorMessage('');
+
+      if (eventId) {
+        const foundEvent = events.find((ev) => ev.EventID === eventId) || null;
+        setEvent(foundEvent);
+        try {
+          const eventRounds = await getRounds(eventId);
+          setRounds(eventRounds);
+          if (eventRounds.length > 0) {
+            const defaultRoundId = chooseDefaultRound(eventRounds, submissions);
+            setSelectedRoundId(defaultRoundId);
+            const matchingSub = submissions.find((s) => s.RoundID === defaultRoundId) || null;
+            applySubmissionToForm(matchingSub);
+          }
+        } catch (error) {
+          console.error('Cannot load rounds:', error);
+          showToast('Không thể tải danh sách vòng thi.', 'error');
+        }
+      }
+    },
+    [applySubmissionToForm, chooseDefaultRound, events, submissions, showToast]
+  );
+
   const handleDeleteClick = useCallback(
     async (submissionId: string) => {
       if (!window.confirm('Bạn có chắc chắn muốn xóa bài nộp này không?')) return;
@@ -384,9 +476,10 @@ export default function LeaderPage() {
       } catch (err: unknown) {
         console.error(err);
         setErrorMessage(getApiErrorMessage(err, 'Không thể xóa bài nộp.'));
+        showToast(getApiErrorMessage(err, 'Không thể xóa bài nộp.'), 'error');
       }
     },
-    [currentSubmission]
+    [currentSubmission, showToast]
   );
 
   useEffect(() => {
@@ -450,11 +543,18 @@ export default function LeaderPage() {
 
     if (!team || !selectedRound) {
       setErrorMessage('Vui lòng chọn đội và vòng thi trước khi upload file.');
+      showToast('Vui lòng chọn đội và vòng thi trước khi upload file.', 'error');
       return;
     }
 
     if (deadlinePassed) {
       setErrorMessage('Vòng thi đã quá hạn nộp bài. Không thể upload file.');
+      return;
+    }
+
+    if (beforeStartDate) {
+      setErrorMessage('Vòng thi chưa mở. Vui lòng đợi đến ngày bắt đầu.');
+      showToast('Vòng thi chưa mở. Vui lòng đợi đến ngày bắt đầu.', 'error');
       return;
     }
 
@@ -469,9 +569,11 @@ export default function LeaderPage() {
         if (assetType === 'SlideDocument') setSlideAsset(uploadedAsset);
       }
       setSuccessMessage(assetType === 'VideoDemo' ? 'Upload video demo thành công.' : 'Upload slide/tài liệu thành công.');
+      showToast(assetType === 'VideoDemo' ? 'Upload video demo thành công!' : 'Upload slide/tài liệu thành công!', 'success');
     } catch (error: unknown) {
       console.error(error);
       setErrorMessage(getApiErrorMessage(error, 'Không thể upload file lên Cloudinary.'));
+      showToast(getApiErrorMessage(error, 'Không thể upload file lên Cloudinary.'), 'error');
     } finally {
       setUploadingAssetType(null);
     }
@@ -481,16 +583,25 @@ export default function LeaderPage() {
     eventForm.preventDefault();
     if (!team) {
       setErrorMessage('Không tìm thấy đội gắn với tài khoản trưởng nhóm hiện tại.');
+      showToast('Không tìm thấy đội gắn với tài khoản trưởng nhóm hiện tại.', 'error');
       return;
     }
 
     if (!selectedRound) {
       setErrorMessage('Chưa có vòng thi từ API để nộp bài mới.');
+      showToast('Chưa có vòng thi từ API để nộp bài mới.', 'error');
       return;
     }
 
     if (deadlinePassed) {
       setErrorMessage('Vòng thi đã quá hạn nộp bài. Không thể tạo hoặc cập nhật bài nộp.');
+      showToast('Vòng thi đã quá hạn nộp bài. Không thể tạo hoặc cập nhật bài nộp.', 'error');
+      return;
+    }
+
+    if (beforeStartDate) {
+      setErrorMessage('Vòng thi chưa mở. Vui lòng đợi đến ngày bắt đầu.');
+      showToast('Vòng thi chưa mở. Vui lòng đợi đến ngày bắt đầu.', 'error');
       return;
     }
 
@@ -504,6 +615,7 @@ export default function LeaderPage() {
     const validationMessage = validateLinks(links);
     if (validationMessage) {
       setErrorMessage(validationMessage);
+      showToast(validationMessage, 'error');
       return;
     }
 
@@ -516,28 +628,39 @@ export default function LeaderPage() {
         const updatedSubmission = await updateSubmissionLinks(currentSubmission.SubmissionID, links);
         if (updatedSubmission) {
           const submissionWithTeam = { ...updatedSubmission, Team: team };
-          setCurrentSubmission(submissionWithTeam);
           setSubmissions((current) =>
             current.map((item) => (item.SubmissionID === updatedSubmission.SubmissionID ? submissionWithTeam : item))
           );
         }
-        setSuccessMessage('Nộp bài dự án thành công.');
+        resetSubmissionForm();
+        setSuccessMessage('Cập nhật bài nộp dự án thành công.');
+        showToast('Cập nhật bài nộp dự án thành công!', 'success');
       } else {
         const createdSubmission = await createSubmissionLinks(team.TeamID, selectedRound.RoundID, links);
         if (createdSubmission) {
           const submissionWithTeam = { ...createdSubmission, Team: team };
-          setCurrentSubmission(submissionWithTeam);
           setSubmissions((current) =>
             [submissionWithTeam, ...current].sort(
               (a, b) => new Date(b.SubmittedAt).getTime() - new Date(a.SubmittedAt).getTime()
             )
           );
         }
+        resetSubmissionForm();
         setSuccessMessage('Nộp bài dự án thành công.');
+        showToast('Nộp bài dự án thành công!', 'success');
       }
+
+      setTimeout(() => {
+        const historyElement = document.getElementById('submission-history-card');
+        if (historyElement) {
+          historyElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+      }, 150);
     } catch (error: unknown) {
       console.error(error);
-      setErrorMessage(getApiErrorMessage(error, 'Không thể cập nhật bài nộp qua API.'));
+      const errorMsg = getApiErrorMessage(error, 'Không thể cập nhật bài nộp qua API.');
+      setErrorMessage(errorMsg);
+      showToast(errorMsg, 'error');
     } finally {
       setUpdating(false);
     }
@@ -561,7 +684,7 @@ export default function LeaderPage() {
           variant="outline"
           size="sm"
           className="h-9 rounded-xl border-slate-200 text-xs font-semibold"
-          onClick={loadData}
+          onClick={() => void loadData()}
           disabled={loading}
         >
           <RefreshCw className={`mr-1.5 h-3.5 w-3.5 ${loading ? 'animate-spin' : ''}`} /> Tải lại dữ liệu
@@ -597,26 +720,23 @@ export default function LeaderPage() {
               <CardContent className="p-6 pt-0">
                 <form onSubmit={handleSubmit} className="space-y-4">
                   {/* Select Team / Event if user has teams */}
-                  <div className="space-y-1.5">
-                    <label
-                      htmlFor="leader-team-select"
-                      className="block text-xs font-semibold uppercase tracking-wider text-slate-500"
-                    >
-                      Đội & Sự kiện
-                    </label>
-                    <select
-                      id="leader-team-select"
-                      title="Chọn đội và sự kiện để nộp bài"
-                      aria-label="Chọn đội và sự kiện để nộp bài"
-                      className="h-11 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 text-sm font-semibold text-slate-800 outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
-                      value={selectedTeamId}
-                      onChange={(e) => void handleTeamChange(e.target.value)}
-                      disabled={myLeaderTeams.length === 0}
-                    >
-                      {myLeaderTeams.length === 0 ? (
-                        <option value="">Chưa có đội</option>
-                      ) : (
-                        myLeaderTeams.map((t) => {
+                  {myLeaderTeams.length > 0 && (
+                    <div className="space-y-1.5">
+                      <label
+                        htmlFor="leader-team-select"
+                        className="block text-xs font-semibold uppercase tracking-wider text-slate-500"
+                      >
+                        Đội & Sự kiện
+                      </label>
+                      <select
+                        id="leader-team-select"
+                        title="Chọn đội và sự kiện để nộp bài"
+                        aria-label="Chọn đội và sự kiện để nộp bài"
+                        className="h-11 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 text-sm font-semibold text-slate-800 outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
+                        value={selectedTeamId}
+                        onChange={(e) => void handleTeamChange(e.target.value)}
+                      >
+                        {myLeaderTeams.map((t) => {
                           const cat = allCategories.find((c) => c.CategoryID === t.CategoryID);
                           const evId = t.EventID || cat?.EventID;
                           const ev = allEvents.find((e) => e.EventID === evId);
@@ -625,11 +745,38 @@ export default function LeaderPage() {
                               Đội: {t.TeamName} {ev ? `— Sự kiện: ${ev.EventName}` : ''}
                             </option>
                           );
-                        })
-                      )}
+                        })}
+                      </select>
+                    </div>
+                  )}
+
+                  {/* Event selector */}
+                  <div className="space-y-1.5">
+                    <label
+                      htmlFor="leader-event-select"
+                      className="block text-xs font-semibold uppercase tracking-wider text-slate-500"
+                    >
+                      Sự kiện
+                    </label>
+                    <select
+                      id="leader-event-select"
+                      title="Chọn sự kiện để xem các vòng thi"
+                      aria-label="Chọn sự kiện"
+                      className="h-11 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 text-sm font-semibold text-slate-800 outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
+                      value={selectedEventId}
+                      onChange={(event) => void handleEventChange(event.target.value)}
+                      disabled={!team}
+                    >
+                      <option value="">-- Chọn sự kiện --</option>
+                      {teamEvents.map((ev) => (
+                        <option key={ev.EventID} value={ev.EventID}>
+                          {ev.EventName}
+                        </option>
+                      ))}
                     </select>
                   </div>
 
+                  {/* Round selector */}
                   <div className="space-y-1.5">
                     <label
                       htmlFor="leader-round-select"
@@ -644,22 +791,29 @@ export default function LeaderPage() {
                       className="h-11 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 text-sm font-semibold text-slate-800 outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
                       value={selectedRoundId}
                       onChange={(event) => handleRoundChange(event.target.value)}
-                      disabled={orderedRounds.length === 0}
+                      disabled={!team || !selectedEventId || orderedRounds.length === 0}
                     >
-                      {orderedRounds.length === 0 ? (
-                        <option value="">Chưa có vòng thi từ API</option>
+                      {!selectedEventId ? (
+                        <option value="">Vui lòng chọn sự kiện trước</option>
+                      ) : orderedRounds.length === 0 ? (
+                        <option value="">Không có vòng thi trong sự kiện này</option>
                       ) : (
-                        orderedRounds.map((round) => (
-                          <option key={round.RoundID} value={round.RoundID}>
-                            {round.RoundName} - hạn nộp {formatDateTime(round.SubmissionDeadline)}
-                          </option>
-                        ))
+                        <>
+                          <option value="">-- Chọn vòng thi --</option>
+                          {orderedRounds.map((round) => (
+                            <option key={round.RoundID} value={round.RoundID}>
+                              {round.RoundName} - hạn nộp {formatDateTime(round.SubmissionDeadline)}
+                            </option>
+                          ))}
+                        </>
                       )}
                     </select>
                     <div className="flex flex-wrap items-center gap-2 text-xs font-medium text-slate-500">
                       <CalendarClock className="h-3.5 w-3.5" />
                       <span>Hạn nộp: {formatDateTime(selectedRound?.SubmissionDeadline || '')}</span>
-                      {deadlinePassed ? (
+                      {beforeStartDate ? (
+                        <Badge className="border border-amber-100 bg-amber-50 text-amber-600">Chưa mở</Badge>
+                      ) : deadlinePassed ? (
                         <Badge className="border border-rose-100 bg-rose-50 text-rose-600">Đã quá hạn</Badge>
                       ) : (
                         <Badge className="border border-emerald-100 bg-emerald-50 text-emerald-600">Đang mở</Badge>
@@ -710,11 +864,22 @@ export default function LeaderPage() {
                         id="leader-demo-file"
                         type="file"
                         accept="video/mp4,video/webm,video/quicktime,.mp4,.webm,.mov"
-                        className="h-10 rounded-xl border-slate-200 bg-white text-xs dark:border-slate-700 dark:bg-slate-900"
-                        disabled={uploadingAssetType !== null || deadlinePassed}
+                        className="h-10 rounded-xl border-slate-200 bg-white text-xs cursor-pointer dark:border-slate-700 dark:bg-slate-900"
+                        disabled={!team || !selectedRound || uploadingAssetType !== null || deadlinePassed || beforeStartDate}
                         onChange={(event) => void handleAssetUpload('VideoDemo', event.target.files?.[0])}
                       />
-                      <div className="mt-3 flex items-center justify-between gap-3 rounded-lg bg-white px-3 py-2 text-xs dark:bg-slate-900">
+                      <div
+                        className={`mt-3 flex items-center justify-between gap-3 rounded-lg bg-white px-3 py-2 text-xs transition-colors dark:bg-slate-900 ${
+                          !team || !selectedRound || uploadingAssetType !== null || deadlinePassed || beforeStartDate
+                            ? 'opacity-60 cursor-not-allowed'
+                            : 'cursor-pointer hover:bg-slate-100/80 dark:hover:bg-slate-800'
+                        }`}
+                        onClick={() => {
+                          if (team && selectedRound && uploadingAssetType === null && !deadlinePassed && !beforeStartDate) {
+                            document.getElementById('leader-demo-file')?.click();
+                          }
+                        }}
+                      >
                         <div className="min-w-0">
                           <p className="truncate font-bold text-slate-700 dark:text-slate-200">
                             {videoAsset?.OriginalFileName || 'Chưa upload video demo'}
@@ -724,11 +889,11 @@ export default function LeaderPage() {
                               ? 'Đang upload lên Cloudinary...'
                               : videoAsset
                                 ? `${formatFileSize(videoAsset.FileSize)} · ${videoAsset.Format || videoAsset.ResourceType}`
-                                : 'Hỗ trợ MP4, WEBM, MOV'}
+                                : 'Hỗ trợ MP4, WEBM, MOV (Nhấn vào đây để chọn file)'}
                           </p>
                         </div>
                         {videoAsset?.SecureUrl ? (
-                          <div className="flex gap-1.5">
+                          <div className="flex gap-1.5" onClick={(e) => e.stopPropagation()}>
                             <a
                               href={videoAsset.SecureUrl}
                               target="_blank"
@@ -773,11 +938,22 @@ export default function LeaderPage() {
                         id="leader-slide-file"
                         type="file"
                         accept=".ppt,.pptx,.doc,.docx,application/vnd.ms-powerpoint,application/vnd.openxmlformats-officedocument.presentationml.presentation,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
-                        className="h-10 rounded-xl border-slate-200 bg-white text-xs dark:border-slate-700 dark:bg-slate-900"
-                        disabled={uploadingAssetType !== null || deadlinePassed}
+                        className="h-10 rounded-xl border-slate-200 bg-white text-xs cursor-pointer dark:border-slate-700 dark:bg-slate-900"
+                        disabled={!team || !selectedRound || uploadingAssetType !== null || deadlinePassed || beforeStartDate}
                         onChange={(event) => void handleAssetUpload('SlideDocument', event.target.files?.[0])}
                       />
-                      <div className="mt-3 flex items-center justify-between gap-3 rounded-lg bg-white px-3 py-2 text-xs dark:bg-slate-900">
+                      <div
+                        className={`mt-3 flex items-center justify-between gap-3 rounded-lg bg-white px-3 py-2 text-xs transition-colors dark:bg-slate-900 ${
+                          !team || !selectedRound || uploadingAssetType !== null || deadlinePassed || beforeStartDate
+                            ? 'opacity-60 cursor-not-allowed'
+                            : 'cursor-pointer hover:bg-slate-100/80 dark:hover:bg-slate-800'
+                        }`}
+                        onClick={() => {
+                          if (team && selectedRound && uploadingAssetType === null && !deadlinePassed && !beforeStartDate) {
+                            document.getElementById('leader-slide-file')?.click();
+                          }
+                        }}
+                      >
                         <div className="min-w-0">
                           <p className="truncate font-bold text-slate-700 dark:text-slate-200">
                             {slideAsset?.OriginalFileName || 'Chưa upload slide/tài liệu'}
@@ -787,11 +963,11 @@ export default function LeaderPage() {
                               ? 'Đang upload lên Cloudinary...'
                               : slideAsset
                                 ? `${formatFileSize(slideAsset.FileSize)} · ${slideAsset.Format || slideAsset.ResourceType}`
-                                : 'Hỗ trợ PPT, PPTX, DOC, DOCX'}
+                                : 'Hỗ trợ PPT, PPTX, DOC, DOCX (Nhấn vào đây để chọn file)'}
                           </p>
                         </div>
                         {slideAsset?.SecureUrl ? (
-                          <div className="flex gap-1.5">
+                          <div className="flex gap-1.5" onClick={(e) => e.stopPropagation()}>
                             <a
                               href={slideAsset.SecureUrl}
                               target="_blank"
@@ -840,7 +1016,7 @@ export default function LeaderPage() {
                     <Button
                       type="submit"
                       className="h-10 rounded-xl bg-indigo-600 px-5 text-xs font-bold text-white transition-colors hover:bg-indigo-700"
-                      disabled={updating || uploadingAssetType !== null || !team || !selectedRound || deadlinePassed}
+                      disabled={updating || uploadingAssetType !== null || !team || !selectedRound || deadlinePassed || beforeStartDate}
                     >
                       <Send className="mr-2 h-3.5 w-3.5" />
                       {updating ? 'Đang gửi...' : 'Nộp bài'}
@@ -850,11 +1026,11 @@ export default function LeaderPage() {
               </CardContent>
             </Card>
 
-            <Card className="border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900">
+            <Card className="border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900" id="submission-history-card">
               <CardHeader>
                 <CardTitle className="text-base font-bold">Lịch sử bài nộp qua các vòng</CardTitle>
                 <CardDescription className="text-xs font-medium text-slate-400">
-                  Danh sách bài nộp lấy từ API Submissions theo đội hiện tại.
+                  Danh sách bài nộp lấy từ API Submissions theo đội hiện tại. Bấm vào bài nộp để xem chi tiết.
                 </CardDescription>
               </CardHeader>
               <CardContent className="p-6 pt-0">
@@ -886,13 +1062,21 @@ export default function LeaderPage() {
                           return (
                             <TableRow
                               key={submission.SubmissionID}
-                              className={submission.RoundID === selectedRoundId ? 'bg-indigo-50/50 dark:bg-indigo-950/20' : ''}
+                              className={`cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800/40 ${submission.RoundID === selectedRoundId ? 'bg-indigo-50/50 dark:bg-indigo-950/20' : ''}`}
+                              onClick={() => {
+                                setSelectedDetailSubmission(submission);
+                                setIsDetailModalOpen(true);
+                              }}
                             >
                               <TableCell className="text-xs font-bold text-slate-800 dark:text-slate-200">
                                 <button
                                   type="button"
-                                  className="text-left hover:text-indigo-600"
-                                  onClick={() => handleRoundChange(submission.RoundID)}
+                                  className="text-left font-bold text-indigo-600 hover:underline dark:text-indigo-400"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    setSelectedDetailSubmission(submission);
+                                    setIsDetailModalOpen(true);
+                                  }}
                                 >
                                   {round?.RoundName || 'Vòng thi'}
                                 </button>
@@ -900,7 +1084,7 @@ export default function LeaderPage() {
                               <TableCell className="text-xs text-slate-500">
                                 {formatDateTime(submission.SubmittedAt)}
                               </TableCell>
-                              <TableCell>
+                              <TableCell onClick={(e) => e.stopPropagation()}>
                                 {hasLinks ? (
                                   <div className="flex gap-2">
                                     {submission.RepositoryURL && (
@@ -946,13 +1130,29 @@ export default function LeaderPage() {
                                   {getSubmissionStatusLabel(submission.Status)}
                                 </Badge>
                               </TableCell>
-                              <TableCell className="text-right">
+                              <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
                                 <div className="flex justify-end gap-1">
                                   <Button
                                     type="button"
                                     variant="ghost"
                                     size="icon"
-                                    onClick={() => handleRoundChange(submission.RoundID)}
+                                    onClick={() => {
+                                      setSelectedDetailSubmission(submission);
+                                      setIsDetailModalOpen(true);
+                                    }}
+                                    className="h-7 w-7 text-slate-600 hover:bg-slate-100 hover:text-indigo-600 dark:hover:bg-slate-800"
+                                    title="Xem chi tiết bài nộp"
+                                  >
+                                    <Eye className="h-3.5 w-3.5" />
+                                  </Button>
+                                  <Button
+                                    type="button"
+                                    variant="ghost"
+                                    size="icon"
+                                    onClick={() => {
+                                      handleRoundChange(submission.RoundID);
+                                      document.getElementById('leader-repo-url')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                                    }}
                                     className="h-7 w-7 text-indigo-600 hover:bg-indigo-50 dark:hover:bg-indigo-950/30"
                                     title="Chỉnh sửa bài nộp"
                                   >
@@ -1137,6 +1337,20 @@ export default function LeaderPage() {
             teamId={team.TeamID}
             isOpen={isApplicantListOpen}
             onClose={() => setIsApplicantListOpen(false)}
+          />
+          <SubmissionDetailModal
+            isOpen={isDetailModalOpen}
+            onClose={() => setIsDetailModalOpen(false)}
+            submission={selectedDetailSubmission}
+            team={team}
+            event={event}
+            round={rounds.find((r) => r.RoundID === selectedDetailSubmission?.RoundID) || null}
+            onEdit={(sub) => {
+              handleRoundChange(sub.RoundID);
+              setTimeout(() => {
+                document.getElementById('leader-repo-url')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+              }, 100);
+            }}
           />
         </>
       )}

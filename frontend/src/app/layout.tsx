@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { Inter, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import QueryProvider from "@/components/providers/QueryProvider";
-import { ToastProvider } from "@/components/Toast";
+import { ToastProvider } from "@/contexts/ToastContext";
 import RealtimeProvider from "@/components/providers/RealtimeProvider";
 import { Toaster } from "sonner";
 
