@@ -22,6 +22,7 @@ namespace BusinessLogicLayer.Services.Implements
         private readonly IGenericRepository<Rounds> _roundRepository;
         private readonly IGenericRepository<Teams> _teamRepository;
         private readonly IGenericRepository<Users> _userRepository;
+        private readonly IGenericRepository<SubmissionAssets> _submissionAssetRepository;
         private readonly INotificationService _notificationService;
         private readonly IGenericRepository<TeamMembers> _teamMemberRepository;
         private readonly IRankingService _rankingService;
@@ -41,6 +42,7 @@ namespace BusinessLogicLayer.Services.Implements
             _roundRepository = _unitOfWork.GetRepository<Rounds>();
             _teamRepository = _unitOfWork.GetRepository<Teams>();
             _userRepository = _unitOfWork.GetRepository<Users>();
+            _submissionAssetRepository = _unitOfWork.GetRepository<SubmissionAssets>();
             _teamMemberRepository = _unitOfWork.GetRepository<TeamMembers>();
         }
 
@@ -204,6 +206,13 @@ namespace BusinessLogicLayer.Services.Implements
             var scores = await _scoreRepository.FindAsync(x =>
                 submissionIds.Contains(x.SubmissionId) &&
                 assignmentIds.Contains(x.AssignmentId));
+            var uploadedAssets = await _submissionAssetRepository.FindAsync(x =>
+                x.SubmissionId.HasValue &&
+                submissionIds.Contains(x.SubmissionId.Value) &&
+                x.UploadStatus == "Uploaded");
+            var assetsBySubmissionId = uploadedAssets
+                .GroupBy(x => x.SubmissionId!.Value)
+                .ToDictionary(x => x.Key, x => x.Select(MapAssetToDto).ToList());
 
             var result = new List<JudgeSubmissionDto>();
             foreach (var submission in submissions)
@@ -228,7 +237,10 @@ namespace BusinessLogicLayer.Services.Implements
                     Scores = scores
                         .Where(x => x.SubmissionId == submission.SubmissionId && x.AssignmentId == assignment.AssignmentId)
                         .Select(MapToDto)
-                        .ToList()
+                        .ToList(),
+                    Assets = assetsBySubmissionId.TryGetValue(submission.SubmissionId, out var assets)
+                        ? assets
+                        : new List<SubmissionAssetDto>()
                 });
             }
 
@@ -388,6 +400,31 @@ namespace BusinessLogicLayer.Services.Implements
                 ScoreValue = score.ScoreValue,
                 Comment = score.Comment,
                 ScoredAt = score.ScoredAt
+            };
+        }
+
+        private static SubmissionAssetDto MapAssetToDto(SubmissionAssets asset)
+        {
+            return new SubmissionAssetDto
+            {
+                SubmissionAssetId = asset.SubmissionAssetId,
+                SubmissionId = asset.SubmissionId,
+                TeamId = asset.TeamId,
+                RoundId = asset.RoundId,
+                AssetType = asset.AssetType,
+                Provider = asset.Provider,
+                CloudinaryAssetId = asset.CloudinaryAssetId,
+                PublicId = asset.PublicId,
+                SecureUrl = asset.SecureUrl,
+                ResourceType = asset.ResourceType,
+                OriginalFileName = asset.OriginalFileName,
+                Format = asset.Format,
+                ContentType = asset.ContentType,
+                FileSize = asset.FileSize,
+                DurationSeconds = asset.DurationSeconds,
+                UploadStatus = asset.UploadStatus,
+                CreatedAt = asset.CreatedAt,
+                UploadedAt = asset.UploadedAt
             };
         }
 

@@ -133,6 +133,7 @@ namespace BusinessLogicLayer.Services.Implements
         {
             await GetCalibrationSubmissionAsync(submissionId);
             var scores = await _calibrationScoreRepository.FindAsync(x => x.SubmissionId == submissionId);
+            var criteriaNameById = await GetCriteriaNamesByIdAsync(scores.Select(x => x.CriteriaId));
             
             // Get unique judge IDs and create code mapping
             var judgeIds = scores.Select(x => x.JudgeId).Distinct().ToList();
@@ -143,7 +144,8 @@ namespace BusinessLogicLayer.Services.Implements
             }
             
             return scores.Select(s => MapScoreToDto(s, 
-                judgeCodeById.TryGetValue(s.JudgeId, out var code) ? code : null)).ToList();
+                judgeCodeById.TryGetValue(s.JudgeId, out var code) ? code : null,
+                criteriaNameById.TryGetValue(s.CriteriaId, out var criteriaName) ? criteriaName : null)).ToList();
         }
 
         public async Task<(bool hasScored, IEnumerable<CalibrationScoreDto> scores)> GetMyScoresAsync(Guid submissionId, Guid judgeUserId)
@@ -151,8 +153,12 @@ namespace BusinessLogicLayer.Services.Implements
             await GetCalibrationSubmissionAsync(submissionId);
             var scores = await _calibrationScoreRepository.FindAsync(x =>
                 x.SubmissionId == submissionId && x.JudgeId == judgeUserId);
+            var criteriaNameById = await GetCriteriaNamesByIdAsync(scores.Select(x => x.CriteriaId));
             var hasScored = scores.Any();
-            return (hasScored, scores.Select(s => MapScoreToDto(s, "Judge A")).ToList());
+            return (hasScored, scores.Select(s => MapScoreToDto(
+                s,
+                "Judge A",
+                criteriaNameById.TryGetValue(s.CriteriaId, out var criteriaName) ? criteriaName : null)).ToList());
         }
 
         public async Task<IEnumerable<CalibrationScoreDto>> SubmitScoresAsync(Guid submissionId, Guid judgeUserId, SubmitScoresRequest request)
@@ -494,6 +500,16 @@ namespace BusinessLogicLayer.Services.Implements
         {
             var eventEntity = await _eventRepository.GetByIdAsync(eventId);
             return eventEntity?.EventName;
+        }
+
+        private async Task<Dictionary<Guid, string>> GetCriteriaNamesByIdAsync(IEnumerable<Guid> criteriaIds)
+        {
+            var distinctCriteriaIds = criteriaIds.Distinct().ToList();
+            if (!distinctCriteriaIds.Any())
+                return new Dictionary<Guid, string>();
+
+            var criteria = await _criteriaRepository.FindAsync(x => distinctCriteriaIds.Contains(x.CriteriaId));
+            return criteria.ToDictionary(x => x.CriteriaId, x => x.CriteriaName);
         }
 
         private static CalibrationScoreDto MapScoreToDto(CalibrationScores score, string? judgeCode = null, string? criteriaName = null)

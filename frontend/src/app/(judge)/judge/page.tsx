@@ -63,6 +63,14 @@ function JudgePageContent() {
   const activeCategory = activeSubmission?.categoryId
     ? categories.find((category) => category.CategoryID === activeSubmission.categoryId)
     : null;
+  const uploadedVideoUrl = activeSubmission?.assets.find(
+    (asset) => asset.AssetType === 'VideoDemo' && asset.SecureUrl,
+  )?.SecureUrl;
+  const uploadedDocumentUrl = activeSubmission?.assets.find(
+    (asset) => asset.AssetType === 'SlideDocument' && asset.SecureUrl,
+  )?.SecureUrl;
+  const demoUrl = activeSubmission?.demoURL || uploadedVideoUrl;
+  const documentUrl = activeSubmission?.slideURL || uploadedDocumentUrl;
 
   const hasExistingScores = existingScores.length > 0;
 
@@ -380,16 +388,16 @@ function JudgePageContent() {
                         Source
                       </a>
                     )}
-                    {activeSubmission.demoURL && (
-                      <a href={activeSubmission.demoURL} target="_blank" rel="noopener noreferrer" className="flex h-9 items-center gap-1.5 rounded-xl border border-slate-200 px-3 text-xs font-semibold text-rose-600 hover:bg-slate-50 dark:border-slate-700">
+                    {demoUrl && (
+                      <a href={demoUrl} target="_blank" rel="noopener noreferrer" className="flex h-9 items-center gap-1.5 rounded-xl border border-slate-200 px-3 text-xs font-semibold text-rose-600 hover:bg-slate-50 dark:border-slate-700">
                         <Video className="h-4 w-4" />
-                        Demo
+                        {activeSubmission.demoURL ? 'Demo' : 'Video'}
                       </a>
                     )}
-                    {activeSubmission.slideURL && (
-                      <a href={activeSubmission.slideURL} target="_blank" rel="noopener noreferrer" className="flex h-9 items-center gap-1.5 rounded-xl border border-slate-200 px-3 text-xs font-semibold hover:bg-slate-50 dark:border-slate-700">
+                    {documentUrl && (
+                      <a href={documentUrl} target="_blank" rel="noopener noreferrer" className="flex h-9 items-center gap-1.5 rounded-xl border border-slate-200 px-3 text-xs font-semibold hover:bg-slate-50 dark:border-slate-700">
                         <FileText className="h-4 w-4 text-indigo-500" />
-                        Slides
+                        {activeSubmission.slideURL ? 'Slides' : 'Tài liệu'}
                       </a>
                     )}
                   </CardContent>
