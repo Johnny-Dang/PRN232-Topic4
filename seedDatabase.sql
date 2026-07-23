@@ -260,27 +260,27 @@ BEGIN TRY
     ('A0000000-0000-0000-0000-000000000013','E0000000-0000-0000-0000-000000000006','Final Round',1,'2026-07-25','2026-07-23','2026-07-25');
 
     -- =========================================================
-    -- CATEGORIES for each Event
+    -- CATEGORIES for each Event (Unique category names per event)
     -- =========================================================
     INSERT INTO Categories (CategoryID, EventID, CategoryName, Description) VALUES
     -- Spring 2026 categories
-    ('C0000000-0000-0000-0000-000000000001','E0000000-0000-0000-0000-000000000001','Web Application',N'Web-based software projects'),
-    ('C0000000-0000-0000-0000-000000000002','E0000000-0000-0000-0000-000000000001','Mobile Application',N'Mobile software solutions'),
+    ('C0000000-0000-0000-0000-000000000001','E0000000-0000-0000-0000-000000000001','Spring Web App',N'Web-based software projects'),
+    ('C0000000-0000-0000-0000-000000000002','E0000000-0000-0000-0000-000000000001','Spring Mobile App',N'Mobile software solutions'),
     ('C0000000-0000-0000-0000-000000000003','E0000000-0000-0000-0000-000000000001','AI Solution',N'Artificial Intelligence projects'),
     -- Summer 2026 categories
     ('C0000000-0000-0000-0000-000000000004','E0000000-0000-0000-0000-000000000002','Blockchain Solution',N'Blockchain applications'),
-    ('C0000000-0000-0000-0000-000000000005','E0000000-0000-0000-0000-000000000002','Web Application',N'Web-based software projects'),
+    ('C0000000-0000-0000-0000-000000000005','E0000000-0000-0000-0000-000000000002','Summer Web Platform',N'Web-based software projects'),
     -- Fall 2026 categories
     ('C0000000-0000-0000-0000-000000000006','E0000000-0000-0000-0000-000000000003','AI/ML Solution',N'Machine Learning projects'),
     ('C0000000-0000-0000-0000-000000000007','E0000000-0000-0000-0000-000000000003','IoT Solution',N'Internet of Things projects'),
     -- Winter 2026 categories
     ('C0000000-0000-0000-0000-000000000008','E0000000-0000-0000-0000-000000000004','Cloud Solution',N'Cloud and DevOps projects'),
-    ('C0000000-0000-0000-0000-000000000009','E0000000-0000-0000-0000-000000000004','Web Application',N'Web-based software projects'),
+    ('C0000000-0000-0000-0000-000000000009','E0000000-0000-0000-0000-000000000004','Winter Web Services',N'Web-based software projects'),
     -- Master 2026 categories
-    ('C0000000-0000-0000-0000-000000000010','E0000000-0000-0000-0000-000000000005','Mobile Application',N'Mobile software solutions'),
-    ('C0000000-0000-0000-0000-000000000011','E0000000-0000-0000-0000-000000000005','Web Application',N'Web-based software projects'),
+    ('C0000000-0000-0000-0000-000000000010','E0000000-0000-0000-0000-000000000005','Master Mobile App',N'Mobile software solutions'),
+    ('C0000000-0000-0000-0000-000000000011','E0000000-0000-0000-0000-000000000005','Master Fullstack Web',N'Web-based software projects'),
     -- Hackathon 2026 categories
-    ('C0000000-0000-0000-0000-000000000012','E0000000-0000-0000-0000-000000000006','Innovation',N'Open innovation solutions');
+    ('C0000000-0000-0000-0000-000000000012','E0000000-0000-0000-0000-000000000006','Open Innovation',N'Open innovation solutions');
 
     -- =========================================================
     -- CATEGORY MENTORS (Mentors linked to Categories via Events)
