@@ -66,7 +66,7 @@ export const CreateTeamCard: React.FC<CreateTeamCardProps> = ({
             <Users className="h-4 w-4 text-indigo-500" /> Chọn tên từ Team cũ của bạn
           </h4>
           <p className="text-[10px] text-slate-500 dark:text-slate-400">
-            Bấm "Dùng tên này" để điền nhanh tên nhóm. Tạo nhóm mới sẽ chỉ khởi tạo với Trưởng nhóm (Team cũ giữ nguyên 100%).
+            Bấm &quot;Dùng tên này&quot; để điền nhanh tên nhóm. Tạo nhóm mới sẽ chỉ khởi tạo với Trưởng nhóm (Team cũ giữ nguyên 100%).
           </p>
           <div className="space-y-2 max-h-60 overflow-y-auto">
             {oldTeams.map((team) => {

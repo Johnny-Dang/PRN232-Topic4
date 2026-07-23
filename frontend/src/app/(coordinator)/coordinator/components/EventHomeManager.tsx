@@ -165,6 +165,21 @@ export default function EventHomeManager({
     getTeams().then(setTeams).catch(() => {});
   }, []);
 
+  const getRegisteredTeamsForEvent = (eventId: string) => {
+    const eventCategories = categories.filter((c) => c.EventId === eventId);
+    const eventCategoryIds = new Set(eventCategories.map((c) => c.CategoryId));
+
+    return teams.filter(
+      (t) => t.EventID === eventId || (t.CategoryID && eventCategoryIds.has(t.CategoryID)),
+    );
+  };
+
+  const getRegisteredTeamsCount = (eventId: string) => {
+    return getRegisteredTeamsForEvent(eventId).length;
+  };
+
+  const hasRegisteredTeams = (eventId: string) => getRegisteredTeamsCount(eventId) > 0;
+
   useEffect(() => {
     if (expandedSection === 'teams' && expandedEventId) {
       const eventTeams = getRegisteredTeamsForEvent(expandedEventId);
@@ -242,21 +257,6 @@ export default function EventHomeManager({
       Year: year,
     }));
   };
-
-  const getRegisteredTeamsForEvent = (eventId: string) => {
-    const eventCategories = categories.filter((c) => c.EventId === eventId);
-    const eventCategoryIds = new Set(eventCategories.map((c) => c.CategoryId));
-
-    return teams.filter(
-      (t) => t.EventID === eventId || (t.CategoryID && eventCategoryIds.has(t.CategoryID)),
-    );
-  };
-
-  const getRegisteredTeamsCount = (eventId: string) => {
-    return getRegisteredTeamsForEvent(eventId).length;
-  };
-
-  const hasRegisteredTeams = (eventId: string) => getRegisteredTeamsCount(eventId) > 0;
 
   const startEditEvent = (event: CoordinatorEvent) => {
     setEditingEventId(event.EventId);
