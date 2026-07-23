@@ -155,6 +155,12 @@ namespace BusinessLogicLayer.Services.Implements
                 return Enumerable.Empty<RankingDto>();
 
             var round = await _roundRepository.GetByIdAsync(roundId);
+            var eventRounds = round == null
+                ? Array.Empty<Rounds>()
+                : (await _roundRepository.FindAsync(x => x.EventId == round.EventId)).ToArray();
+            var isFinalRound = round != null
+                && eventRounds.Any()
+                && round.RoundOrder == eventRounds.Max(item => item.RoundOrder);
             var teamIds = rankings.Select(x => x.TeamId).Distinct().ToList();
             var teams = await _teamRepository.FindAsync(x => teamIds.Contains(x.TeamId));
             var teamsById = teams.ToDictionary(x => x.TeamId, x => x);
@@ -176,7 +182,13 @@ namespace BusinessLogicLayer.Services.Implements
                         RankPosition = ranking.RankPosition,
                         TotalScore = ranking.TotalScore,
                         GeneratedAt = ranking.GeneratedAt,
-                        IsAdvanced = round?.IsFinalized == true ? ranking.IsAdvanced : null
+                        IsAdvanced = round?.IsFinalized == true && !isFinalRound
+                            ? ranking.IsAdvanced
+                            : null,
+                        IsFinalRound = isFinalRound,
+                        IsAwarded = round?.IsFinalized == true && isFinalRound
+                            ? ranking.IsAdvanced
+                            : null
                     };
                 });
         }

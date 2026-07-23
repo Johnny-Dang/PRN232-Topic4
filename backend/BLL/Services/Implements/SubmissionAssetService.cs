@@ -1,6 +1,7 @@
 using BusinessLogicLayer.DTOs.Requests;
 using BusinessLogicLayer.DTOs.Responses;
 using BusinessLogicLayer.Services.Interfaces;
+using BusinessLogicLayer.Utilities;
 using DataAccessLayer.Database.Entities;
 using DataAccessLayer.Repositories.Interfaces;
 using Microsoft.Extensions.Configuration;
@@ -256,10 +257,7 @@ namespace BusinessLogicLayer.Services.Implements
                 throw new Exception("Vòng thi không thuộc sự kiện của đội.");
 
             await _roundEligibilityService.EnsureTeamCanParticipateAsync(team.TeamId, round);
-            if (DateTime.UtcNow < round.StartDate)
-                throw new Exception($"Vòng thi chưa mở. Upload file sẽ được chấp nhận từ {round.StartDate:yyyy-MM-dd HH:mm:ss} UTC.");
-            if (DateTime.UtcNow > round.SubmissionDeadline)
-                throw new Exception("Đã quá hạn nộp bài. Bạn không thể upload file cho vòng thi này.");
+            SubmissionMutationPolicy.EnsureAllowed(round, DateTime.UtcNow);
 
             return round;
         }

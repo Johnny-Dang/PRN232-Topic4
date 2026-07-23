@@ -18,5 +18,6 @@ namespace BusinessLogicLayer.DTOs.Responses
         public bool IsFinalized { get; set; }
         public DateTime? FinalizedAt { get; set; }
         public DateTime EffectiveEndAtUtc { get; set; }
+        public bool IsFinalRound { get; set; }
     }
 }

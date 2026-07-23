@@ -177,7 +177,7 @@ namespace BusinessLogicLayer.Services.Implements
         public async Task<List<EventDto>> GetPublishedEventsAsync()
         {
             var events = await _eventRepository.FindAsync(x =>
-                x.IsPublished && x.Status == "Published"
+                x.IsPublished && (x.Status == "Published" || x.Status == "Completed")
             );
             return events
                 .OrderByDescending(x => x.IsFeatured)
@@ -413,6 +413,10 @@ namespace BusinessLogicLayer.Services.Implements
 
         private EventDto MapToDto(Events eventEntity)
         {
+            var finalRoundOrder = eventEntity.Rounds.Any()
+                ? eventEntity.Rounds.Max(round => round.RoundOrder)
+                : (int?)null;
+
             return new EventDto
             {
                 EventId = eventEntity.EventId,
@@ -445,6 +449,7 @@ namespace BusinessLogicLayer.Services.Implements
                         IsFinalized = r.IsFinalized,
                         FinalizedAt = r.FinalizedAt,
                         EffectiveEndAtUtc = RoundTimePolicy.GetEffectiveEndAtUtc(r.EndDate),
+                        IsFinalRound = finalRoundOrder.HasValue && r.RoundOrder == finalRoundOrder.Value,
                     })
                     .ToList(),
             };

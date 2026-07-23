@@ -318,6 +318,27 @@ export default function LeaderPage() {
   const qualificationBlocked = selectedRoundProgress?.IsEligible === false;
   const deadlinePassed = isPastDeadline(selectedRound);
   const beforeStartDate = isBeforeStartDate(selectedRound);
+  const effectiveEndPassed = Boolean(
+    selectedRound?.EffectiveEndAtUtc
+      && Date.now() >= new Date(selectedRound.EffectiveEndAtUtc).getTime(),
+  );
+  const submissionReadOnly = selectedRoundProgress
+    ? !selectedRoundProgress.CanSubmit
+    : deadlinePassed
+      || beforeStartDate
+      || qualificationBlocked
+      || effectiveEndPassed
+      || Boolean(selectedRound?.IsFinalized);
+  const submissionReadOnlyReason = selectedRoundProgress?.BlockedReason
+    || (selectedRound?.IsFinalized || effectiveEndPassed
+      ? 'Vòng thi đã kết thúc. Bài nộp hiện chỉ có thể xem.'
+      : beforeStartDate
+        ? 'Vòng thi chưa mở.'
+        : deadlinePassed
+          ? 'Đã quá hạn nộp bài.'
+          : qualificationBlocked
+            ? 'Đội chưa đủ điều kiện tham gia vòng này.'
+            : 'Bài nộp hiện chỉ có thể xem.');
 
   const applySubmissionToForm = useCallback((submission: SubmissionWithTeam | null) => {
     setCurrentSubmission(submission);
@@ -606,6 +627,28 @@ export default function LeaderPage() {
 
   const handleDeleteClick = useCallback(
     async (submissionId: string) => {
+      const submission = submissions.find((item) => item.SubmissionID === submissionId);
+      const submissionRound = rounds.find((item) => item.RoundID === submission?.RoundID);
+      const progress = roundProgress.find((item) => item.RoundId === submission?.RoundID);
+      const effectiveEnd = submissionRound?.EffectiveEndAtUtc
+        ? new Date(submissionRound.EffectiveEndAtUtc).getTime()
+        : Number.POSITIVE_INFINITY;
+      const isReadOnly = progress
+        ? !progress.CanSubmit
+        : !submissionRound
+          || submissionRound.IsFinalized
+          || Date.now() >= effectiveEnd
+          || isPastDeadline(submissionRound)
+          || isBeforeStartDate(submissionRound);
+
+      if (isReadOnly) {
+        const reason = progress?.BlockedReason
+          || 'Vòng thi đã đóng. Bài nộp hiện chỉ có thể xem và không thể xóa.';
+        setErrorMessage(reason);
+        showToast(reason, 'error');
+        return;
+      }
+
       if (!window.confirm('Bạn có chắc chắn muốn xóa bài nộp này không?')) return;
       try {
         await deleteSubmission(submissionId);
@@ -625,7 +668,7 @@ export default function LeaderPage() {
         showToast(getApiErrorMessage(err, 'Không thể xóa bài nộp.'), 'error');
       }
     },
-    [currentSubmission, showToast]
+    [currentSubmission, roundProgress, rounds, showToast, submissions]
   );
 
   useEffect(() => {
@@ -693,19 +736,8 @@ export default function LeaderPage() {
       return;
     }
 
-    if (deadlinePassed) {
-      setErrorMessage('Vòng thi đã quá hạn nộp bài. Không thể upload file.');
-      return;
-    }
-
-    if (beforeStartDate) {
-      setErrorMessage('Vòng thi chưa mở. Vui lòng đợi đến ngày bắt đầu.');
-      showToast('Vòng thi chưa mở. Vui lòng đợi đến ngày bắt đầu.', 'error');
-      return;
-    }
-
-    if (qualificationBlocked) {
-      const reason = selectedRoundProgress?.BlockedReason || 'Đội chưa đủ điều kiện tham gia vòng này.';
+    if (submissionReadOnly) {
+      const reason = submissionReadOnlyReason;
       setErrorMessage(reason);
       showToast(reason, 'error');
       return;
@@ -746,20 +778,8 @@ export default function LeaderPage() {
       return;
     }
 
-    if (deadlinePassed) {
-      setErrorMessage('Vòng thi đã quá hạn nộp bài. Không thể tạo hoặc cập nhật bài nộp.');
-      showToast('Vòng thi đã quá hạn nộp bài. Không thể tạo hoặc cập nhật bài nộp.', 'error');
-      return;
-    }
-
-    if (beforeStartDate) {
-      setErrorMessage('Vòng thi chưa mở. Vui lòng đợi đến ngày bắt đầu.');
-      showToast('Vòng thi chưa mở. Vui lòng đợi đến ngày bắt đầu.', 'error');
-      return;
-    }
-
-    if (qualificationBlocked) {
-      const reason = selectedRoundProgress?.BlockedReason || 'Đội chưa đủ điều kiện tham gia vòng này.';
+    if (submissionReadOnly) {
+      const reason = submissionReadOnlyReason;
       setErrorMessage(reason);
       showToast(reason, 'error');
       return;
@@ -994,13 +1014,15 @@ export default function LeaderPage() {
                         <Badge className="border border-amber-100 bg-amber-50 text-amber-600">Chưa mở</Badge>
                       ) : deadlinePassed ? (
                         <Badge className="border border-rose-100 bg-rose-50 text-rose-600">Đã quá hạn</Badge>
+                      ) : submissionReadOnly ? (
+                        <Badge className="border border-slate-200 bg-slate-50 text-slate-600">Chỉ đọc</Badge>
                       ) : (
                         <Badge className="border border-emerald-100 bg-emerald-50 text-emerald-600">Đang mở</Badge>
                       )}
                     </div>
-                    {qualificationBlocked && selectedRoundProgress?.BlockedReason && (
+                    {submissionReadOnly && (
                       <p className="text-xs font-medium text-rose-600">
-                        {selectedRoundProgress.BlockedReason}
+                        {submissionReadOnlyReason}
                       </p>
                     )}
                   </div>
@@ -1020,6 +1042,7 @@ export default function LeaderPage() {
                         className="h-10 rounded-xl border-slate-200 bg-slate-50 dark:border-slate-700 dark:bg-slate-800"
                         value={repoUrl}
                         onChange={(event) => setRepoUrl(event.target.value)}
+                        disabled={submissionReadOnly}
                       />
                       {repoUrl && (
                         <a
@@ -1049,17 +1072,17 @@ export default function LeaderPage() {
                         type="file"
                         accept="video/mp4,video/webm,video/quicktime,.mp4,.webm,.mov"
                         className="h-10 rounded-xl border-slate-200 bg-white text-xs cursor-pointer dark:border-slate-700 dark:bg-slate-900"
-                        disabled={!team || !selectedRound || uploadingAssetType !== null || deadlinePassed || beforeStartDate || qualificationBlocked}
+                        disabled={!team || !selectedRound || uploadingAssetType !== null || submissionReadOnly}
                         onChange={(event) => void handleAssetUpload('VideoDemo', event.target.files?.[0])}
                       />
                       <div
                         className={`mt-3 flex items-center justify-between gap-3 rounded-lg bg-white px-3 py-2 text-xs transition-colors dark:bg-slate-900 ${
-                          !team || !selectedRound || uploadingAssetType !== null || deadlinePassed || beforeStartDate || qualificationBlocked
+                          !team || !selectedRound || uploadingAssetType !== null || submissionReadOnly
                             ? 'opacity-60 cursor-not-allowed'
                             : 'cursor-pointer hover:bg-slate-100/80 dark:hover:bg-slate-800'
                         }`}
                         onClick={() => {
-                          if (team && selectedRound && uploadingAssetType === null && !deadlinePassed && !beforeStartDate && !qualificationBlocked) {
+                          if (team && selectedRound && uploadingAssetType === null && !submissionReadOnly) {
                             document.getElementById('leader-demo-file')?.click();
                           }
                         }}
@@ -1097,6 +1120,7 @@ export default function LeaderPage() {
                                 const input = document.getElementById('leader-demo-file') as HTMLInputElement;
                                 if (input) input.value = '';
                               }}
+                              disabled={submissionReadOnly}
                               className="h-8 w-8 text-rose-500 hover:bg-rose-50 hover:text-rose-700 dark:hover:bg-rose-950/30"
                               title="Xóa video demo"
                             >
@@ -1123,17 +1147,17 @@ export default function LeaderPage() {
                         type="file"
                         accept=".ppt,.pptx,.doc,.docx,application/vnd.ms-powerpoint,application/vnd.openxmlformats-officedocument.presentationml.presentation,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
                         className="h-10 rounded-xl border-slate-200 bg-white text-xs cursor-pointer dark:border-slate-700 dark:bg-slate-900"
-                        disabled={!team || !selectedRound || uploadingAssetType !== null || deadlinePassed || beforeStartDate || qualificationBlocked}
+                        disabled={!team || !selectedRound || uploadingAssetType !== null || submissionReadOnly}
                         onChange={(event) => void handleAssetUpload('SlideDocument', event.target.files?.[0])}
                       />
                       <div
                         className={`mt-3 flex items-center justify-between gap-3 rounded-lg bg-white px-3 py-2 text-xs transition-colors dark:bg-slate-900 ${
-                          !team || !selectedRound || uploadingAssetType !== null || deadlinePassed || beforeStartDate || qualificationBlocked
+                          !team || !selectedRound || uploadingAssetType !== null || submissionReadOnly
                             ? 'opacity-60 cursor-not-allowed'
                             : 'cursor-pointer hover:bg-slate-100/80 dark:hover:bg-slate-800'
                         }`}
                         onClick={() => {
-                          if (team && selectedRound && uploadingAssetType === null && !deadlinePassed && !beforeStartDate && !qualificationBlocked) {
+                          if (team && selectedRound && uploadingAssetType === null && !submissionReadOnly) {
                             document.getElementById('leader-slide-file')?.click();
                           }
                         }}
@@ -1171,6 +1195,7 @@ export default function LeaderPage() {
                                 const input = document.getElementById('leader-slide-file') as HTMLInputElement;
                                 if (input) input.value = '';
                               }}
+                              disabled={submissionReadOnly}
                               className="h-8 w-8 text-rose-500 hover:bg-rose-50 hover:text-rose-700 dark:hover:bg-rose-950/30"
                               title="Xóa slide/tài liệu"
                             >
@@ -1201,6 +1226,7 @@ export default function LeaderPage() {
                       type="button"
                       variant="outline"
                       onClick={resetSubmissionForm}
+                      disabled={submissionReadOnly}
                       className="h-10 rounded-xl border-slate-200 text-xs font-semibold hover:bg-slate-100 dark:border-slate-800 dark:hover:bg-slate-800"
                     >
                       <RefreshCw className="mr-2 h-3.5 w-3.5" />
@@ -1209,7 +1235,7 @@ export default function LeaderPage() {
                     <Button
                       type="submit"
                       className="h-10 rounded-xl bg-indigo-600 px-5 text-xs font-bold text-white transition-colors hover:bg-indigo-700"
-                      disabled={updating || uploadingAssetType !== null || !team || !selectedRound || deadlinePassed || beforeStartDate || qualificationBlocked}
+                      disabled={updating || uploadingAssetType !== null || !team || !selectedRound || submissionReadOnly}
                     >
                       <Send className="mr-2 h-3.5 w-3.5" />
                       {updating ? 'Đang gửi...' : currentSubmission ? 'Cập nhật bài nộp' : 'Nộp bài'}
@@ -1253,6 +1279,19 @@ export default function LeaderPage() {
                       <TableBody>
                         {submissions.map((submission) => {
                           const round = rounds.find((item) => item.RoundID === submission.RoundID);
+                          const progress = roundProgress.find((item) => item.RoundId === submission.RoundID);
+                          const effectiveEnd = round?.EffectiveEndAtUtc
+                            ? new Date(round.EffectiveEndAtUtc).getTime()
+                            : Number.POSITIVE_INFINITY;
+                          const isSubmissionReadOnly = progress
+                            ? !progress.CanSubmit
+                            : !round
+                              || round.IsFinalized
+                              || Date.now() >= effectiveEnd
+                              || isPastDeadline(round)
+                              || isBeforeStartDate(round);
+                          const readOnlyReason = progress?.BlockedReason
+                            || 'Vòng thi đã đóng. Bài nộp hiện chỉ có thể xem.';
                           const hasLinks = submission.RepositoryURL || submission.DemoURL || submission.SlideURL;
 
                           return (
@@ -1350,7 +1389,7 @@ export default function LeaderPage() {
                                       document.getElementById('leader-repo-url')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
                                     }}
                                     className="h-7 w-7 text-indigo-600 hover:bg-indigo-50 dark:hover:bg-indigo-950/30"
-                                    title="Chỉnh sửa bài nộp"
+                                    title={isSubmissionReadOnly ? 'Xem bài nộp ở chế độ chỉ đọc' : 'Chỉnh sửa bài nộp'}
                                   >
                                     <Pencil className="h-3.5 w-3.5" />
                                   </Button>
@@ -1360,7 +1399,8 @@ export default function LeaderPage() {
                                     size="icon"
                                     onClick={() => void handleDeleteClick(submission.SubmissionID)}
                                     className="h-7 w-7 text-rose-600 hover:bg-rose-50 hover:text-rose-700 dark:hover:bg-rose-950/30"
-                                    title="Xóa bài nộp"
+                                    disabled={isSubmissionReadOnly}
+                                    title={isSubmissionReadOnly ? readOnlyReason : 'Xóa bài nộp'}
                                   >
                                     <Trash2 className="h-3.5 w-3.5" />
                                   </Button>

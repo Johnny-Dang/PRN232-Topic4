@@ -18,6 +18,8 @@ const statusLabel: Record<TeamRoundProgressStatus, string> = {
   AwaitingFinalization: 'Đang chốt',
   Advanced: 'Thăng vòng',
   Eliminated: 'Bị loại',
+  Awarded: 'Đạt giải',
+  NotAwarded: 'Không đạt giải',
 };
 
 const statusClass: Record<TeamRoundProgressStatus, string> = {
@@ -26,6 +28,8 @@ const statusClass: Record<TeamRoundProgressStatus, string> = {
   AwaitingFinalization: 'border-amber-100 bg-amber-50 text-amber-700',
   Advanced: 'border-emerald-100 bg-emerald-50 text-emerald-700',
   Eliminated: 'border-rose-100 bg-rose-50 text-rose-700',
+  Awarded: 'border-amber-200 bg-amber-50 text-amber-700',
+  NotAwarded: 'border-slate-200 bg-slate-50 text-slate-600',
 };
 
 export const TeamRoundsCard: React.FC<TeamRoundsCardProps> = ({ teamId }) => {
@@ -39,10 +43,10 @@ export const TeamRoundsCard: React.FC<TeamRoundsCardProps> = ({ teamId }) => {
     <Card className="border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900">
       <CardHeader>
         <CardTitle className="flex items-center gap-2 text-base font-bold">
-          <Calendar className="h-5 w-5 text-indigo-600 dark:text-indigo-400" /> Tiến độ thăng hạng vòng thi
+          <Calendar className="h-5 w-5 text-indigo-600 dark:text-indigo-400" /> Tiến độ và kết quả vòng thi
         </CardTitle>
         <CardDescription className="text-xs font-medium text-slate-400">
-          Hạng trước khi chốt là tạm thời; kết quả thăng vòng chỉ có hiệu lực sau khi round được chốt.
+          Hạng trước khi chốt là tạm thời; vòng trung gian hiển thị kết quả thăng vòng và vòng cuối hiển thị kết quả đạt giải.
         </CardDescription>
       </CardHeader>
       <CardContent className="p-6 pt-0">

@@ -13,5 +13,7 @@ namespace BusinessLogicLayer.DTOs.Responses
         public decimal TotalScore { get; set; }
         public DateTime GeneratedAt { get; set; }
         public bool? IsAdvanced { get; set; }
+        public bool IsFinalRound { get; set; }
+        public bool? IsAwarded { get; set; }
     }
 }

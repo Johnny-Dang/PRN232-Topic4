@@ -42,6 +42,7 @@ export interface Round {
   IsFinalized: boolean;
   FinalizedAt: string | null;
   EffectiveEndAtUtc: string;
+  IsFinalRound: boolean;
 }
 
 export interface Category {
@@ -360,6 +361,8 @@ export interface Ranking {
   RankPosition: number;
   TotalScore: number;
   IsAdvanced: boolean | null;
+  IsFinalRound: boolean;
+  IsAwarded: boolean | null;
 }
 
 export type TeamRoundProgressStatus =
@@ -367,7 +370,9 @@ export type TeamRoundProgressStatus =
   | "InProgress"
   | "AwaitingFinalization"
   | "Advanced"
-  | "Eliminated";
+  | "Eliminated"
+  | "Awarded"
+  | "NotAwarded";
 
 export interface TeamRoundProgress {
   RoundId: string;
@@ -380,6 +385,8 @@ export interface TeamRoundProgress {
   RankPosition: number | null;
   TotalScore: number | null;
   IsAdvanced: boolean | null;
+  IsFinalRound: boolean;
+  IsAwarded: boolean | null;
   Status: TeamRoundProgressStatus;
   IsEligible: boolean;
   CanSubmit: boolean;
@@ -488,6 +495,8 @@ export interface BackendRound {
   FinalizedAt?: string | null;
   effectiveEndAtUtc?: string;
   EffectiveEndAtUtc?: string;
+  isFinalRound?: boolean;
+  IsFinalRound?: boolean;
 }
 
 export interface BackendCategory {
@@ -714,6 +723,10 @@ export interface BackendRanking {
   TotalScore?: number;
   isAdvanced?: boolean | null;
   IsAdvanced?: boolean | null;
+  isFinalRound?: boolean;
+  IsFinalRound?: boolean;
+  isAwarded?: boolean | null;
+  IsAwarded?: boolean | null;
 }
 
 export interface BackendEventCriteria {
@@ -826,6 +839,7 @@ const mapRound = (round: BackendRound): Round => ({
   FinalizedAt: round.finalizedAt ?? round.FinalizedAt ?? null,
   EffectiveEndAtUtc:
     round.effectiveEndAtUtc || round.EffectiveEndAtUtc || "",
+  IsFinalRound: round.isFinalRound ?? round.IsFinalRound ?? false,
 });
 
 const mapCategory = (category: BackendCategory): Category => ({
@@ -979,6 +993,8 @@ const mapRanking = (ranking: BackendRanking): Ranking => ({
   RankPosition: ranking.rankPosition || ranking.RankPosition || 0,
   TotalScore: ranking.totalScore || ranking.TotalScore || 0,
   IsAdvanced: ranking.isAdvanced ?? ranking.IsAdvanced ?? null,
+  IsFinalRound: ranking.isFinalRound ?? ranking.IsFinalRound ?? false,
+  IsAwarded: ranking.isAwarded ?? ranking.IsAwarded ?? null,
 });
 
 const mapEventCriteria = (criteria: BackendEventCriteria): Criteria => ({
@@ -1103,6 +1119,9 @@ const calculateDaysLeft = (deadlineValue: string): number => {
 const getCompetitionStatus = (
   event: BackendEvent,
 ): DetailedCompetition["Status"] => {
+  const backendStatus = String(event.status || event.Status || "");
+  if (backendStatus.toLowerCase() === "completed") return "closed";
+
   const startDate = normalizeDate(event.startDate || event.StartDate || "");
   const endDate = normalizeDate(event.endDate || event.EndDate || "");
   const now = new Date();
@@ -2291,6 +2310,11 @@ export async function getTeamRoundProgress(
       item.isAdvanced == null && item.IsAdvanced == null
         ? null
         : Boolean(item.isAdvanced ?? item.IsAdvanced),
+    IsFinalRound: Boolean(item.isFinalRound ?? item.IsFinalRound ?? false),
+    IsAwarded:
+      item.isAwarded == null && item.IsAwarded == null
+        ? null
+        : Boolean(item.isAwarded ?? item.IsAwarded),
     Status: String(
       item.status ?? item.Status ?? "Upcoming",
     ) as TeamRoundProgressStatus,

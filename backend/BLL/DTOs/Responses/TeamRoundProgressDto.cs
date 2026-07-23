@@ -14,6 +14,8 @@ namespace BusinessLogicLayer.DTOs.Responses
         public int? RankPosition { get; set; }
         public decimal? TotalScore { get; set; }
         public bool? IsAdvanced { get; set; }
+        public bool IsFinalRound { get; set; }
+        public bool? IsAwarded { get; set; }
         public string Status { get; set; } = string.Empty;
         public bool IsEligible { get; set; }
         public bool CanSubmit { get; set; }

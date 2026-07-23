@@ -68,14 +68,25 @@ namespace BusinessLogicLayer.Services.Implements
                 .ToDictionary(group => group.Key, group => group.OrderBy(item => item.RankPosition).First());
             var now = DateTime.UtcNow;
             var result = new List<TeamRoundProgressDto>();
+            var finalRoundOrder = rounds.Any()
+                ? rounds.Max(round => round.RoundOrder)
+                : (int?)null;
 
             foreach (var round in rounds)
             {
+                var isFinalRound = finalRoundOrder.HasValue
+                    && round.RoundOrder == finalRoundOrder.Value;
                 rankingByRound.TryGetValue(round.RoundId, out var ranking);
                 var effectiveEndAtUtc = RoundTimePolicy.GetEffectiveEndAtUtc(round.EndDate);
                 var normalizedStart = RoundTimePolicy.NormalizeUtc(round.StartDate);
                 var normalizedDeadline = RoundTimePolicy.NormalizeUtc(round.SubmissionDeadline);
-                var status = GetStatus(round, ranking, now, normalizedStart, effectiveEndAtUtc);
+                var status = GetStatus(
+                    round,
+                    ranking,
+                    isFinalRound,
+                    now,
+                    normalizedStart,
+                    effectiveEndAtUtc);
                 var (eligible, eligibilityReason) =
                     await _roundEligibilityService.CheckTeamCanParticipateAsync(
                         teamId,
@@ -103,7 +114,13 @@ namespace BusinessLogicLayer.Services.Implements
                     FinalizedAt = round.FinalizedAt,
                     RankPosition = ranking?.RankPosition,
                     TotalScore = ranking?.TotalScore,
-                    IsAdvanced = round.IsFinalized ? ranking?.IsAdvanced == true : null,
+                    IsAdvanced = round.IsFinalized && !isFinalRound
+                        ? ranking?.IsAdvanced == true
+                        : null,
+                    IsFinalRound = isFinalRound,
+                    IsAwarded = round.IsFinalized && isFinalRound
+                        ? ranking?.IsAdvanced == true
+                        : null,
                     Status = status,
                     IsEligible = eligible,
                     CanSubmit = canSubmit,
@@ -117,12 +134,17 @@ namespace BusinessLogicLayer.Services.Implements
         private static string GetStatus(
             Rounds round,
             Rankings? ranking,
+            bool isFinalRound,
             DateTime now,
             DateTime startAtUtc,
             DateTime effectiveEndAtUtc)
         {
             if (round.IsFinalized)
+            {
+                if (isFinalRound)
+                    return ranking?.IsAdvanced == true ? "Awarded" : "NotAwarded";
                 return ranking?.IsAdvanced == true ? "Advanced" : "Eliminated";
+            }
             if (now < startAtUtc)
                 return "Upcoming";
             if (now >= effectiveEndAtUtc)

@@ -25,6 +25,7 @@ namespace BusinessLogicLayer.Services.Implements
         private readonly INotificationSender _notificationSender;
         private readonly ILogger<RoundFinalizationService> _logger;
         private readonly IGenericRepository<Rounds> _roundRepository;
+        private readonly IGenericRepository<Events> _eventRepository;
         private readonly IGenericRepository<Rankings> _rankingRepository;
         private readonly IGenericRepository<AdvancementRules> _ruleRepository;
         private readonly IGenericRepository<Teams> _teamRepository;
@@ -46,6 +47,7 @@ namespace BusinessLogicLayer.Services.Implements
             _notificationSender = notificationSender;
             _logger = logger;
             _roundRepository = unitOfWork.GetRepository<Rounds>();
+            _eventRepository = unitOfWork.GetRepository<Events>();
             _rankingRepository = unitOfWork.GetRepository<Rankings>();
             _ruleRepository = unitOfWork.GetRepository<AdvancementRules>();
             _teamRepository = unitOfWork.GetRepository<Teams>();
@@ -106,11 +108,31 @@ namespace BusinessLogicLayer.Services.Implements
                     cancellationToken);
                 var round = await GetRoundWithUpdateLockAsync(roundId, cancellationToken)
                     ?? throw new Exception($"Không tìm thấy vòng thi với id: {roundId}");
+                var eventEntity = await _eventRepository.GetByIdAsync(
+                    round.EventId,
+                    cancellationToken)
+                    ?? throw new Exception($"Không tìm thấy sự kiện với id: {round.EventId}");
+                var eventRounds = await _roundRepository.FindAsync(
+                    item => item.EventId == round.EventId,
+                    cancellationToken);
+                var isFinalRound = eventRounds.Any()
+                    && round.RoundOrder == eventRounds.Max(item => item.RoundOrder);
 
                 if (round.IsFinalized)
                 {
+                    if (isFinalRound
+                        && !string.Equals(
+                            eventEntity.Status,
+                            "Completed",
+                            StringComparison.OrdinalIgnoreCase))
+                    {
+                        eventEntity.Status = "Completed";
+                        _eventRepository.Update(eventEntity);
+                        await _unitOfWork.SaveChangesAsync(cancellationToken);
+                    }
+
                     await transaction.CommitAsync(cancellationToken);
-                    return await CreateResultAsync(round);
+                    return await CreateResultAsync(round, isFinalRound);
                 }
 
                 if (!RoundTimePolicy.HasEnded(round.EndDate, DateTime.UtcNow))
@@ -157,10 +179,18 @@ namespace BusinessLogicLayer.Services.Implements
                 round.FinalizedAt = finalizedAt;
                 _roundRepository.Update(round);
 
+                if (isFinalRound)
+                {
+                    eventEntity.Status = "Completed";
+                    _eventRepository.Update(eventEntity);
+                }
+
                 var pendingSignals = await AddFinalizationNotificationsAsync(
+                    eventEntity,
                     round,
                     teams,
                     rankings,
+                    isFinalRound,
                     finalizedAt,
                     cancellationToken);
 
@@ -185,7 +215,7 @@ namespace BusinessLogicLayer.Services.Implements
                     }
                 }
 
-                return await CreateResultAsync(round);
+                return await CreateResultAsync(round, isFinalRound);
             }
             finally
             {
@@ -211,9 +241,11 @@ namespace BusinessLogicLayer.Services.Implements
         }
 
         private async Task<List<PendingSignal>> AddFinalizationNotificationsAsync(
+            Events eventEntity,
             Rounds round,
             IReadOnlyList<Teams> teams,
             IReadOnlyList<Rankings> rankings,
+            bool isFinalRound,
             DateTime createdAt,
             CancellationToken cancellationToken)
         {
@@ -229,12 +261,12 @@ namespace BusinessLogicLayer.Services.Implements
             foreach (var team in teams)
             {
                 rankingsByTeam.TryGetValue(team.TeamId, out var ranking);
-                var message = ranking == null
-                    ? $"Vòng {round.RoundName} đã chốt. Đội {team.TeamName} không có điểm, "
-                        + "không được xếp hạng và bị loại."
-                    : $"Vòng {round.RoundName} đã chốt. Đội {team.TeamName}: "
-                        + $"điểm {ranking.TotalScore:0.##}, hạng {ranking.RankPosition}, "
-                        + $"kết quả: {(ranking.IsAdvanced == true ? "Thăng vòng" : "Bị loại")}.";
+                var message = CreateTeamNotificationMessage(
+                    eventEntity,
+                    round,
+                    team,
+                    ranking,
+                    isFinalRound);
                 var recipientIds = memberships
                     .Where(member => member.TeamId == team.TeamId)
                     .Select(member => member.UserId)
@@ -256,17 +288,56 @@ namespace BusinessLogicLayer.Services.Implements
                 {
                     var teamName = teams.FirstOrDefault(team => team.TeamId == ranking.TeamId)?.TeamName
                         ?? ranking.TeamId.ToString();
-                    return $"{ranking.RankPosition}. {teamName} ({ranking.TotalScore:0.##} điểm)";
+                    return $"Top {ranking.RankPosition}: {teamName} "
+                        + $"({ranking.TotalScore:0.##} điểm)";
                 })
                 .ToList();
-            var summary = advancedTeams.Count == 0
-                ? $"Vòng {round.RoundName} đã chốt. Không có đội nào được thăng hạng."
-                : $"Vòng {round.RoundName} đã chốt. Các đội thăng hạng: {string.Join(", ", advancedTeams)}.";
+            var summary = isFinalRound
+                ? advancedTeams.Count == 0
+                    ? $"Sự kiện {eventEntity.EventName} đã hoàn tất. Vòng {round.RoundName} "
+                        + "không có đội nào đạt giải."
+                    : $"Sự kiện {eventEntity.EventName} đã hoàn tất. Kết quả vòng "
+                        + $"{round.RoundName}, các đội đạt giải: "
+                        + $"{string.Join(", ", advancedTeams)}."
+                : advancedTeams.Count == 0
+                    ? $"Vòng {round.RoundName} đã chốt. Không có đội nào được thăng hạng."
+                    : $"Vòng {round.RoundName} đã chốt. Các đội thăng hạng: "
+                        + $"{string.Join(", ", advancedTeams)}.";
 
             foreach (var coordinatorId in coordinators.Select(user => user.UserId).Distinct())
                 await AddNotificationAsync(coordinatorId, summary, createdAt, pendingSignals, cancellationToken);
 
             return pendingSignals;
+        }
+
+        private static string CreateTeamNotificationMessage(
+            Events eventEntity,
+            Rounds round,
+            Teams team,
+            Rankings? ranking,
+            bool isFinalRound)
+        {
+            if (!isFinalRound)
+            {
+                return ranking == null
+                    ? $"Vòng {round.RoundName} đã chốt. Đội {team.TeamName} không có điểm, "
+                        + "không được xếp hạng và bị loại."
+                    : $"Vòng {round.RoundName} đã chốt. Đội {team.TeamName}: "
+                        + $"điểm {ranking.TotalScore:0.##}, hạng {ranking.RankPosition}, "
+                        + $"kết quả: {(ranking.IsAdvanced == true ? "Thăng vòng" : "Bị loại")}.";
+            }
+
+            var prefix = $"Sự kiện {eventEntity.EventName} đã hoàn tất. "
+                + $"Vòng {round.RoundName}, đội {team.TeamName}: ";
+            if (ranking == null)
+                return prefix + "không có điểm, không được xếp hạng và không đạt giải.";
+
+            var result = ranking.IsAdvanced == true
+                ? $"Đạt giải Top {ranking.RankPosition}"
+                : "Không đạt giải";
+            return prefix
+                + $"điểm {ranking.TotalScore:0.##}, hạng {ranking.RankPosition}, "
+                + $"kết quả: {result}.";
         }
 
         private async Task AddNotificationAsync(
@@ -287,12 +358,15 @@ namespace BusinessLogicLayer.Services.Implements
             pendingSignals.Add(new PendingSignal(userId, message));
         }
 
-        private async Task<RoundFinalizationDto> CreateResultAsync(Rounds round)
+        private async Task<RoundFinalizationDto> CreateResultAsync(
+            Rounds round,
+            bool isFinalRound)
         {
             return new RoundFinalizationDto
             {
                 RoundId = round.RoundId,
                 IsFinalized = round.IsFinalized,
+                IsFinalRound = isFinalRound,
                 FinalizedAt = round.FinalizedAt,
                 Rankings = (await _rankingService.GetByRoundAsync(round.RoundId)).ToList()
             };

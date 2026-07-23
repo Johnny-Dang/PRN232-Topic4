@@ -65,20 +65,23 @@ namespace BusinessLogicLayer.Services.Implements
 
             await _unitOfWork.SaveChangesAsync();
 
-            return MapToDto(created);
+            return MapToDto(created, await IsFinalRoundAsync(created));
         }
 
         public async Task<RoundDto?> GetByIdAsync(Guid roundId)
         {
             var round = await _roundRepository.GetByIdAsync(roundId);
             if (round == null) return null;
-            return MapToDto(round);
+            return MapToDto(round, await IsFinalRoundAsync(round));
         }
 
         public async Task<IEnumerable<RoundDto>> GetAllByEventAsync(Guid eventId)
         {
             var rounds = await _roundRepository.FindAsync(r => r.EventId == eventId);
-            return rounds.Select(MapToDto);
+            var finalRoundOrder = rounds.Any() ? rounds.Max(round => round.RoundOrder) : (int?)null;
+            return rounds.Select(round => MapToDto(
+                round,
+                finalRoundOrder.HasValue && round.RoundOrder == finalRoundOrder.Value));
         }
 
         public async Task<RoundDto> UpdateAsync(Guid roundId, AddRoundRequest request)
@@ -111,7 +114,7 @@ namespace BusinessLogicLayer.Services.Implements
             _roundRepository.Update(round);
             await _unitOfWork.SaveChangesAsync();
 
-            return MapToDto(round);
+            return MapToDto(round, await IsFinalRoundAsync(round));
         }
 
         public async Task DeleteAsync(Guid roundId)
@@ -126,7 +129,14 @@ namespace BusinessLogicLayer.Services.Implements
             await _unitOfWork.SaveChangesAsync();
         }
 
-        private RoundDto MapToDto(Rounds r)
+        private async Task<bool> IsFinalRoundAsync(Rounds round)
+        {
+            var eventRounds = await _roundRepository.FindAsync(item => item.EventId == round.EventId);
+            return eventRounds.Any()
+                && round.RoundOrder == eventRounds.Max(item => item.RoundOrder);
+        }
+
+        private static RoundDto MapToDto(Rounds r, bool isFinalRound)
         {
             return new RoundDto
             {
@@ -139,7 +149,8 @@ namespace BusinessLogicLayer.Services.Implements
                 EndDate = r.EndDate,
                 IsFinalized = r.IsFinalized,
                 FinalizedAt = r.FinalizedAt,
-                EffectiveEndAtUtc = RoundTimePolicy.GetEffectiveEndAtUtc(r.EndDate)
+                EffectiveEndAtUtc = RoundTimePolicy.GetEffectiveEndAtUtc(r.EndDate),
+                IsFinalRound = isFinalRound
             };
         }
     }

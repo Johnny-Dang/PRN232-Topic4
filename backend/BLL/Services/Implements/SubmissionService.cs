@@ -1,6 +1,7 @@
 using BusinessLogicLayer.DTOs.Requests;
 using BusinessLogicLayer.DTOs.Responses;
 using BusinessLogicLayer.Services.Interfaces;
+using BusinessLogicLayer.Utilities;
 using DataAccessLayer.Database.Entities;
 using DataAccessLayer.Repositories.Interfaces;
 using System;
@@ -56,10 +57,7 @@ namespace BusinessLogicLayer.Services.Implements
 
             await _roundEligibilityService.EnsureTeamCanParticipateAsync(team.TeamId, round);
             var now = DateTime.UtcNow;
-            if (now < round.StartDate)
-                throw new Exception($"Vòng thi chưa mở. Bài nộp sẽ được chấp nhận từ {round.StartDate:yyyy-MM-dd HH:mm:ss} UTC.");
-            if (now > round.SubmissionDeadline)
-                throw new Exception("Đã quá hạn nộp bài. Bạn không thể tạo bài nộp mới.");
+            SubmissionMutationPolicy.EnsureAllowed(round, now);
 
             var existingSubmission = await _submissionRepository.FirstOrDefaultAsync(x => x.TeamId == request.TeamId && x.RoundId == request.RoundId);
             if (existingSubmission != null)
@@ -154,10 +152,7 @@ namespace BusinessLogicLayer.Services.Implements
                 throw new Exception($"Không tìm thấy vòng thi với id: {submission.RoundId}");
 
             await _roundEligibilityService.EnsureTeamCanParticipateAsync(updatedTeam.TeamId, round);
-            if (DateTime.UtcNow < round.StartDate)
-                throw new Exception($"Vòng thi chưa mở. Bài nộp sẽ được chấp nhận từ {round.StartDate:yyyy-MM-dd HH:mm:ss} UTC.");
-            if (DateTime.UtcNow > round.SubmissionDeadline)
-                throw new Exception("Đã quá hạn nộp bài. Bạn không thể cập nhật bài nộp này.");
+            SubmissionMutationPolicy.EnsureAllowed(round, DateTime.UtcNow);
 
             var oldValue = JsonSerializer.Serialize(new
             {
@@ -218,6 +213,13 @@ namespace BusinessLogicLayer.Services.Implements
 
             if (team.TeamLeaderId != userId)
                 throw new Exception("Chỉ trưởng nhóm mới có thể xóa bài nộp.");
+
+            var round = await _roundRepository.GetByIdAsync(submission.RoundId);
+            if (round == null)
+                throw new Exception($"Không tìm thấy vòng thi với id: {submission.RoundId}");
+
+            await _roundEligibilityService.EnsureTeamCanParticipateAsync(team.TeamId, round);
+            SubmissionMutationPolicy.EnsureAllowed(round, DateTime.UtcNow);
 
             _submissionRepository.Delete(submission);
             await _unitOfWork.SaveChangesAsync();
