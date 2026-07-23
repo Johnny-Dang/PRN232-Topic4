@@ -15,6 +15,7 @@ namespace DataAccessLayer.Database.Entities
         public int RankPosition { get; set; }
         public decimal TotalScore { get; set; }
         public DateTime GeneratedAt { get; set; }
+        public bool? IsAdvanced { get; set; }
 
         public virtual Teams Team { get; set; } = null!;
         public virtual Rounds Round { get; set; } = null!;

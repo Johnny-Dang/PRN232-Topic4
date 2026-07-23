@@ -51,11 +51,16 @@ namespace BusinessLogicLayer.Services.Implements
         private readonly IGenericRepository<Teams> _teamRepository;
         private readonly IGenericRepository<Rounds> _roundRepository;
         private readonly IGenericRepository<Submissions> _submissionRepository;
+        private readonly IRoundEligibilityService _roundEligibilityService;
 
-        public SubmissionAssetService(IUnitOfWork unitOfWork, IConfiguration configuration)
+        public SubmissionAssetService(
+            IUnitOfWork unitOfWork,
+            IConfiguration configuration,
+            IRoundEligibilityService roundEligibilityService)
         {
             _unitOfWork = unitOfWork;
             _configuration = configuration;
+            _roundEligibilityService = roundEligibilityService;
             _assetRepository = _unitOfWork.GetRepository<SubmissionAssets>();
             _teamRepository = _unitOfWork.GetRepository<Teams>();
             _roundRepository = _unitOfWork.GetRepository<Rounds>();
@@ -127,7 +132,8 @@ namespace BusinessLogicLayer.Services.Implements
             if (asset == null)
                 throw new Exception($"Không tìm thấy file đính kèm với id: {request.SubmissionAssetId}");
 
-            await GetLeaderTeamAsync(asset.TeamId, userId);
+            var team = await GetLeaderTeamAsync(asset.TeamId, userId);
+            await GetOpenRoundAsync(asset.RoundId, team);
             ValidateCompletedAsset(asset, request);
 
             asset.CloudinaryAssetId = request.CloudinaryAssetId;
@@ -160,7 +166,8 @@ namespace BusinessLogicLayer.Services.Implements
 
         public async Task AttachAssetsToSubmissionAsync(Guid submissionId, Guid teamId, Guid roundId, Guid? videoAssetId, Guid? slideAssetId, Guid userId)
         {
-            await GetLeaderTeamAsync(teamId, userId);
+            var team = await GetLeaderTeamAsync(teamId, userId);
+            await GetOpenRoundAsync(roundId, team);
             var submission = await _submissionRepository.GetByIdAsync(submissionId);
             if (submission == null)
                 throw new Exception($"Không tìm thấy bài nộp với id: {submissionId}");
@@ -248,6 +255,7 @@ namespace BusinessLogicLayer.Services.Implements
             if (team.EventId != null && team.EventId != round.EventId)
                 throw new Exception("Vòng thi không thuộc sự kiện của đội.");
 
+            await _roundEligibilityService.EnsureTeamCanParticipateAsync(team.TeamId, round);
             if (DateTime.UtcNow < round.StartDate)
                 throw new Exception($"Vòng thi chưa mở. Upload file sẽ được chấp nhận từ {round.StartDate:yyyy-MM-dd HH:mm:ss} UTC.");
             if (DateTime.UtcNow > round.SubmissionDeadline)

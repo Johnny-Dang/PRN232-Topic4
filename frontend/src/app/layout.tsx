@@ -3,7 +3,6 @@ import { Inter, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import QueryProvider from "@/components/providers/QueryProvider";
 import { ToastProvider } from "@/contexts/ToastContext";
-import RealtimeProvider from "@/components/providers/RealtimeProvider";
 import { Toaster } from "sonner";
 
 const inter = Inter({
@@ -34,7 +33,6 @@ export default function RootLayout({
     >
       <body className="min-h-full flex flex-col" suppressHydrationWarning>
         <QueryProvider>
-          <RealtimeProvider />
           <ToastProvider>
             {children}
             <Toaster position="top-right" richColors />

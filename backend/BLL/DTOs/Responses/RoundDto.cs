@@ -15,5 +15,8 @@ namespace BusinessLogicLayer.DTOs.Responses
         public DateTime SubmissionDeadline { get; set; }
         public DateTime StartDate { get; set; }
         public DateTime EndDate { get; set; }
+        public bool IsFinalized { get; set; }
+        public DateTime? FinalizedAt { get; set; }
+        public DateTime EffectiveEndAtUtc { get; set; }
     }
 }

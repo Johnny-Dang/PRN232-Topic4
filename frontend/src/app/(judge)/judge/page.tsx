@@ -60,6 +60,7 @@ function JudgePageContent() {
   const [rankings, setRankings] = useState<(Ranking & { Team: Team })[]>([]);
   const [loadingRankings, setLoadingRankings] = useState(false);
   const [selectedRoundId, setSelectedRoundId] = useState<string>('');
+  const [nowMs, setNowMs] = useState(() => Date.now());
 
   const activeSubmission = submissions.find((submission) => submission.submissionId === selectedSubId);
   const activeRound = activeSubmission ? rounds.find((round) => round.RoundID === activeSubmission.roundId) : null;
@@ -75,8 +76,20 @@ function JudgePageContent() {
   )?.SecureUrl;
   const demoUrl = activeSubmission?.demoURL || uploadedVideoUrl;
   const documentUrl = activeSubmission?.slideURL || uploadedDocumentUrl;
+  const activeRoundEndMs = activeRound
+    ? Date.parse(activeRound.EffectiveEndAtUtc || activeRound.EndDate)
+    : Number.POSITIVE_INFINITY;
+  const isScoringLocked = Boolean(
+    activeRound?.IsFinalized
+      || (Number.isFinite(activeRoundEndMs) && nowMs >= activeRoundEndMs),
+  );
 
   const hasExistingScores = existingScores.length > 0;
+
+  useEffect(() => {
+    const timer = window.setInterval(() => setNowMs(Date.now()), 15_000);
+    return () => window.clearInterval(timer);
+  }, []);
 
   const loadData = async () => {
     setLoading(true);
@@ -224,6 +237,10 @@ function JudgePageContent() {
   const handleSubmitScores = async (event: React.FormEvent) => {
     event.preventDefault();
     if (!activeSubmission || criteria.length === 0) return;
+    if (isScoringLocked) {
+      showToast('Round đã kết thúc nên điểm chỉ còn ở chế độ xem.', 'error');
+      return;
+    }
 
     setSubmitting(true);
     setMessage('');
@@ -397,6 +414,11 @@ function JudgePageContent() {
                     <CardDescription className="text-xs font-medium text-slate-400">
                       Sự kiện: <span className="font-bold text-slate-700 dark:text-slate-200">{activeEvent?.EventName || 'Chưa xác định'}</span> | Hạng mục: {activeCategory?.CategoryName || 'Chưa có category'} | Vòng thi: {activeRound?.RoundName || 'Chưa có round'}
                     </CardDescription>
+                    {isScoringLocked && (
+                      <Badge className="mt-2 w-fit border border-rose-100 bg-rose-50 text-rose-700">
+                        Round đã kết thúc · Chỉ xem
+                      </Badge>
+                    )}
                   </CardHeader>
                   <CardContent className="flex flex-wrap gap-4 border-b border-slate-100 p-6 pt-0 dark:border-slate-800">
                     {activeSubmission.repositoryURL && (
@@ -451,6 +473,7 @@ function JudgePageContent() {
                                 step={0.1}
                                 className="h-10 w-24 rounded-xl border-slate-200 text-center font-bold text-slate-800 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
                                 value={scores[item.CriteriaID] ?? 0}
+                                disabled={isScoringLocked}
                                 onChange={(event) =>
                                   setScores((current) => ({
                                     ...current,
@@ -470,6 +493,7 @@ function JudgePageContent() {
                             <textarea
                               className="w-full rounded-xl border border-slate-200 bg-slate-50 p-2.5 text-xs font-medium focus:outline-none dark:border-slate-700 dark:bg-slate-800"
                               value={comments[item.CriteriaID] || ''}
+                              disabled={isScoringLocked}
                               onChange={(event) =>
                                 setComments((current) => ({
                                   ...current,
@@ -511,7 +535,9 @@ function JudgePageContent() {
                     {hasExistingScores && (
                       <div className="flex items-center gap-2 rounded-lg bg-amber-500/20 px-3 py-1.5">
                         <Edit2 className="h-3.5 w-3.5 text-amber-400" />
-                        <span className="text-xs font-semibold text-amber-400">Sẽ cập nhật</span>
+                        <span className="text-xs font-semibold text-amber-400">
+                          {isScoringLocked ? 'Chỉ xem' : 'Sẽ cập nhật'}
+                        </span>
                       </div>
                     )}
 
@@ -522,9 +548,11 @@ function JudgePageContent() {
                           ? 'bg-amber-600 hover:bg-amber-700'
                           : 'bg-emerald-600 hover:bg-emerald-700'
                       }`}
-                      disabled={submitting || criteria.length === 0 || loadingScores}
+                      disabled={submitting || criteria.length === 0 || loadingScores || isScoringLocked}
                     >
-                      {loadingScores ? (
+                      {isScoringLocked ? (
+                        'Đã khóa chấm điểm'
+                      ) : loadingScores ? (
                         'Đang tải...'
                       ) : hasExistingScores ? (
                         <>

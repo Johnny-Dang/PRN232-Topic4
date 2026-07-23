@@ -15,6 +15,8 @@ namespace DataAccessLayer.Database.Entities
         public DateTime SubmissionDeadline { get; set; }
         public DateTime StartDate { get; set; }
         public DateTime EndDate { get; set; }
+        public bool IsFinalized { get; set; }
+        public DateTime? FinalizedAt { get; set; }
 
         public virtual Events Event { get; set; } = null!;
 

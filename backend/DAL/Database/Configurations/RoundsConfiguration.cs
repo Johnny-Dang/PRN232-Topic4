@@ -33,6 +33,13 @@ namespace DataAccessLayer.Database.Configurations
             builder.Property(x => x.EndDate)
                 .HasColumnType("datetime");
 
+            builder.Property(x => x.IsFinalized)
+                .HasDefaultValue(false)
+                .IsRequired();
+
+            builder.Property(x => x.FinalizedAt)
+                .HasColumnType("datetime");
+
             builder.HasOne(x => x.Event)
                 .WithMany(e => e.Rounds)
                 .HasForeignKey(x => x.EventId)

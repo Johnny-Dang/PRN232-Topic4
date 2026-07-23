@@ -1,6 +1,7 @@
 using BusinessLogicLayer.DTOs.Requests;
 using BusinessLogicLayer.DTOs.Responses;
 using BusinessLogicLayer.Services.Interfaces;
+using BusinessLogicLayer.Utilities;
 using DataAccessLayer.Database.Entities;
 using DataAccessLayer.Repositories.Interfaces;
 using System;
@@ -85,6 +86,8 @@ namespace BusinessLogicLayer.Services.Implements
             var round = await _roundRepository.GetByIdAsync(roundId);
             if (round == null)
                 throw new Exception($"Round with id {roundId} not found");
+            if (round.IsFinalized)
+                throw new Exception("Round đã chốt nên không thể chỉnh sửa.");
 
             var eventEntity = await _eventRepository.GetByIdAsync(round.EventId);
             if (eventEntity == null)
@@ -116,6 +119,8 @@ namespace BusinessLogicLayer.Services.Implements
             var round = await _roundRepository.GetByIdAsync(roundId);
             if (round == null)
                 throw new Exception($"Không tìm thấy vòng thi với id: {roundId}");
+            if (round.IsFinalized)
+                throw new Exception("Round đã chốt nên không thể xóa.");
 
             _roundRepository.Delete(round);
             await _unitOfWork.SaveChangesAsync();
@@ -131,7 +136,10 @@ namespace BusinessLogicLayer.Services.Implements
                 RoundOrder = r.RoundOrder,
                 SubmissionDeadline = r.SubmissionDeadline,
                 StartDate = r.StartDate,
-                EndDate = r.EndDate
+                EndDate = r.EndDate,
+                IsFinalized = r.IsFinalized,
+                FinalizedAt = r.FinalizedAt,
+                EffectiveEndAtUtc = RoundTimePolicy.GetEffectiveEndAtUtc(r.EndDate)
             };
         }
     }

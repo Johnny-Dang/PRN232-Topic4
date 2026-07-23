@@ -1,37 +1,40 @@
+'use client';
+
 import React from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { Calendar } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import type { Category as ApiCategory, Round as ApiRound, Team } from '@/lib/api';
-
-type RankingWithTeam = {
-  RoundId: string;
-  TeamId: string;
-  RankPosition: number;
-  TotalScore: number;
-};
-
-type AdvancementRuleData = {
-  RoundId: string;
-  CategoryId: string;
-  TopN: number;
-};
+import { getTeamRoundProgress, TeamRoundProgressStatus } from '@/lib/api';
 
 interface TeamRoundsCardProps {
-  team: Team;
-  category: ApiCategory | null;
-  rounds: ApiRound[];
-  rankings: RankingWithTeam[];
-  rules: AdvancementRuleData[];
+  teamId: string;
 }
 
-export const TeamRoundsCard: React.FC<TeamRoundsCardProps> = ({
-  category,
-  rounds,
-  rankings,
-  rules,
-}) => {
+const statusLabel: Record<TeamRoundProgressStatus, string> = {
+  Upcoming: 'Sắp diễn ra',
+  InProgress: 'Chờ chốt',
+  AwaitingFinalization: 'Đang chốt',
+  Advanced: 'Thăng vòng',
+  Eliminated: 'Bị loại',
+};
+
+const statusClass: Record<TeamRoundProgressStatus, string> = {
+  Upcoming: 'border-slate-200 bg-slate-50 text-slate-500',
+  InProgress: 'border-blue-100 bg-blue-50 text-blue-600',
+  AwaitingFinalization: 'border-amber-100 bg-amber-50 text-amber-700',
+  Advanced: 'border-emerald-100 bg-emerald-50 text-emerald-700',
+  Eliminated: 'border-rose-100 bg-rose-50 text-rose-700',
+};
+
+export const TeamRoundsCard: React.FC<TeamRoundsCardProps> = ({ teamId }) => {
+  const { data: progress = [], isLoading, isError } = useQuery({
+    queryKey: ['team-round-progress', teamId],
+    queryFn: () => getTeamRoundProgress(teamId),
+    enabled: Boolean(teamId),
+  });
+
   return (
     <Card className="border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900">
       <CardHeader>
@@ -39,13 +42,21 @@ export const TeamRoundsCard: React.FC<TeamRoundsCardProps> = ({
           <Calendar className="h-5 w-5 text-indigo-600 dark:text-indigo-400" /> Tiến độ thăng hạng vòng thi
         </CardTitle>
         <CardDescription className="text-xs font-medium text-slate-400">
-          Bảng điểm xếp hạng lấy từ API Rankings.
+          Hạng trước khi chốt là tạm thời; kết quả thăng vòng chỉ có hiệu lực sau khi round được chốt.
         </CardDescription>
       </CardHeader>
       <CardContent className="p-6 pt-0">
-        {rounds.length === 0 ? (
-          <div className="rounded-xl bg-slate-50 p-4 text-center text-xs font-medium text-slate-500 dark:bg-slate-955">
-            Chưa có vòng thi từ API.
+        {isLoading ? (
+          <div className="rounded-xl bg-slate-50 p-4 text-center text-xs font-medium text-slate-500 dark:bg-slate-950">
+            Đang tải tiến độ vòng thi...
+          </div>
+        ) : isError ? (
+          <div className="rounded-xl bg-rose-50 p-4 text-center text-xs font-medium text-rose-600">
+            Không thể tải tiến độ vòng thi.
+          </div>
+        ) : progress.length === 0 ? (
+          <div className="rounded-xl bg-slate-50 p-4 text-center text-xs font-medium text-slate-500 dark:bg-slate-950">
+            Chưa có vòng thi.
           </div>
         ) : (
           <div className="overflow-hidden rounded-xl border border-slate-200 dark:border-slate-800">
@@ -53,44 +64,37 @@ export const TeamRoundsCard: React.FC<TeamRoundsCardProps> = ({
               <TableHeader className="bg-slate-50 dark:bg-slate-900/50">
                 <TableRow>
                   <TableHead className="text-xs font-bold uppercase text-slate-700">Vòng thi</TableHead>
-                  <TableHead className="text-center text-xs font-bold uppercase text-slate-700">
-                    Xếp hạng
-                  </TableHead>
-                  <TableHead className="text-center text-xs font-bold uppercase text-slate-700">
-                    Tổng điểm
-                  </TableHead>
-                  <TableHead className="text-right text-xs font-bold uppercase text-slate-700">
-                    Trạng thái
-                  </TableHead>
+                  <TableHead className="text-center text-xs font-bold uppercase text-slate-700">Xếp hạng</TableHead>
+                  <TableHead className="text-center text-xs font-bold uppercase text-slate-700">Tổng điểm</TableHead>
+                  <TableHead className="text-right text-xs font-bold uppercase text-slate-700">Trạng thái</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {rounds.map((round) => {
-                  const rank = rankings.find((item) => item.RoundId === round.RoundID);
-                  const rule = rules.find(
-                    (item) => item.RoundId === round.RoundID && item.CategoryId === category?.CategoryID
-                  );
-                  const advances = rank && rule ? rank.RankPosition <= rule.TopN : null;
-
-                  return (
-                    <TableRow key={round.RoundID}>
-                      <TableCell className="text-xs font-bold text-slate-800 dark:text-slate-200">
-                        {round.RoundName}
-                      </TableCell>
-                      <TableCell className="text-center text-xs font-bold text-slate-700">
-                        {rank ? `Hạng ${rank.RankPosition}` : '-'}
-                      </TableCell>
-                      <TableCell className="text-center text-xs font-bold text-slate-800">
-                        {rank ? rank.TotalScore.toFixed(2) : '-'}
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <Badge className="border border-slate-200 bg-slate-50 px-2 py-0.5 text-[10px] font-bold text-slate-500">
-                          {advances === null ? 'Chờ cập nhật' : advances ? 'Thăng vòng' : 'Bị loại'}
-                        </Badge>
-                      </TableCell>
-                    </TableRow>
-                  );
-                })}
+                {progress.map((round) => (
+                  <TableRow key={round.RoundId}>
+                    <TableCell className="text-xs font-bold text-slate-800 dark:text-slate-200">
+                      <div>{round.RoundName}</div>
+                      {!round.CanSubmit && round.BlockedReason && (
+                        <div className="mt-1 max-w-xs text-[10px] font-medium text-slate-400">
+                          {round.BlockedReason}
+                        </div>
+                      )}
+                    </TableCell>
+                    <TableCell className="text-center text-xs font-bold text-slate-700">
+                      {round.RankPosition == null
+                        ? '-'
+                        : `${round.IsFinalized ? 'Hạng' : 'Hạng tạm'} ${round.RankPosition}`}
+                    </TableCell>
+                    <TableCell className="text-center text-xs font-bold text-slate-800">
+                      {round.TotalScore == null ? '-' : round.TotalScore.toFixed(2)}
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <Badge className={`border px-2 py-0.5 text-[10px] font-bold ${statusClass[round.Status]}`}>
+                        {statusLabel[round.Status]}
+                      </Badge>
+                    </TableCell>
+                  </TableRow>
+                ))}
               </TableBody>
             </Table>
           </div>

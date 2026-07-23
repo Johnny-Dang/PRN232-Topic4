@@ -1,6 +1,7 @@
 using BusinessLogicLayer.DTOs.Requests;
 using BusinessLogicLayer.DTOs.Responses;
 using BusinessLogicLayer.Services.Interfaces;
+using BusinessLogicLayer.Utilities;
 using DataAccessLayer.Database.Entities;
 using DataAccessLayer.Repositories.Interfaces;
 using System;
@@ -164,6 +165,7 @@ namespace BusinessLogicLayer.Services.Implements
         public async Task<IEnumerable<CalibrationScoreDto>> SubmitScoresAsync(Guid submissionId, Guid judgeUserId, SubmitScoresRequest request)
         {
             var submission = await GetCalibrationSubmissionAsync(submissionId);
+            await EnsureScoringOpenAsync(submission.RoundId);
             await ValidateJudgeAsync(judgeUserId);
             ValidateDuplicateCriteria(request);
             ValidateScoreValues(request);
@@ -206,6 +208,7 @@ namespace BusinessLogicLayer.Services.Implements
         public async Task<IEnumerable<CalibrationScoreDto>> UpdateScoresAsync(Guid submissionId, Guid judgeUserId, SubmitScoresRequest request)
         {
             var submission = await GetCalibrationSubmissionAsync(submissionId);
+            await EnsureScoringOpenAsync(submission.RoundId);
             await ValidateJudgeAsync(judgeUserId);
             ValidateDuplicateCriteria(request);
             ValidateScoreValues(request);
@@ -384,6 +387,18 @@ namespace BusinessLogicLayer.Services.Implements
                 throw new Exception("Bài nộp này không phải là mẫu calibration");
 
             return submission;
+        }
+
+        private async Task EnsureScoringOpenAsync(Guid roundId)
+        {
+            var round = await _roundRepository.GetByIdAsync(roundId)
+                ?? throw new Exception($"Không tìm thấy vòng với id: {roundId}");
+            var now = DateTime.UtcNow;
+
+            if (now < round.StartDate)
+                throw new Exception("Chấm điểm chưa bắt đầu cho vòng này");
+            if (RoundTimePolicy.HasEnded(round.EndDate, now))
+                throw new Exception("Thời gian chấm điểm cho vòng này đã kết thúc");
         }
 
         private async Task ValidateJudgeAsync(Guid judgeUserId)

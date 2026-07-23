@@ -20,12 +20,18 @@ namespace BusinessLogicLayer.Services.Implements
         private readonly ISubmissionAssetService _submissionAssetService;
         private readonly IUnitOfWork _unitOfWork;
         private readonly IGenericRepository<AuditLogs> _auditLogRepository;
+        private readonly IRoundEligibilityService _roundEligibilityService;
 
-        public SubmissionService(IUnitOfWork unitOfWork, INotificationService notificationService, ISubmissionAssetService submissionAssetService)
+        public SubmissionService(
+            IUnitOfWork unitOfWork,
+            INotificationService notificationService,
+            ISubmissionAssetService submissionAssetService,
+            IRoundEligibilityService roundEligibilityService)
         {
             _unitOfWork = unitOfWork;
             _notificationService = notificationService;
             _submissionAssetService = submissionAssetService;
+            _roundEligibilityService = roundEligibilityService;
             _submissionRepository = _unitOfWork.GetRepository<Submissions>();
             _roundRepository = _unitOfWork.GetRepository<Rounds>();
             _teamRepository = _unitOfWork.GetRepository<Teams>();
@@ -48,6 +54,7 @@ namespace BusinessLogicLayer.Services.Implements
             if (team.EventId != null && team.EventId != round.EventId)
                 throw new Exception("Vòng thi không thuộc sự kiện của đội.");
 
+            await _roundEligibilityService.EnsureTeamCanParticipateAsync(team.TeamId, round);
             var now = DateTime.UtcNow;
             if (now < round.StartDate)
                 throw new Exception($"Vòng thi chưa mở. Bài nộp sẽ được chấp nhận từ {round.StartDate:yyyy-MM-dd HH:mm:ss} UTC.");
@@ -146,6 +153,7 @@ namespace BusinessLogicLayer.Services.Implements
             if (round == null)
                 throw new Exception($"Không tìm thấy vòng thi với id: {submission.RoundId}");
 
+            await _roundEligibilityService.EnsureTeamCanParticipateAsync(updatedTeam.TeamId, round);
             if (DateTime.UtcNow < round.StartDate)
                 throw new Exception($"Vòng thi chưa mở. Bài nộp sẽ được chấp nhận từ {round.StartDate:yyyy-MM-dd HH:mm:ss} UTC.");
             if (DateTime.UtcNow > round.SubmissionDeadline)

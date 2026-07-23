@@ -28,6 +28,7 @@ namespace BusinessLogicLayer.Services.Implements
         public async Task<AdvancementRuleDto> CreateAsync(AddAdvancementRuleRequest request, Guid userId)
         {
             await ValidateForeignKeysAsync(request.RoundId, request.CategoryId);
+            await EnsureRoundIsEditableAsync(request.RoundId);
 
             var existingRules = (await _advancementRuleRepository.FindAsync(x =>
                 x.RoundId == request.RoundId && x.CategoryId == request.CategoryId)).ToList();
@@ -98,7 +99,9 @@ namespace BusinessLogicLayer.Services.Implements
             if (rule == null)
                 throw new Exception($"Không tìm thấy quy tắc thăng hạng với id: {request.RuleId}");
 
+            await EnsureRoundIsEditableAsync(rule.RoundId);
             await ValidateForeignKeysAsync(request.RoundId, request.CategoryId);
+            await EnsureRoundIsEditableAsync(request.RoundId);
 
             var duplicateRules = await _advancementRuleRepository.FindAsync(x =>
                 x.RuleId != request.RuleId &&
@@ -126,8 +129,16 @@ namespace BusinessLogicLayer.Services.Implements
             if (rule == null)
                 throw new Exception($"Không tìm thấy quy tắc thăng hạng với id: {ruleId}");
 
+            await EnsureRoundIsEditableAsync(rule.RoundId);
             _advancementRuleRepository.Delete(rule);
             await _unitOfWork.SaveChangesAsync();
+        }
+
+        private async Task EnsureRoundIsEditableAsync(Guid roundId)
+        {
+            var round = await _roundRepository.GetByIdAsync(roundId);
+            if (round?.IsFinalized == true)
+                throw new Exception("Quy tắc của round đã chốt không thể sửa hoặc xóa.");
         }
 
         private async Task ValidateForeignKeysAsync(Guid roundId, Guid categoryId)

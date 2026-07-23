@@ -1,6 +1,7 @@
 using BusinessLogicLayer.DTOs.Requests;
 using BusinessLogicLayer.DTOs.Responses;
 using BusinessLogicLayer.Services.Interfaces;
+using BusinessLogicLayer.Utilities;
 using DataAccessLayer.Database.Entities;
 using DataAccessLayer.Repositories.Interfaces;
 using System;
@@ -326,7 +327,7 @@ namespace BusinessLogicLayer.Services.Implements
             if (now < round.StartDate)
                 throw new Exception("Chấm điểm chưa bắt đầu cho vòng này");
 
-            if (now > round.EndDate)
+            if (RoundTimePolicy.HasEnded(round.EndDate, now))
                 throw new Exception("Thời gian chấm điểm cho vòng này đã kết thúc");
 
             return submission;

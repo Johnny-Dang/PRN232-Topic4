@@ -58,6 +58,9 @@ namespace BusinessLogicLayer.Extensions
             serviceCollection.AddScoped<IMentorshipService, MentorshipService>();
             serviceCollection.AddScoped<IAuditLogService, AuditLogService>();
             serviceCollection.AddScoped<IEliminationService, EliminationService>();
+            serviceCollection.AddScoped<IRoundEligibilityService, RoundEligibilityService>();
+            serviceCollection.AddScoped<ITeamRoundProgressService, TeamRoundProgressService>();
+            serviceCollection.AddScoped<IRoundFinalizationService, RoundFinalizationService>();
         }
     }
 }

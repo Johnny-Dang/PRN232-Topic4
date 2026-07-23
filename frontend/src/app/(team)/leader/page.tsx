@@ -3,6 +3,7 @@
 /* eslint-disable react/no-unescaped-entities */
 
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { useSearchParams, useRouter } from 'next/navigation';
 import {
   CalendarClock,
@@ -41,6 +42,7 @@ import {
   getSubmissionAssets,
   getTeamMembers,
   getTeams,
+  getTeamRoundProgress,
   getTeamSubmissions,
   updateSubmissionLinks,
   uploadSubmissionAsset,
@@ -58,6 +60,7 @@ import CreateRecruitmentModal from '@/components/recruitment/CreateRecruitmentMo
 import ApplicantListModal from '@/components/application/ApplicantListModal';
 import MentoringBookingPanel from './components/MentoringBookingPanel';
 import { TeamMembersCard } from '@/components/team/TeamMembersCard';
+import { TeamRoundsCard } from '@/components/team/TeamRoundsCard';
 import SubmissionDetailModal from './components/SubmissionDetailModal';
 
 type TeamMemberWithProfile = Awaited<ReturnType<typeof getTeamMembers>>[number];
@@ -304,6 +307,15 @@ export default function LeaderPage() {
     () => orderedRounds.find((round) => round.RoundID === selectedRoundId) || null,
     [orderedRounds, selectedRoundId]
   );
+  const { data: roundProgress = [] } = useQuery({
+    queryKey: ['team-round-progress', team?.TeamID],
+    queryFn: () => getTeamRoundProgress(team!.TeamID),
+    enabled: Boolean(team?.TeamID),
+  });
+  const selectedRoundProgress = roundProgress.find(
+    (item) => item.RoundId === selectedRoundId,
+  );
+  const qualificationBlocked = selectedRoundProgress?.IsEligible === false;
   const deadlinePassed = isPastDeadline(selectedRound);
   const beforeStartDate = isBeforeStartDate(selectedRound);
 
@@ -692,6 +704,13 @@ export default function LeaderPage() {
       return;
     }
 
+    if (qualificationBlocked) {
+      const reason = selectedRoundProgress?.BlockedReason || 'Đội chưa đủ điều kiện tham gia vòng này.';
+      setErrorMessage(reason);
+      showToast(reason, 'error');
+      return;
+    }
+
     setUploadingAssetType(assetType);
     setSuccessMessage('');
     setErrorMessage('');
@@ -736,6 +755,13 @@ export default function LeaderPage() {
     if (beforeStartDate) {
       setErrorMessage('Vòng thi chưa mở. Vui lòng đợi đến ngày bắt đầu.');
       showToast('Vòng thi chưa mở. Vui lòng đợi đến ngày bắt đầu.', 'error');
+      return;
+    }
+
+    if (qualificationBlocked) {
+      const reason = selectedRoundProgress?.BlockedReason || 'Đội chưa đủ điều kiện tham gia vòng này.';
+      setErrorMessage(reason);
+      showToast(reason, 'error');
       return;
     }
 
@@ -833,6 +859,7 @@ export default function LeaderPage() {
       ) : (
         <div className="grid grid-cols-1 items-start gap-8 lg:grid-cols-3">
           <div className="space-y-6 lg:col-span-2">
+            {team && <TeamRoundsCard teamId={team.TeamID} />}
             <Card className="border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900">
               <CardHeader>
                 <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
@@ -947,7 +974,11 @@ export default function LeaderPage() {
                         <>
                           <option value="">-- Chọn vòng thi --</option>
                           {orderedRounds.map((round) => (
-                            <option key={round.RoundID} value={round.RoundID}>
+                            <option
+                              key={round.RoundID}
+                              value={round.RoundID}
+                              disabled={roundProgress.find((item) => item.RoundId === round.RoundID)?.IsEligible === false}
+                            >
                               {round.RoundName} - hạn nộp {formatDateTime(round.SubmissionDeadline)}
                             </option>
                           ))}
@@ -957,7 +988,9 @@ export default function LeaderPage() {
                     <div className="flex flex-wrap items-center gap-2 text-xs font-medium text-slate-500">
                       <CalendarClock className="h-3.5 w-3.5" />
                       <span>Hạn nộp: {formatDateTime(selectedRound?.SubmissionDeadline || '')}</span>
-                      {beforeStartDate ? (
+                      {qualificationBlocked ? (
+                        <Badge className="border border-rose-100 bg-rose-50 text-rose-600">Không đủ điều kiện</Badge>
+                      ) : beforeStartDate ? (
                         <Badge className="border border-amber-100 bg-amber-50 text-amber-600">Chưa mở</Badge>
                       ) : deadlinePassed ? (
                         <Badge className="border border-rose-100 bg-rose-50 text-rose-600">Đã quá hạn</Badge>
@@ -965,6 +998,11 @@ export default function LeaderPage() {
                         <Badge className="border border-emerald-100 bg-emerald-50 text-emerald-600">Đang mở</Badge>
                       )}
                     </div>
+                    {qualificationBlocked && selectedRoundProgress?.BlockedReason && (
+                      <p className="text-xs font-medium text-rose-600">
+                        {selectedRoundProgress.BlockedReason}
+                      </p>
+                    )}
                   </div>
 
                   <div className="space-y-1.5">
@@ -1011,17 +1049,17 @@ export default function LeaderPage() {
                         type="file"
                         accept="video/mp4,video/webm,video/quicktime,.mp4,.webm,.mov"
                         className="h-10 rounded-xl border-slate-200 bg-white text-xs cursor-pointer dark:border-slate-700 dark:bg-slate-900"
-                        disabled={!team || !selectedRound || uploadingAssetType !== null || deadlinePassed || beforeStartDate}
+                        disabled={!team || !selectedRound || uploadingAssetType !== null || deadlinePassed || beforeStartDate || qualificationBlocked}
                         onChange={(event) => void handleAssetUpload('VideoDemo', event.target.files?.[0])}
                       />
                       <div
                         className={`mt-3 flex items-center justify-between gap-3 rounded-lg bg-white px-3 py-2 text-xs transition-colors dark:bg-slate-900 ${
-                          !team || !selectedRound || uploadingAssetType !== null || deadlinePassed || beforeStartDate
+                          !team || !selectedRound || uploadingAssetType !== null || deadlinePassed || beforeStartDate || qualificationBlocked
                             ? 'opacity-60 cursor-not-allowed'
                             : 'cursor-pointer hover:bg-slate-100/80 dark:hover:bg-slate-800'
                         }`}
                         onClick={() => {
-                          if (team && selectedRound && uploadingAssetType === null && !deadlinePassed && !beforeStartDate) {
+                          if (team && selectedRound && uploadingAssetType === null && !deadlinePassed && !beforeStartDate && !qualificationBlocked) {
                             document.getElementById('leader-demo-file')?.click();
                           }
                         }}
@@ -1085,17 +1123,17 @@ export default function LeaderPage() {
                         type="file"
                         accept=".ppt,.pptx,.doc,.docx,application/vnd.ms-powerpoint,application/vnd.openxmlformats-officedocument.presentationml.presentation,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
                         className="h-10 rounded-xl border-slate-200 bg-white text-xs cursor-pointer dark:border-slate-700 dark:bg-slate-900"
-                        disabled={!team || !selectedRound || uploadingAssetType !== null || deadlinePassed || beforeStartDate}
+                        disabled={!team || !selectedRound || uploadingAssetType !== null || deadlinePassed || beforeStartDate || qualificationBlocked}
                         onChange={(event) => void handleAssetUpload('SlideDocument', event.target.files?.[0])}
                       />
                       <div
                         className={`mt-3 flex items-center justify-between gap-3 rounded-lg bg-white px-3 py-2 text-xs transition-colors dark:bg-slate-900 ${
-                          !team || !selectedRound || uploadingAssetType !== null || deadlinePassed || beforeStartDate
+                          !team || !selectedRound || uploadingAssetType !== null || deadlinePassed || beforeStartDate || qualificationBlocked
                             ? 'opacity-60 cursor-not-allowed'
                             : 'cursor-pointer hover:bg-slate-100/80 dark:hover:bg-slate-800'
                         }`}
                         onClick={() => {
-                          if (team && selectedRound && uploadingAssetType === null && !deadlinePassed && !beforeStartDate) {
+                          if (team && selectedRound && uploadingAssetType === null && !deadlinePassed && !beforeStartDate && !qualificationBlocked) {
                             document.getElementById('leader-slide-file')?.click();
                           }
                         }}
@@ -1171,7 +1209,7 @@ export default function LeaderPage() {
                     <Button
                       type="submit"
                       className="h-10 rounded-xl bg-indigo-600 px-5 text-xs font-bold text-white transition-colors hover:bg-indigo-700"
-                      disabled={updating || uploadingAssetType !== null || !team || !selectedRound || deadlinePassed || beforeStartDate}
+                      disabled={updating || uploadingAssetType !== null || !team || !selectedRound || deadlinePassed || beforeStartDate || qualificationBlocked}
                     >
                       <Send className="mr-2 h-3.5 w-3.5" />
                       {updating ? 'Đang gửi...' : currentSubmission ? 'Cập nhật bài nộp' : 'Nộp bài'}

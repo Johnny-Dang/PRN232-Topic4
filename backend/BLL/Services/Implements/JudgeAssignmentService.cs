@@ -1,6 +1,7 @@
 using BusinessLogicLayer.DTOs.Requests;
 using BusinessLogicLayer.DTOs.Responses;
 using BusinessLogicLayer.Services.Interfaces;
+using BusinessLogicLayer.Utilities;
 using DataAccessLayer.Database.Entities;
 using DataAccessLayer.Repositories.Interfaces;
 using System;
@@ -46,7 +47,7 @@ namespace BusinessLogicLayer.Services.Implements
             if (round == null)
                 throw new Exception($"Không tìm thấy vòng thi với id: {request.RoundId}");
 
-            if (round.EndDate < DateTime.UtcNow)
+            if (RoundTimePolicy.HasEnded(round.EndDate, DateTime.UtcNow))
                 throw new Exception("Không thể phân công giám khảo cho vòng thi đã kết thúc");
 
             if (round.Event != null && round.Event.EndDate < DateTime.UtcNow)
@@ -118,7 +119,7 @@ namespace BusinessLogicLayer.Services.Implements
             if (round == null)
                 throw new Exception($"Không tìm thấy vòng thi với id: {request.RoundId}");
 
-            if (round.EndDate < DateTime.UtcNow)
+            if (RoundTimePolicy.HasEnded(round.EndDate, DateTime.UtcNow))
                 throw new Exception("Không thể phân công giám khảo cho vòng thi đã kết thúc");
 
             if (round.Event != null && round.Event.EndDate < DateTime.UtcNow)

@@ -7,6 +7,7 @@ using System.Threading.Tasks;
 using BusinessLogicLayer.DTOs.Requests;
 using BusinessLogicLayer.DTOs.Responses;
 using BusinessLogicLayer.Services.Interfaces;
+using BusinessLogicLayer.Utilities;
 using DataAccessLayer.Database.Entities;
 using DataAccessLayer.Repositories.Interfaces;
 
@@ -441,6 +442,9 @@ namespace BusinessLogicLayer.Services.Implements
                         SubmissionDeadline = r.SubmissionDeadline,
                         StartDate = r.StartDate,
                         EndDate = r.EndDate,
+                        IsFinalized = r.IsFinalized,
+                        FinalizedAt = r.FinalizedAt,
+                        EffectiveEndAtUtc = RoundTimePolicy.GetEffectiveEndAtUtc(r.EndDate),
                     })
                     .ToList(),
             };

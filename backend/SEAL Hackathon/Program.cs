@@ -24,6 +24,7 @@ namespace SEAL_Hackathon
             builder.Services.AddEndpointsApiExplorer();
             builder.Services.AddSignalR();
             builder.Services.AddScoped<INotificationSender, NotificationSender>();
+            builder.Services.AddHostedService<RoundFinalizationWorker>();
             builder.Services.AddCors(options =>
             {
                 options.AddPolicy(

@@ -13,10 +13,28 @@ namespace SEALHackathonSystem.Controllers
     public class RoundController : ControllerBase
     {
         private readonly IRoundService _roundService;
+        private readonly IRoundFinalizationService _roundFinalizationService;
 
-        public RoundController(IRoundService roundService)
+        public RoundController(
+            IRoundService roundService,
+            IRoundFinalizationService roundFinalizationService)
         {
             _roundService = roundService;
+            _roundFinalizationService = roundFinalizationService;
+        }
+
+        [Authorize(Policy = "CoordinatorOnly")]
+        [HttpPost("/api/Rounds/{roundId}/finalize")]
+        public async Task<IActionResult> FinalizeRound(Guid roundId)
+        {
+            try
+            {
+                return Ok(await _roundFinalizationService.FinalizeRoundAsync(roundId));
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
         }
 
         [Authorize(Policy = "CoordinatorOnly")]

@@ -232,6 +232,7 @@ export default function RealtimeProvider() {
       void queryClient.invalidateQueries({ queryKey: ["scores"] });
       void queryClient.invalidateQueries({ queryKey: ["rankings"] });
       void queryClient.invalidateQueries({ queryKey: ["notifications"] });
+      void queryClient.invalidateQueries({ queryKey: ["team-round-progress"] });
       window.dispatchEvent(
         new CustomEvent("seal:notification", { detail: notification }),
       );

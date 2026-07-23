@@ -12,6 +12,6 @@ namespace BusinessLogicLayer.DTOs.Responses
         public int RankPosition { get; set; }
         public decimal TotalScore { get; set; }
         public DateTime GeneratedAt { get; set; }
-        public bool IsAdvanced { get; set; }
+        public bool? IsAdvanced { get; set; }
     }
 }

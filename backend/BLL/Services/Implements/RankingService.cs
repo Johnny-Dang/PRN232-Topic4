@@ -17,7 +17,6 @@ namespace BusinessLogicLayer.Services.Implements
         private readonly IGenericRepository<Scores> _scoreRepository;
         private readonly IGenericRepository<EventCriteria> _eventCriteriaRepository;
         private readonly IGenericRepository<Teams> _teamRepository;
-        private readonly IGenericRepository<AdvancementRules> _advancementRuleRepository;
         private readonly IUnitOfWork _unitOfWork;
 
         public RankingService(IUnitOfWork unitOfWork)
@@ -29,7 +28,6 @@ namespace BusinessLogicLayer.Services.Implements
             _scoreRepository = _unitOfWork.GetRepository<Scores>();
             _eventCriteriaRepository = _unitOfWork.GetRepository<EventCriteria>();
             _teamRepository = _unitOfWork.GetRepository<Teams>();
-            _advancementRuleRepository = _unitOfWork.GetRepository<AdvancementRules>();
         }
 
         public async Task<IEnumerable<RankingDto>> GenerateAsync(Guid roundId)
@@ -37,6 +35,9 @@ namespace BusinessLogicLayer.Services.Implements
             var round = await _roundRepository.GetByIdAsync(roundId);
             if (round == null)
                 throw new Exception($"Không tìm thấy vòng thi với id: {roundId}");
+
+            if (round.IsFinalized)
+                return await GetByRoundAsync(roundId);
 
             var eventCriteria = await _eventCriteriaRepository.FindAsync(x => x.EventId == round.EventId);
             if (!eventCriteria.Any())
@@ -47,9 +48,6 @@ namespace BusinessLogicLayer.Services.Implements
                 !x.IsCalibrationSample &&
                 x.TeamId.HasValue &&
                 (x.Status == "Submitted" || x.Status == "Updated" || x.Status == "Graded"));
-            if (!submissions.Any())
-                return Enumerable.Empty<RankingDto>();
-
             var submissionIds = submissions.Select(x => x.SubmissionId).ToList();
             var teamIds = submissions.Select(x => x.TeamId!.Value).Distinct().ToList();
             var teams = await _teamRepository.FindAsync(x => teamIds.Contains(x.TeamId));
@@ -118,7 +116,8 @@ namespace BusinessLogicLayer.Services.Implements
                         CategoryId = calculated.CategoryId,
                         RankPosition = calculated.RankPosition,
                         TotalScore = calculated.TotalScore,
-                        GeneratedAt = generatedAt
+                        GeneratedAt = generatedAt,
+                        IsAdvanced = null
                     });
 
                     continue;
@@ -127,6 +126,7 @@ namespace BusinessLogicLayer.Services.Implements
                 existing.RankPosition = calculated.RankPosition;
                 existing.TotalScore = calculated.TotalScore;
                 existing.GeneratedAt = generatedAt;
+                existing.IsAdvanced = null;
                 _rankingRepository.Update(existing);
             }
 
@@ -154,10 +154,7 @@ namespace BusinessLogicLayer.Services.Implements
             if (!rankings.Any())
                 return Enumerable.Empty<RankingDto>();
 
-            var rules = await _advancementRuleRepository.FindAsync(x => x.RoundId == roundId);
-            var ruleTopNByCategoryId = rules
-                .GroupBy(x => x.CategoryId)
-                .ToDictionary(x => x.Key, x => x.Min(rule => rule.TopN));
+            var round = await _roundRepository.GetByIdAsync(roundId);
             var teamIds = rankings.Select(x => x.TeamId).Distinct().ToList();
             var teams = await _teamRepository.FindAsync(x => teamIds.Contains(x.TeamId));
             var teamsById = teams.ToDictionary(x => x.TeamId, x => x);
@@ -168,7 +165,6 @@ namespace BusinessLogicLayer.Services.Implements
                 .Select(ranking =>
                 {
                     teamsById.TryGetValue(ranking.TeamId, out var team);
-                    var hasRule = ruleTopNByCategoryId.TryGetValue(ranking.CategoryId, out var topN);
 
                     return new RankingDto
                     {
@@ -180,7 +176,7 @@ namespace BusinessLogicLayer.Services.Implements
                         RankPosition = ranking.RankPosition,
                         TotalScore = ranking.TotalScore,
                         GeneratedAt = ranking.GeneratedAt,
-                        IsAdvanced = hasRule && ranking.RankPosition <= topN
+                        IsAdvanced = round?.IsFinalized == true ? ranking.IsAdvanced : null
                     };
                 });
         }

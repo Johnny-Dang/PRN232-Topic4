@@ -39,6 +39,9 @@ export interface Round {
   SubmissionDeadline: string;
   StartDate: string;
   EndDate: string;
+  IsFinalized: boolean;
+  FinalizedAt: string | null;
+  EffectiveEndAtUtc: string;
 }
 
 export interface Category {
@@ -356,6 +359,31 @@ export interface Ranking {
   RoundId: string;
   RankPosition: number;
   TotalScore: number;
+  IsAdvanced: boolean | null;
+}
+
+export type TeamRoundProgressStatus =
+  | "Upcoming"
+  | "InProgress"
+  | "AwaitingFinalization"
+  | "Advanced"
+  | "Eliminated";
+
+export interface TeamRoundProgress {
+  RoundId: string;
+  RoundName: string;
+  RoundOrder: number;
+  StartDate: string;
+  EffectiveEndAtUtc: string;
+  IsFinalized: boolean;
+  FinalizedAt: string | null;
+  RankPosition: number | null;
+  TotalScore: number | null;
+  IsAdvanced: boolean | null;
+  Status: TeamRoundProgressStatus;
+  IsEligible: boolean;
+  CanSubmit: boolean;
+  BlockedReason: string | null;
 }
 
 export interface JudgeAssignedSubmission {
@@ -454,6 +482,12 @@ export interface BackendRound {
   StartDate?: string;
   endDate?: string;
   EndDate?: string;
+  isFinalized?: boolean;
+  IsFinalized?: boolean;
+  finalizedAt?: string | null;
+  FinalizedAt?: string | null;
+  effectiveEndAtUtc?: string;
+  EffectiveEndAtUtc?: string;
 }
 
 export interface BackendCategory {
@@ -678,6 +712,8 @@ export interface BackendRanking {
   RankPosition?: number;
   totalScore?: number;
   TotalScore?: number;
+  isAdvanced?: boolean | null;
+  IsAdvanced?: boolean | null;
 }
 
 export interface BackendEventCriteria {
@@ -786,6 +822,10 @@ const mapRound = (round: BackendRound): Round => ({
     round.submissionDeadline || round.SubmissionDeadline || "",
   StartDate: round.startDate || round.StartDate || "",
   EndDate: round.endDate || round.EndDate || "",
+  IsFinalized: round.isFinalized ?? round.IsFinalized ?? false,
+  FinalizedAt: round.finalizedAt ?? round.FinalizedAt ?? null,
+  EffectiveEndAtUtc:
+    round.effectiveEndAtUtc || round.EffectiveEndAtUtc || "",
 });
 
 const mapCategory = (category: BackendCategory): Category => ({
@@ -938,6 +978,7 @@ const mapRanking = (ranking: BackendRanking): Ranking => ({
   RoundId: ranking.roundId || ranking.RoundId || "",
   RankPosition: ranking.rankPosition || ranking.RankPosition || 0,
   TotalScore: ranking.totalScore || ranking.TotalScore || 0,
+  IsAdvanced: ranking.isAdvanced ?? ranking.IsAdvanced ?? null,
 });
 
 const mapEventCriteria = (criteria: BackendEventCriteria): Criteria => ({
@@ -2216,6 +2257,48 @@ export async function getRankings(
     logApiError("getRankings", error);
     return [];
   }
+}
+
+export async function getTeamRoundProgress(
+  teamId: string,
+): Promise<TeamRoundProgress[]> {
+  if (!useLiveApi || !teamId) return [];
+
+  const response = await apiClient.get<Array<Record<string, unknown>>>(
+    `/Teams/${teamId}/round-progress`,
+  );
+
+  return response.data.map((item) => ({
+    RoundId: String(item.roundId ?? item.RoundId ?? ""),
+    RoundName: String(item.roundName ?? item.RoundName ?? ""),
+    RoundOrder: Number(item.roundOrder ?? item.RoundOrder ?? 0),
+    StartDate: String(item.startDate ?? item.StartDate ?? ""),
+    EffectiveEndAtUtc: String(
+      item.effectiveEndAtUtc ?? item.EffectiveEndAtUtc ?? "",
+    ),
+    IsFinalized: Boolean(item.isFinalized ?? item.IsFinalized ?? false),
+    FinalizedAt:
+      (item.finalizedAt ?? item.FinalizedAt ?? null) as string | null,
+    RankPosition:
+      item.rankPosition == null && item.RankPosition == null
+        ? null
+        : Number(item.rankPosition ?? item.RankPosition),
+    TotalScore:
+      item.totalScore == null && item.TotalScore == null
+        ? null
+        : Number(item.totalScore ?? item.TotalScore),
+    IsAdvanced:
+      item.isAdvanced == null && item.IsAdvanced == null
+        ? null
+        : Boolean(item.isAdvanced ?? item.IsAdvanced),
+    Status: String(
+      item.status ?? item.Status ?? "Upcoming",
+    ) as TeamRoundProgressStatus,
+    IsEligible: Boolean(item.isEligible ?? item.IsEligible ?? false),
+    CanSubmit: Boolean(item.canSubmit ?? item.CanSubmit ?? false),
+    BlockedReason:
+      (item.blockedReason ?? item.BlockedReason ?? null) as string | null,
+  }));
 }
 
 export async function getAnnouncements(

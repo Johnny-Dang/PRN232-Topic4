@@ -13,10 +13,31 @@ namespace SEALHackathonSystem.Controllers
     public class TeamsController : ControllerBase
     {
         private readonly ITeamService _teamService;
+        private readonly ITeamRoundProgressService _teamRoundProgressService;
 
-        public TeamsController(ITeamService teamService)
+        public TeamsController(
+            ITeamService teamService,
+            ITeamRoundProgressService teamRoundProgressService)
         {
             _teamService = teamService;
+            _teamRoundProgressService = teamRoundProgressService;
+        }
+
+        [HttpGet("{teamId}/round-progress")]
+        public async Task<IActionResult> GetRoundProgress(Guid teamId)
+        {
+            try
+            {
+                return Ok(await _teamRoundProgressService.GetAsync(teamId, GetCurrentUserId()));
+            }
+            catch (UnauthorizedAccessException)
+            {
+                return Forbid();
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
         }
 
         [HttpPost]

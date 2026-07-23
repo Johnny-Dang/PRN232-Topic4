@@ -9,11 +9,8 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import {
-  getAdvancementRules,
   getCategories,
   getEvents,
-  getRankings,
-  getRounds,
   getTeamMembers,
   getTeams,
   addTeamMember,
@@ -22,7 +19,6 @@ import {
   removeTeamMember,
   Category as ApiCategory,
   Event as ApiEvent,
-  Round as ApiRound,
   Team,
 } from '@/lib/api';
 
@@ -33,8 +29,6 @@ import { TeamMembersCard } from '@/components/team/TeamMembersCard';
 import { useToast } from '@/contexts/ToastContext';
 
 type TeamMemberWithProfile = Awaited<ReturnType<typeof getTeamMembers>>[number];
-type RankingWithTeam = Awaited<ReturnType<typeof getRankings>>[number];
-type AdvancementRuleData = Awaited<ReturnType<typeof getAdvancementRules>>[number];
 
 const getStringProperty = (value: unknown, keys: string[]): string | null => {
   if (typeof value !== 'object' || value === null) return null;
@@ -94,9 +88,6 @@ export default function MemberPage() {
   const [members, setMembers] = useState<TeamMemberWithProfile[]>([]);
   const [event, setEvent] = useState<ApiEvent | null>(null);
   const [category, setCategory] = useState<ApiCategory | null>(null);
-  const [rounds, setRounds] = useState<ApiRound[]>([]);
-  const [rankings, setRankings] = useState<RankingWithTeam[]>([]);
-  const [rules, setRules] = useState<AdvancementRuleData[]>([]);
 
   const [currentUserId, setCurrentUserId] = useState('');
   const [newMemberId, setNewMemberId] = useState('');
@@ -220,9 +211,6 @@ export default function MemberPage() {
         setMembers([]);
         setEvent(null);
         setCategory(null);
-        setRounds([]);
-        setRankings([]);
-        setRules([]);
         setAllCategories(categoriesData);
         setAllEvents(eventsData);
         setLoading(false);
@@ -236,28 +224,6 @@ export default function MemberPage() {
       setAllCategories(categoriesData);
       setAllEvents(eventsData);
 
-      if (selectedEntry.event) {
-        try {
-          const roundsData = await getRounds(selectedEntry.event.EventID);
-          const rulesData = await getAdvancementRules();
-          const rankingRows: RankingWithTeam[] = [];
-          for (const round of roundsData) {
-            const roundRankings = await getRankings(round.RoundID);
-            rankingRows.push(...roundRankings.filter((r) => r.TeamId === selectedEntry!.team.TeamID));
-          }
-          setRounds(roundsData);
-          setRules(rulesData);
-          setRankings(rankingRows);
-        } catch {
-          setRounds([]);
-          setRules([]);
-          setRankings([]);
-        }
-      } else {
-        setRounds([]);
-        setRules([]);
-        setRankings([]);
-      }
     } catch (error) {
       console.error(error);
       setErrorMessage('Không thể tải dữ liệu thành viên từ API.');
@@ -303,9 +269,6 @@ export default function MemberPage() {
         setMembers(entry.members);
         setEvent(entry.event);
         setCategory(entry.category);
-        setRounds([]);
-        setRankings([]);
-        setRules([]);
 
         // Cập nhật URL để đồng bộ
         if (entry.event?.EventID && requestedEventId !== entry.event.EventID) {
@@ -314,27 +277,6 @@ export default function MemberPage() {
           router.replace('/member');
         }
 
-        // Load rounds cho event mới
-        if (entry.event) {
-          void (async () => {
-            try {
-              const roundsData = await getRounds(entry.event!.EventID);
-              const rulesData = await getAdvancementRules();
-              const rankingRows: RankingWithTeam[] = [];
-              for (const round of roundsData) {
-                const roundRankings = await getRankings(round.RoundID);
-                rankingRows.push(...roundRankings.filter((r) => r.TeamId === entry.team.TeamID));
-              }
-              setRounds(roundsData);
-              setRules(rulesData);
-              setRankings(rankingRows);
-            } catch {
-              setRounds([]);
-              setRules([]);
-              setRankings([]);
-            }
-          })();
-        }
       }
     },
     [myAllTeams, team, router, requestedEventId]
@@ -605,11 +547,7 @@ export default function MemberPage() {
                   onRegisterCategory={handleRegisterCategorySubmit}
                 />
                 <TeamRoundsCard
-                  team={team}
-                  category={category}
-                  rounds={rounds}
-                  rankings={rankings}
-                  rules={rules}
+                  teamId={team.TeamID}
                 />
               </>
             )}
