@@ -30,7 +30,6 @@ import {
   getMyCalibrationScore,
   submitCalibrationScore,
   updateCalibrationScore,
-  getCalibrationScores,
   getEventCriteria,
 } from '@/lib/api';
 

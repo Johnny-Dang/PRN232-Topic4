@@ -16,6 +16,8 @@ namespace DataAccessLayer.Database.Configurations
             builder.ToTable("CalibrationScores");
 
             builder.HasKey(x => x.CalibrationScoreId);
+            builder.Property(x => x.CalibrationScoreId)
+                .HasColumnName("CalibrationId");
 
             builder.Property(x => x.ScoreValue)
                 .IsRequired()

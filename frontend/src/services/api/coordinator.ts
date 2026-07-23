@@ -3,7 +3,6 @@ import { apiClient } from "./apiClient";
 import {
   advancementRuleSchema,
   eliminationSchema,
-  notificationSchema,
   type Notification,
 } from "../types/coordinator";
 
@@ -18,34 +17,37 @@ export async function getEliminationsApi() {
 }
 
 export async function getNotificationsApi(): Promise<Notification[]> {
-  const response = await apiClient.get("/Notification", {
-    withCredentials: false,
-  });
-  const data = response.data;
-  
-  // Support both array directly or wrapped in {items: []}
-  const items = Array.isArray(data) ? data : data?.items;
-  
-  if (!items || !Array.isArray(items)) {
-    console.log("[Notifications API] No items found, raw data:", data);
+  try {
+    const response = await apiClient.get("/Notification");
+    const data = response.data;
+    
+    // Support both array directly or wrapped in {items: []}
+    const items = Array.isArray(data) ? data : data?.items;
+    
+    if (!items || !Array.isArray(items)) {
+      console.log("[Notifications API] No items found, raw data:", data);
+      return [];
+    }
+    
+    // Log for debugging
+    console.log("[Notifications API] Raw data:", items);
+    console.log("[Notifications API] Count:", items.length);
+    
+    // Parse với optional fields để tránh lỗi
+    const result: Notification[] = items.map((item: Record<string, unknown>) => ({
+      NotificationId: String(item.NotificationId || item.notificationId || ""),
+      UserId: String(item.UserId || item.userId || ""),
+      Message: String(item.Message || item.message || ""),
+      IsRead: Boolean(item.IsRead ?? item.isRead ?? false),
+      CreatedAt: String(item.CreatedAt || item.createdAt || new Date().toISOString()),
+    }));
+    
+    console.log("[Notifications API] Parsed:", result);
+    return result;
+  } catch (error) {
+    console.warn("[Notifications API] Could not fetch notifications (401 or network error):", error);
     return [];
   }
-  
-  // Log for debugging
-  console.log("[Notifications API] Raw data:", items);
-  console.log("[Notifications API] Count:", items.length);
-  
-  // Parse với optional fields để tránh lỗi
-  const result: Notification[] = items.map((item: Record<string, unknown>) => ({
-    NotificationId: String(item.NotificationId || item.notificationId || ""),
-    UserId: String(item.UserId || item.userId || ""),
-    Message: String(item.Message || item.message || ""),
-    IsRead: Boolean(item.IsRead ?? item.isRead ?? false),
-    CreatedAt: String(item.CreatedAt || item.createdAt || new Date().toISOString()),
-  }));
-  
-  console.log("[Notifications API] Parsed:", result);
-  return result;
 }
 
 export async function markNotificationAsReadApi(

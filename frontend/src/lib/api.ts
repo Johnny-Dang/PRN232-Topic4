@@ -973,18 +973,25 @@ const mapCalibrationSubmission = (
 
 const mapCalibrationScore = (
   score: BackendCalibrationScore,
-): CalibrationScoreOutput => ({
-  CalibrationScoreId:
-    score.calibrationScoreId || score.CalibrationScoreId || "",
-  CalibrationId: score.calibrationId || score.CalibrationId || "",
-  JudgeId: score.judgeId || score.JudgeId || "",
-  JudgeCode: score.judgeCode || score.JudgeCode || "",
-  CriteriaId: score.criteriaId || score.CriteriaId || "",
-  CriteriaName: score.criteriaName || score.CriteriaName || "",
-  ScoreValue: score.scoreValue || score.ScoreValue || 0,
-  Comment: score.comment || score.Comment || "",
-  ScoredAt: score.scoredAt || score.ScoredAt || "",
-});
+): CalibrationScoreOutput => {
+  const scoreId =
+    score.calibrationScoreId ||
+    score.CalibrationScoreId ||
+    score.calibrationId ||
+    score.CalibrationId ||
+    "";
+  return {
+    CalibrationScoreId: scoreId,
+    CalibrationId: score.calibrationId || score.CalibrationId || scoreId,
+    JudgeId: score.judgeId || score.JudgeId || "",
+    JudgeCode: score.judgeCode || score.JudgeCode || "",
+    CriteriaId: score.criteriaId || score.CriteriaId || "",
+    CriteriaName: score.criteriaName || score.CriteriaName || "",
+    ScoreValue: score.scoreValue || score.ScoreValue || 0,
+    Comment: score.comment || score.Comment || "",
+    ScoredAt: score.scoredAt || score.ScoredAt || "",
+  };
+};
 
 const mapCriteriaVariance = (
   data: BackendCriteriaVariance,

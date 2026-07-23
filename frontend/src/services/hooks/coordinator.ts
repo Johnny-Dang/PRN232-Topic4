@@ -27,7 +27,7 @@ export function useNotificationsQuery() {
         return result;
       } catch (error) {
         console.error("[useNotificationsQuery] Error:", error);
-        throw error;
+        return [];
       }
     },
     refetchInterval: 30000,
