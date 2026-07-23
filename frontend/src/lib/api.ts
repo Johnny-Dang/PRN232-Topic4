@@ -2007,10 +2007,114 @@ export async function getUsersByRole(role: string): Promise<User[]> {
   }
 }
 
+interface BackendEliminationItem {
+  eliminationId?: string;
+  EliminationId?: string;
+  submissionId?: string;
+  SubmissionId?: string;
+  userId?: string;
+  UserId?: string;
+  reason?: string;
+  Reason?: string;
+  eliminatedAt?: string;
+  EliminatedAt?: string;
+  user?: BackendAuditUserField;
+  User?: BackendAuditUserField;
+  submission?: BackendSubmission;
+  Submission?: BackendSubmission;
+}
+
 export async function getEliminations(): Promise<
   (Elimination & { Submission: Submission; Team: Team; Coordinator: User })[]
 > {
-  return [];
+  if (!useLiveApi) return [];
+  try {
+    const response = await apiClient.get<BackendEliminationItem[]>("/Elimination");
+    const teams = await getTeams();
+
+    return response.data.map((item) => {
+      const mappedSubmission = item.submission || item.Submission
+        ? mapSubmission(item.submission || item.Submission!)
+        : {
+            SubmissionID: item.submissionId || item.SubmissionId || "",
+            TeamID: "",
+            RoundID: "",
+            RepositoryURL: "",
+            DemoURL: "",
+            SlideURL: "",
+            SubmittedAt: "",
+            Status: "Disqualified" as const,
+          };
+
+      const team = teams.find((t) => t.TeamID === mappedSubmission.TeamID) || {
+        TeamID: mappedSubmission.TeamID,
+        TeamName: "Đội thi",
+        TeamLeaderId: "",
+        EventID: "",
+        CategoryID: "",
+        TeamStatus: "Pending" as const,
+      };
+
+      const rawUser = item.user || item.User;
+      const coordinator: User = rawUser
+        ? {
+            UserID: rawUser.userId || rawUser.UserId || rawUser.UserID || "",
+            Email: rawUser.email || rawUser.Email || "",
+            FullName: rawUser.fullName || rawUser.FullName || "Coordinator",
+            Phone: rawUser.phone || rawUser.Phone || "",
+            ShortId: rawUser.shortId || rawUser.ShortId || "",
+            Role: "Coordinator",
+            AccountStatus: "Active",
+          }
+        : {
+            UserID: item.userId || item.UserId || "",
+            Email: "",
+            FullName: "Coordinator",
+            Phone: "",
+            ShortId: "",
+            Role: "Coordinator",
+            AccountStatus: "Active",
+          };
+
+      return {
+        EliminationId: item.eliminationId || item.EliminationId || "",
+        SubmissionId: item.submissionId || item.SubmissionId || "",
+        UserId: item.userId || item.UserId || "",
+        Reason: item.reason || item.Reason || "",
+        EliminatedAt: item.eliminatedAt || item.EliminatedAt || "",
+        Submission: mappedSubmission,
+        Team: team,
+        Coordinator: coordinator,
+      };
+    });
+  } catch (error: unknown) {
+    logApiError("getEliminations", error);
+    return [];
+  }
+}
+
+export async function disqualifySubmission(
+  submissionId: string,
+  reason: string,
+): Promise<Elimination | null> {
+  if (!useLiveApi) return null;
+  try {
+    const response = await apiClient.post<BackendEliminationItem>("/Elimination", {
+      submissionId,
+      reason,
+    });
+    const item = response.data;
+    return {
+      EliminationId: item.eliminationId || item.EliminationId || "",
+      SubmissionId: item.submissionId || item.SubmissionId || submissionId,
+      UserId: item.userId || item.UserId || "",
+      Reason: item.reason || item.Reason || reason,
+      EliminatedAt: item.eliminatedAt || item.EliminatedAt || new Date().toISOString(),
+    };
+  } catch (error: unknown) {
+    logApiError("disqualifySubmission", error);
+    throw error;
+  }
 }
 
 interface BackendAuditUserField {

@@ -1,19 +1,24 @@
 'use client';
 
 import React, { useMemo, useState } from 'react';
-import { AlertCircle, Send, Trash2 } from 'lucide-react';
+import { AlertCircle, CheckCircle2, Send, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { disqualifySubmission } from '@/lib/api';
+import { parseApiError } from '@/lib/errorHandler';
 import type { SubmissionWithTeam } from './types';
 
 interface DisqualifyPanelProps {
   submissions: SubmissionWithTeam[];
+  onSuccess?: () => void;
 }
 
-export default function DisqualifyPanel({ submissions }: DisqualifyPanelProps) {
+export default function DisqualifyPanel({ submissions, onSuccess }: DisqualifyPanelProps) {
   const [message, setMessage] = useState('');
+  const [errorMsg, setErrorMsg] = useState('');
   const [submissionId, setSubmissionId] = useState('');
   const [reason, setReason] = useState('');
+  const [submitting, setSubmitting] = useState(false);
 
   const availableSubmissions = useMemo(
     () => submissions.filter((submission) => submission.Status !== 'Disqualified'),
@@ -22,9 +27,31 @@ export default function DisqualifyPanel({ submissions }: DisqualifyPanelProps) {
 
   const selectedSubmissionId = submissionId || availableSubmissions[0]?.SubmissionID || '';
 
-  const handleDisqualify = (event: React.FormEvent) => {
+  const handleDisqualify = async (event: React.FormEvent) => {
     event.preventDefault();
-    setMessage('Backend chưa có API loại bài/ghi elimination, nên frontend không tạo dữ liệu giả.');
+    if (!selectedSubmissionId) {
+      setErrorMsg('Vui lòng chọn bài nộp cần loại.');
+      return;
+    }
+
+    setSubmitting(true);
+    setMessage('');
+    setErrorMsg('');
+
+    try {
+      await disqualifySubmission(selectedSubmissionId, reason);
+      setMessage('Đã loại bài nộp thành công!');
+      setReason('');
+      if (onSuccess) {
+        onSuccess();
+      }
+    } catch (err: unknown) {
+      console.error(err);
+      const { message: apiErr } = parseApiError(err);
+      setErrorMsg(apiErr || 'Không thể loại bài nộp. Vui lòng thử lại.');
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   return (
@@ -35,7 +62,7 @@ export default function DisqualifyPanel({ submissions }: DisqualifyPanelProps) {
           Thực thi loại đội
         </CardTitle>
         <CardDescription className="text-xs font-medium text-slate-400">
-          Chức năng này cần endpoint backend riêng để cập nhật submission, elimination và audit log.
+          Loại bài nộp vi phạm quy chế thi. Hệ thống sẽ ghi nhận quyết định và tự động tạo Nhật ký hoạt động.
         </CardDescription>
       </CardHeader>
       <CardContent className="p-6 pt-0">
@@ -51,14 +78,14 @@ export default function DisqualifyPanel({ submissions }: DisqualifyPanelProps) {
               className="h-10 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 text-xs font-semibold focus:outline-none dark:border-slate-700 dark:bg-slate-800"
               value={selectedSubmissionId}
               onChange={(event) => setSubmissionId(event.target.value)}
-              disabled={availableSubmissions.length === 0}
+              disabled={availableSubmissions.length === 0 || submitting}
             >
               {availableSubmissions.length === 0 ? (
                 <option value="">Không có bài nộp hợp lệ từ API</option>
               ) : (
                 availableSubmissions.map((submission) => (
                   <option key={submission.SubmissionID} value={submission.SubmissionID}>
-                    {submission.Team.TeamName || 'Đội thi'} (ID: {submission.SubmissionID.substring(0, 8)})
+                    {submission.Team?.TeamName || 'Đội thi'} (ID: {submission.SubmissionID.substring(0, 8)})
                   </option>
                 ))
               )}
@@ -73,16 +100,24 @@ export default function DisqualifyPanel({ submissions }: DisqualifyPanelProps) {
               id="disqualify-reason"
               rows={3}
               className="w-full rounded-xl border border-slate-200 bg-slate-50 p-3 text-xs font-medium focus:outline-none dark:border-slate-700 dark:bg-slate-800"
-              placeholder="Nhập lý do để gửi khi backend bổ sung API loại bài."
+              placeholder="Nhập lý do chi tiết loại bài nộp (ví dụ: Vi phạm bản quyền, Nộp bài sai yêu cầu...)"
               value={reason}
               onChange={(event) => setReason(event.target.value)}
+              disabled={submitting}
             />
           </div>
 
           {message && (
-            <div className="flex items-center gap-2 rounded-xl border border-amber-100 bg-amber-50 p-3 text-xs font-medium text-amber-700">
-              <AlertCircle className="h-4 w-4 text-amber-600" />
+            <div className="flex items-center gap-2 rounded-xl border border-emerald-100 bg-emerald-50 p-3 text-xs font-medium text-emerald-700">
+              <CheckCircle2 className="h-4 w-4 text-emerald-600" />
               {message}
+            </div>
+          )}
+
+          {errorMsg && (
+            <div className="flex items-center gap-2 rounded-xl border border-rose-100 bg-rose-50 p-3 text-xs font-medium text-rose-700">
+              <AlertCircle className="h-4 w-4 text-rose-600" />
+              {errorMsg}
             </div>
           )}
 
@@ -90,10 +125,10 @@ export default function DisqualifyPanel({ submissions }: DisqualifyPanelProps) {
             <Button
               type="submit"
               className="h-10 rounded-xl bg-rose-600 px-5 text-xs font-bold text-white transition-colors hover:bg-rose-700"
-              disabled={availableSubmissions.length === 0}
+              disabled={availableSubmissions.length === 0 || submitting}
             >
               <Send className="mr-2 h-3.5 w-3.5" />
-              Kiểm tra API loại bài
+              {submitting ? 'Đang thực thi...' : 'Thực thi loại đội'}
             </Button>
           </div>
         </form>
