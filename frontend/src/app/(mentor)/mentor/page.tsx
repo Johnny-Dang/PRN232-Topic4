@@ -178,13 +178,38 @@ function MentorDashboardContent() {
       return;
     }
 
+    const loc = location.trim();
+    if (!loc) {
+      setError('Vui lòng nhập Link Meet cuộc họp trực tuyến.');
+      return;
+    }
+
+    // Strict URL / Meeting Link Validation
+    let formattedUrl = loc;
+    if (!/^https?:\/\//i.test(formattedUrl)) {
+      formattedUrl = `https://${formattedUrl}`;
+    }
+
+    try {
+      const parsedUrl = new URL(formattedUrl);
+      const host = parsedUrl.hostname.toLowerCase();
+
+      // Ensure hostname contains a valid domain extension (e.g. meet.google.com, zoom.us, teams.microsoft.com, etc.)
+      if (!host.includes('.') || host.split('.').some((part) => !part)) {
+        throw new Error('Invalid host');
+      }
+    } catch {
+      setError('Trường này chỉ nhận đường dẫn Link Meet hợp lệ (ví dụ: https://meet.google.com/abc-xyz-def hoặc https://zoom.us/j/123456789).');
+      return;
+    }
+
     try {
       setError('');
       setMessage('');
       await createMentorScheduleApi({
         startTime: new Date(startTime).toISOString(),
         endTime: new Date(endTime).toISOString(),
-        meetingLocation: location.trim() || undefined,
+        meetingLocation: formattedUrl,
       });
       setMessage('Tạo khung giờ rảnh thành công!');
       setStartTime('');
@@ -331,10 +356,10 @@ function MentorDashboardContent() {
                       />
                     </div>
                     <div>
-                      <label className="block text-xs font-semibold uppercase text-slate-500">Địa điểm / Meeting Link</label>
+                      <label className="block text-xs font-semibold uppercase text-slate-500">Meeting Link</label>
                       <input
-                        type="text"
-                        placeholder="Google Meet link hoặc Phòng học"
+                        type="url"
+                        placeholder="https://meet.google.com/abc-xyz-def"
                         value={location}
                         onChange={(e) => setLocation(e.target.value)}
                         className="mt-1 h-10 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 text-xs font-semibold focus:outline-none dark:border-slate-700 dark:bg-slate-800"
