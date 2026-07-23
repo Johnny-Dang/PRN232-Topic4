@@ -13,12 +13,14 @@ import { parseApiError } from '@/lib/errorHandler';
 import {
   Category,
   Criteria,
+  Event,
   Ranking,
   Round,
   Score,
   Team,
   getCategories,
   getEventCriteria,
+  getEvents,
   getRounds,
   getAssignedSubmissions,
   getScores,
@@ -52,6 +54,7 @@ function JudgePageContent() {
   const [submissions, setSubmissions] = useState<JudgeAssignedSubmission[]>([]);
   const [rounds, setRounds] = useState<Round[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
+  const [events, setEvents] = useState<Event[]>([]);
   const [criteria, setCriteria] = useState<Criteria[]>([]);
   const [existingScores, setExistingScores] = useState<Score[]>([]);
   const [loadingScores, setLoadingScores] = useState(false);
@@ -61,6 +64,7 @@ function JudgePageContent() {
 
   const activeSubmission = submissions.find((submission) => submission.submissionId === selectedSubId);
   const activeRound = activeSubmission ? rounds.find((round) => round.RoundID === activeSubmission.roundId) : null;
+  const activeEvent = activeRound?.EventID ? events.find((e) => e.EventID === activeRound.EventID) : null;
   const activeCategory = activeSubmission?.categoryId
     ? categories.find((category) => category.CategoryID === activeSubmission.categoryId)
     : null;
@@ -80,15 +84,17 @@ function JudgePageContent() {
     setMessage('');
 
     try {
-      const [fetchedRounds, fetchedCategories, fetchedSubmissions] = await Promise.all([
+      const [fetchedRounds, fetchedCategories, fetchedSubmissions, fetchedEvents] = await Promise.all([
         getRounds(),
         getCategories(),
         getAssignedSubmissions(),
+        getEvents(),
       ]);
 
       setRounds(fetchedRounds);
       setCategories(fetchedCategories);
       setSubmissions(fetchedSubmissions);
+      setEvents(fetchedEvents);
       setSelectedSubId(fetchedSubmissions[0]?.submissionId || '');
 
       if (fetchedRounds.length > 0 && !selectedRoundId) {
@@ -334,6 +340,7 @@ function JudgePageContent() {
                 submissions.map((submission) => {
                   const isSelected = submission.submissionId === selectedSubId;
                   const round = rounds.find((item) => item.RoundID === submission.roundId);
+                  const event = round?.EventID ? events.find((e) => e.EventID === round.EventID) : null;
 
                   return (
                     <Card
@@ -361,7 +368,12 @@ function JudgePageContent() {
                             );
                           })()}
                         </div>
-                        <p className="text-[10px] font-semibold uppercase text-slate-400">{round?.RoundName}</p>
+                        <div className="flex items-center gap-1.5 flex-wrap text-[10px] font-semibold text-slate-400">
+                          {event && (
+                            <span className="text-indigo-600 dark:text-indigo-400 font-bold">{event.EventName} • </span>
+                          )}
+                          <span>{round?.RoundName || 'Chưa có round'}</span>
+                        </div>
                       </div>
                     </Card>
                   );
@@ -379,7 +391,7 @@ function JudgePageContent() {
                       Bài nộp: {activeSubmission.teamName}
                     </CardTitle>
                     <CardDescription className="text-xs font-medium text-slate-400">
-                      Hạng mục: {activeCategory?.CategoryName || 'Chưa có category'} | Vòng thi: {activeRound?.RoundName || 'Chưa có round'}
+                      Sự kiện: <span className="font-bold text-slate-700 dark:text-slate-200">{activeEvent?.EventName || 'Chưa xác định'}</span> | Hạng mục: {activeCategory?.CategoryName || 'Chưa có category'} | Vòng thi: {activeRound?.RoundName || 'Chưa có round'}
                     </CardDescription>
                   </CardHeader>
                   <CardContent className="flex flex-wrap gap-4 border-b border-slate-100 p-6 pt-0 dark:border-slate-800">
@@ -542,11 +554,14 @@ function JudgePageContent() {
               className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-medium dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200"
             >
               <option value="">-- Chọn vòng --</option>
-              {rounds.map((round) => (
-                <option key={round.RoundID} value={round.RoundID}>
-                  {round.RoundName}
-                </option>
-              ))}
+              {rounds.map((round) => {
+                const event = events.find((e) => e.EventID === round.EventID);
+                return (
+                  <option key={round.RoundID} value={round.RoundID}>
+                    {round.RoundName}{event ? ` (${event.EventName})` : ''}
+                  </option>
+                );
+              })}
             </select>
           </div>
 

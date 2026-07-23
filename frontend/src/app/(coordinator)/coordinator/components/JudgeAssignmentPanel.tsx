@@ -7,35 +7,33 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { Skeleton } from '@/components/ui/skeleton';
-import { JudgeAssignment, Round, User, getJudgeAssignments, getRounds, getUsersByRole, assignJudge, removeJudgeAssignment } from '@/lib/api';
+import { Event, JudgeAssignment, Round, User, getEvents, getJudgeAssignments, getRounds, getUsersByRole, assignJudge, removeJudgeAssignment } from '@/lib/api';
 
 export default function JudgeAssignmentPanel() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState('');
+  const [events, setEvents] = useState<Event[]>([]);
   const [assignments, setAssignments] = useState<JudgeAssignment[]>([]);
   const [rounds, setRounds] = useState<Round[]>([]);
   const [judges, setJudges] = useState<User[]>([]);
+  const [selectedEventId, setSelectedEventId] = useState('');
   const [selectedRoundId, setSelectedRoundId] = useState('');
   const [selectedJudgeId, setSelectedJudgeId] = useState('');
 
   const loadData = async () => {
     setLoading(true);
     try {
-      const [fetchedAssignments, fetchedRounds, fetchedJudges] = await Promise.all([
+      const [fetchedAssignments, fetchedRounds, fetchedJudges, fetchedEvents] = await Promise.all([
         getJudgeAssignments(),
         getRounds(),
         getUsersByRole('Judge'),
+        getEvents(),
       ]);
       setAssignments(fetchedAssignments);
       setRounds(fetchedRounds);
       setJudges(fetchedJudges);
-      console.log('[JudgeAssignment] Data loaded:', {
-        assignments: fetchedAssignments.length,
-        rounds: fetchedRounds.length,
-        judges: fetchedJudges.length,
-        judgesList: fetchedJudges.map(j => ({ id: j.UserID, name: j.FullName, status: j.AccountStatus }))
-      });
+      setEvents(fetchedEvents);
     } catch (error) {
       console.error('Failed to load data:', error);
       setMessage('Không thể tải dữ liệu.');
@@ -44,14 +42,20 @@ export default function JudgeAssignmentPanel() {
     }
   };
 
+  const getEventName = (eventId: string) => {
+    const ev = events.find((e) => e.EventID === eventId);
+    return ev ? `${ev.EventName} (${ev.Season} ${ev.Year})` : '';
+  };
+
   const activeRounds = rounds.filter((round) => {
     const endDate = round.EndDate ? new Date(round.EndDate) : null;
-    return !endDate || endDate > new Date();
+    const isNotEnded = !endDate || endDate > new Date();
+    const matchesEvent = !selectedEventId || round.EventID === selectedEventId;
+    return isNotEnded && matchesEvent;
   });
 
   useEffect(() => {
     void loadData();
-    // eslint-disable-next-line react-hooks/set-state-in-effect
   }, []);
 
   const roundsWithJudges = rounds.map((round) => ({
@@ -61,21 +65,19 @@ export default function JudgeAssignmentPanel() {
       .map((a) => a),
   }));
 
+  const filteredRoundsWithJudges = roundsWithJudges.filter(({ round }) =>
+    !selectedEventId || round.EventID === selectedEventId
+  );
+
   const availableJudgesForRound = (roundId: string) => {
     const assignedUserIds = assignments
       .filter((a) => a.RoundId === roundId)
       .map((a) => a.UserId);
-    const available = judges.filter((j) => 
-      j.AccountStatus?.toLowerCase() === 'active' && 
+    return judges.filter((j) =>
+      j.AccountStatus?.toLowerCase() === 'active' &&
       !assignedUserIds.includes(j.UserID)
     );
-    console.log('[JudgeAssignment] availableJudgesForRound', { roundId, assignedUserIds, availableCount: available.length });
-    return available;
   };
-
-  const activeJudges = judges.filter((j) => 
-    j.AccountStatus?.toLowerCase() === 'active'
-  );
 
   const handleAssignJudge = async () => {
     if (!selectedRoundId || !selectedJudgeId) {
@@ -144,7 +146,7 @@ export default function JudgeAssignmentPanel() {
             <div>
               <CardTitle className="text-base font-bold">Phân công Judge cho vòng thi</CardTitle>
               <CardDescription className="text-xs font-medium text-slate-400">
-                Gán judge cho các vòng thi để chấm điểm
+                Lọc theo sự kiện và gán judge cho các vòng thi tương ứng để chấm điểm
               </CardDescription>
             </div>
             <Button
@@ -160,23 +162,46 @@ export default function JudgeAssignmentPanel() {
           </div>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+            <div className="space-y-2">
+              <Label className="text-xs font-semibold text-slate-600 dark:text-slate-400">Sự kiện</Label>
+              <select
+                value={selectedEventId}
+                onChange={(e) => {
+                  setSelectedEventId(e.target.value);
+                  setSelectedRoundId('');
+                  setSelectedJudgeId('');
+                }}
+                className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200"
+              >
+                <option value="">-- Tất cả sự kiện --</option>
+                {events.map((ev) => (
+                  <option key={ev.EventID} value={ev.EventID}>
+                    {ev.EventName} ({ev.Season} {ev.Year})
+                  </option>
+                ))}
+              </select>
+            </div>
+
             <div className="space-y-2">
               <Label className="text-xs font-semibold text-slate-600 dark:text-slate-400">Vòng thi</Label>
               <select
                 value={selectedRoundId}
                 onChange={(e) => {
                   setSelectedRoundId(e.target.value);
-                  setSelectedJudgeId(''); // Reset judge when round changes
+                  setSelectedJudgeId('');
                 }}
                 className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200"
               >
                 <option value="">-- Chọn vòng --</option>
-                {activeRounds.map((round) => (
-                  <option key={round.RoundID} value={round.RoundID}>
-                    {round.RoundName}
-                  </option>
-                ))}
+                {activeRounds.map((round) => {
+                  const eventName = getEventName(round.EventID);
+                  return (
+                    <option key={round.RoundID} value={round.RoundID}>
+                      {round.RoundName}{eventName && !selectedEventId ? ` (${eventName})` : ''}
+                    </option>
+                  );
+                })}
               </select>
             </div>
 
@@ -214,59 +239,71 @@ export default function JudgeAssignmentPanel() {
       </Card>
 
       <div className="space-y-4">
-        <h3 className="text-sm font-bold text-slate-800 dark:text-slate-200">Danh sách phân công hiện tại</h3>
+        <h3 className="text-sm font-bold text-slate-800 dark:text-slate-200">
+          Danh sách phân công hiện tại {selectedEventId ? `(Đã lọc theo sự kiện)` : ''}
+        </h3>
         
-        {roundsWithJudges
+        {filteredRoundsWithJudges
           .filter(({ judges: roundJudges }) => roundJudges.length > 0)
           .length === 0 ? (
           <Card className="border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900">
             <CardContent className="p-8 text-center text-xs text-slate-500">
-              Chưa có phân công judge nào.
+              Chưa có phân công judge nào{selectedEventId ? ' cho sự kiện này' : ''}.
             </CardContent>
           </Card>
         ) : (
           <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-            {roundsWithJudges
+            {filteredRoundsWithJudges
               .filter(({ judges: roundJudges }) => roundJudges.length > 0)
-              .map(({ round, judges: roundJudges }) => (
-              <Card key={round.RoundID} className="border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900">
-                <CardHeader className="pb-3">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <CardTitle className="text-sm font-bold">{round.RoundName}</CardTitle>
-                      <CardDescription className="text-xs">
-                        {roundJudges.length} judge được phân công
-                      </CardDescription>
-                    </div>
-                    <Badge className="bg-indigo-100 text-indigo-600 dark:bg-indigo-950/30 dark:text-indigo-400">
-                      {roundJudges.length}
-                    </Badge>
-                  </div>
-                </CardHeader>
-                <CardContent>
-                  <div className="flex flex-wrap gap-2 max-h-48 overflow-y-auto">
-                    {roundJudges.map((assignment) => (
-                      <div
-                        key={assignment.AssignmentId}
-                        className="flex items-center gap-2 rounded-lg border border-slate-200 bg-slate-50 px-3 py-1.5 dark:border-slate-700 dark:bg-slate-800"
-                      >
-                        <UserCheck className="h-3.5 w-3.5 text-emerald-500" />
-                        <span className="text-xs font-medium text-slate-700 dark:text-slate-300">
-                          {assignment.UserFullName || 'Unknown'}
-                        </span>
-                        <button
-                          onClick={() => handleRemoveAssignment(assignment.AssignmentId, assignment.UserId, assignment.RoundId)}
-                          disabled={saving}
-                          className="ml-1 text-rose-400 hover:text-rose-600 disabled:opacity-50"
-                        >
-                          <Trash2 className="h-3 w-3" />
-                        </button>
+              .map(({ round, judges: roundJudges }) => {
+                const eventName = getEventName(round.EventID);
+                return (
+                  <Card key={round.RoundID} className="border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900">
+                    <CardHeader className="pb-3">
+                      <div className="flex items-center justify-between gap-2">
+                        <div className="space-y-1">
+                          <CardTitle className="text-sm font-bold flex items-center gap-2 flex-wrap">
+                            <span>{round.RoundName}</span>
+                            {eventName && (
+                              <Badge variant="outline" className="text-[10px] font-medium border-slate-200 text-slate-500 dark:border-slate-700 dark:text-slate-400">
+                                {eventName}
+                              </Badge>
+                            )}
+                          </CardTitle>
+                          <CardDescription className="text-xs">
+                            {roundJudges.length} judge được phân công
+                          </CardDescription>
+                        </div>
+                        <Badge className="bg-indigo-100 text-indigo-600 dark:bg-indigo-950/30 dark:text-indigo-400">
+                          {roundJudges.length}
+                        </Badge>
                       </div>
-                    ))}
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
+                    </CardHeader>
+                    <CardContent>
+                      <div className="flex flex-wrap gap-2 max-h-48 overflow-y-auto">
+                        {roundJudges.map((assignment) => (
+                          <div
+                            key={assignment.AssignmentId}
+                            className="flex items-center gap-2 rounded-lg border border-slate-200 bg-slate-50 px-3 py-1.5 dark:border-slate-700 dark:bg-slate-800"
+                          >
+                            <UserCheck className="h-3.5 w-3.5 text-emerald-500" />
+                            <span className="text-xs font-medium text-slate-700 dark:text-slate-300">
+                              {assignment.UserFullName || 'Unknown'}
+                            </span>
+                            <button
+                              onClick={() => handleRemoveAssignment(assignment.AssignmentId, assignment.UserId, assignment.RoundId)}
+                              disabled={saving}
+                              className="ml-1 text-rose-400 hover:text-rose-600 disabled:opacity-50"
+                            >
+                              <Trash2 className="h-3 w-3" />
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    </CardContent>
+                  </Card>
+                );
+              })}
           </div>
         )}
       </div>

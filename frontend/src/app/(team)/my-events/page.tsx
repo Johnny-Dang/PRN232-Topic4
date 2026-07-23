@@ -4,6 +4,7 @@ import React, { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useSearchParams, useRouter } from "next/navigation";
 import {
+  AlertCircle,
   CalendarDays,
   CheckCircle2,
   Clock3,
@@ -12,6 +13,7 @@ import {
   Trophy,
   Users,
 } from "lucide-react";
+import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -126,6 +128,7 @@ export default function MyEventsPage() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const requestedEventId = searchParams.get("eventId") ?? "";
+  const urlError = searchParams.get("error") || searchParams.get("message") || "";
   const [loading, setLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState("");
   const [rows, setRows] = useState<MyEventRow[]>([]);
@@ -143,6 +146,13 @@ export default function MyEventsPage() {
   const [showTeamChoice, setShowTeamChoice] = useState(() =>
     Boolean(requestedEventId),
   );
+
+  useEffect(() => {
+    if (urlError) {
+      toast.error(urlError);
+      setRegistrationMessage(urlError);
+    }
+  }, [urlError]);
 
   const handleSelectTeam = useCallback((teamId: string) => {
     setSelectedTeamId(teamId);
@@ -261,7 +271,9 @@ export default function MyEventsPage() {
         cat?.CategoryID || null,
         selectedEventId,
       );
-      setRegistrationMessage("Đăng ký sự kiện thành công.");
+      const successMsg = "Đăng ký sự kiện thành công.";
+      setRegistrationMessage(successMsg);
+      toast.success(successMsg);
       setSelectedEventId("");
       setSelectedTeamId("");
       setCustomTeamName("");
@@ -276,6 +288,7 @@ export default function MyEventsPage() {
         (registrationError instanceof Error ? registrationError.message : "") ||
         "Không thể đăng ký sự kiện.";
       setRegistrationMessage(message);
+      toast.error(message);
     } finally {
       setRegistering(false);
     }
@@ -287,7 +300,6 @@ export default function MyEventsPage() {
       if (teamToUse.members.length >= 3) {
         setRegistering(true);
         setRegistrationMessage("");
-        setShowTeamChoice(false);
         try {
           // If Leader typed a new team name, update it via API
           const newName = customTeamName.trim();
@@ -303,10 +315,13 @@ export default function MyEventsPage() {
             cat?.CategoryID || null,
             requestedEventId,
           );
-          setRegistrationMessage("Đăng ký sự kiện thành công.");
+          const successMsg = "Đăng ký sự kiện thành công.";
+          setRegistrationMessage(successMsg);
+          toast.success(successMsg);
           setSelectedEventId("");
           setSelectedTeamId("");
           setCustomTeamName("");
+          setShowTeamChoice(false);
           // Clear URL query parameters to avoid showing the choice dialog again
           router.replace("/my-events");
           await loadData();
@@ -320,6 +335,7 @@ export default function MyEventsPage() {
             (registrationError instanceof Error ? registrationError.message : "") ||
             "Không thể đăng ký sự kiện.";
           setRegistrationMessage(message);
+          toast.error(message);
         } finally {
           setRegistering(false);
         }
@@ -508,6 +524,30 @@ export default function MyEventsPage() {
                 </p>
               )}
               
+              {registrationMessage && (
+                <div
+                  className={`flex items-start gap-2.5 rounded-xl border p-3.5 text-xs font-semibold shadow-sm ${
+                    registrationMessage.includes("thành công")
+                      ? "border-emerald-200 bg-emerald-50 text-emerald-800 dark:border-emerald-900/50 dark:bg-emerald-950/40 dark:text-emerald-200"
+                      : "border-rose-200 bg-rose-50 text-rose-800 dark:border-rose-900/50 dark:bg-rose-950/40 dark:text-rose-200"
+                  }`}
+                >
+                  {registrationMessage.includes("thành công") ? (
+                    <CheckCircle2 className="h-4 w-4 shrink-0 text-emerald-600 dark:text-emerald-400 mt-0.5" />
+                  ) : (
+                    <AlertCircle className="h-4 w-4 shrink-0 text-rose-600 dark:text-rose-400 mt-0.5" />
+                  )}
+                  <div className="flex-1">
+                    <p className="font-bold">
+                      {registrationMessage.includes("thành công")
+                        ? "Thông báo hệ thống:"
+                        : "Lỗi đăng ký sự kiện:"}
+                    </p>
+                    <p className="mt-0.5 leading-relaxed">{registrationMessage}</p>
+                  </div>
+                </div>
+              )}
+
               <Button
                 type="button"
                 variant="ghost"
@@ -618,9 +658,27 @@ export default function MyEventsPage() {
                   </>
                 )}
                 {registrationMessage && (
-                  <p className="text-xs font-medium text-slate-600 dark:text-slate-300">
-                    {registrationMessage}
-                  </p>
+                  <div
+                    className={`flex items-start gap-2.5 rounded-xl border p-3.5 text-xs font-semibold shadow-sm ${
+                      registrationMessage.includes("thành công")
+                        ? "border-emerald-200 bg-emerald-50 text-emerald-800 dark:border-emerald-900/50 dark:bg-emerald-950/40 dark:text-emerald-200"
+                        : "border-rose-200 bg-rose-50 text-rose-800 dark:border-rose-900/50 dark:bg-rose-950/40 dark:text-rose-200"
+                    }`}
+                  >
+                    {registrationMessage.includes("thành công") ? (
+                      <CheckCircle2 className="h-4 w-4 shrink-0 text-emerald-600 dark:text-emerald-400 mt-0.5" />
+                    ) : (
+                      <AlertCircle className="h-4 w-4 shrink-0 text-rose-600 dark:text-rose-400 mt-0.5" />
+                    )}
+                    <div className="flex-1">
+                      <p className="font-bold">
+                        {registrationMessage.includes("thành công")
+                          ? "Thông báo hệ thống:"
+                          : "Lỗi đăng ký sự kiện:"}
+                      </p>
+                      <p className="mt-0.5 leading-relaxed">{registrationMessage}</p>
+                    </div>
+                  </div>
                 )}
               </CardContent>
             </Card>
