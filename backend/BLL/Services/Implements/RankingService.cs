@@ -46,7 +46,7 @@ namespace BusinessLogicLayer.Services.Implements
                 x.RoundId == roundId &&
                 !x.IsCalibrationSample &&
                 x.TeamId.HasValue &&
-                (x.Status == "Submitted" || x.Status == "Updated"));
+                (x.Status == "Submitted" || x.Status == "Updated" || x.Status == "Graded"));
             if (!submissions.Any())
                 return Enumerable.Empty<RankingDto>();
 

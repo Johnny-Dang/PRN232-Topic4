@@ -226,7 +226,8 @@ Giám khảo gửi điểm cho bài nộp theo toàn bộ bộ tiêu chí đã c
 
 ### Các điều kiện kiểm tra
 1. Submission phải tồn tại.
-2. Submission phải ở trạng thái `Submitted` hoặc `Updated`.
+2. Submission phải ở trạng thái `Submitted`, `Updated` hoặc `Graded`. Trạng thái
+   `Graded` vẫn được phép cập nhật điểm trong thời gian chấm của Round.
 3. Judge hiện tại phải được phân công vào Round của Submission.
 4. Thời gian hiện tại phải nằm trong khoảng chấm điểm của Round: `StartDate <= now <= EndDate`.
 5. Request phải gửi đúng toàn bộ Criteria đã cấu hình cho Event, không thiếu và không thừa.
@@ -235,6 +236,9 @@ Giám khảo gửi điểm cho bài nộp theo toàn bộ bộ tiêu chí đã c
 
 > [!NOTE]
 > Sau khi chấm điểm thành công, hệ thống tự động tạo/cập nhật Ranking cho Round tương ứng. Không cần gọi API trigger Ranking thủ công.
+> Submission chỉ chuyển sang trạng thái `Graded` khi tất cả Judge được phân công
+> cho Round đã chấm đủ toàn bộ Criteria. Bài vẫn xuất hiện trong danh sách được
+> phân công để Judge xem và cập nhật điểm.
 
 ### Realtime Notification
 * **Hub Event**: `ReceiveNotification`

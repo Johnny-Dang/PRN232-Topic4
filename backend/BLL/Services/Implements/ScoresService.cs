@@ -86,8 +86,7 @@ namespace BusinessLogicLayer.Services.Implements
                 result.Add(score);
             }
 
-            submission.Status = "Graded";
-            _submissionRepository.Update(submission);
+            await UpdateSubmissionGradingStatusAsync(submission, result);
 
             await _unitOfWork.SaveChangesAsync();
             await _rankingService.GenerateAsync(submission.RoundId);
@@ -170,6 +169,8 @@ namespace BusinessLogicLayer.Services.Implements
                 result.Add(existingScore);
             }
 
+            await UpdateSubmissionGradingStatusAsync(submission, result);
+
             await _unitOfWork.SaveChangesAsync();
             await _rankingService.GenerateAsync(submission.RoundId);
 
@@ -203,7 +204,7 @@ namespace BusinessLogicLayer.Services.Implements
             var submissions = await _submissionRepository.FindAsync(x =>
                 roundIds.Contains(x.RoundId) &&
                 !x.IsCalibrationSample &&
-                (x.Status == "Submitted" || x.Status == "Updated"));
+                (x.Status == "Submitted" || x.Status == "Updated" || x.Status == "Graded"));
             var submissionIds = submissions.Select(s => s.SubmissionId).ToList();
             var assignmentIds = assignmentByRoundId.Values.Select(a => a.AssignmentId).ToList();
             var scores = await _scoreRepository.FindAsync(x =>
@@ -300,7 +301,8 @@ namespace BusinessLogicLayer.Services.Implements
                 throw new Exception($"Không tìm thấy bài nộp với id: {submissionId}");
 
             if (!string.Equals(submission.Status, "Submitted", StringComparison.OrdinalIgnoreCase) &&
-                !string.Equals(submission.Status, "Updated", StringComparison.OrdinalIgnoreCase))
+                !string.Equals(submission.Status, "Updated", StringComparison.OrdinalIgnoreCase) &&
+                !string.Equals(submission.Status, "Graded", StringComparison.OrdinalIgnoreCase))
                 throw new Exception("Chỉ các bài nộp đã được nộp mới có thể được chấm điểm");
 
             if (submission.IsCalibrationSample)
@@ -390,6 +392,53 @@ namespace BusinessLogicLayer.Services.Implements
 
             if (!expectedCriteriaIds.SetEquals(submittedCriteriaIds))
                 throw new Exception("Yêu cầu chấm điểm phải bao gồm chính xác tất cả các tiêu chí được cấu hình cho sự kiện này");
+        }
+
+        private async Task UpdateSubmissionGradingStatusAsync(
+            Submissions submission,
+            IEnumerable<Scores> pendingScores)
+        {
+            var assignments = await _assignmentRepository.FindAsync(x =>
+                x.RoundId == submission.RoundId);
+            var round = await _roundRepository.GetByIdAsync(submission.RoundId);
+            if (round == null)
+                throw new Exception($"Không tìm thấy vòng với id: {submission.RoundId}");
+
+            var eventCriteria = await _eventCriteriaRepository.FindAsync(x =>
+                x.EventId == round.EventId);
+            var expectedCriteriaIds = eventCriteria
+                .Select(x => x.CriteriaId)
+                .ToHashSet();
+            var persistedScores = await _scoreRepository.FindAsync(x =>
+                x.SubmissionId == submission.SubmissionId);
+            var allScores = persistedScores
+                .Concat(pendingScores)
+                .GroupBy(x => x.ScoreId)
+                .Select(x => x.First())
+                .ToList();
+
+            var allAssignedJudgesHaveCompleted = assignments.Any() &&
+                expectedCriteriaIds.Any() &&
+                assignments.All(assignment =>
+                {
+                    var scoredCriteriaIds = allScores
+                        .Where(score => score.AssignmentId == assignment.AssignmentId)
+                        .Select(score => score.CriteriaId)
+                        .ToHashSet();
+                    return expectedCriteriaIds.SetEquals(scoredCriteriaIds);
+                });
+
+            var nextStatus = allAssignedJudgesHaveCompleted
+                ? "Graded"
+                : string.Equals(submission.Status, "Updated", StringComparison.OrdinalIgnoreCase)
+                    ? "Updated"
+                    : "Submitted";
+
+            if (!string.Equals(submission.Status, nextStatus, StringComparison.OrdinalIgnoreCase))
+            {
+                submission.Status = nextStatus;
+                _submissionRepository.Update(submission);
+            }
         }
 
         private static ScoreDto MapToDto(Scores score)
