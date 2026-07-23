@@ -135,8 +135,7 @@ function CoordinatorDashboardContent() {
 
       const computedIrr: IrrSubmissionData[] = [];
       for (const submission of fetchedSubmissions) {
-        if (submission.Status !== 'Graded') continue;
-
+        if (!submission.TeamID || !submission.Team?.TeamName) continue;
         const scores = await getScores(submission.SubmissionID);
         if (scores.length === 0) continue;
 
@@ -146,7 +145,8 @@ function CoordinatorDashboardContent() {
           const scoreValues = criteriaScores.map((score) => score.ScoreValue);
 
           return {
-            name: criteriaScores[0].Criteria.CriteriaName,
+            id: criteriaId,
+            name: criteriaScores[0]?.Criteria?.CriteriaName || 'Tiêu chí',
             mean: calculateMean(scoreValues),
             variance: calculateVariance(scoreValues),
             stdDev: calculateStdDev(scoreValues),
@@ -155,7 +155,7 @@ function CoordinatorDashboardContent() {
 
         computedIrr.push({
           submissionId: submission.SubmissionID,
-          teamName: submission.Team.TeamName,
+          teamName: submission.Team?.TeamName || 'Đội thi',
           roundName: fetchedRounds.find((round) => round.RoundID === submission.RoundID)?.RoundName || 'Vòng thi',
           criteria,
         });

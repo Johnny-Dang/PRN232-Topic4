@@ -36,12 +36,12 @@ export default function IrrMonitor({ data }: IrrMonitorProps) {
               </h4>
 
               <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
-                {item.criteria.map((criteria) => {
+                {item.criteria.map((criteria, index) => {
                   const hasHighDiscrepancy = criteria.stdDev > 0.8;
 
                   return (
                     <div
-                      key={criteria.name}
+                      key={criteria.id || `${criteria.name}-${index}`}
                       className={`flex flex-col justify-between rounded-xl border p-3 ${
                         hasHighDiscrepancy
                           ? 'border-amber-200 bg-amber-50/50 dark:border-amber-900/30 dark:bg-amber-950/20'

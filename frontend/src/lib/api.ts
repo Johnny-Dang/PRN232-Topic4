@@ -2013,8 +2013,75 @@ export async function getEliminations(): Promise<
   return [];
 }
 
+interface BackendAuditUserField {
+  userId?: string;
+  UserId?: string;
+  UserID?: string;
+  email?: string;
+  Email?: string;
+  fullName?: string;
+  FullName?: string;
+  phone?: string;
+  Phone?: string;
+  shortId?: string;
+  ShortId?: string;
+  role?: string;
+  Role?: string;
+  accountStatus?: string;
+  AccountStatus?: string;
+}
+
+interface BackendAuditLog {
+  logId?: string;
+  LogId?: string;
+  userId?: string;
+  UserId?: string;
+  actionType?: string;
+  ActionType?: string;
+  oldValue?: string | null;
+  OldValue?: string | null;
+  newValue?: string;
+  NewValue?: string;
+  createdAt?: string;
+  CreatedAt?: string;
+  user?: BackendAuditUserField;
+  User?: BackendAuditUserField;
+}
+
 export async function getAuditLogs(): Promise<(AuditLog & { User: User })[]> {
-  return [];
+  if (!useLiveApi) return [];
+  try {
+    const response = await apiClient.get<BackendAuditLog[]>("/AuditLog");
+    return response.data.map((log) => {
+      const u = log.user || log.User;
+      const rawRole = u?.role || u?.Role || "Coordinator";
+      const validRole: User["Role"] =
+        rawRole === "Leader" || rawRole === "Member" || rawRole === "Mentor" || rawRole === "Judge" || rawRole === "Coordinator"
+          ? rawRole
+          : "Coordinator";
+
+      return {
+        LogID: String(log.logId || log.LogId || ""),
+        UserID: String(log.userId || log.UserId || ""),
+        ActionType: String(log.actionType || log.ActionType || ""),
+        OldValue: log.oldValue ?? log.OldValue ?? null,
+        NewValue: String(log.newValue || log.NewValue || ""),
+        CreatedAt: String(log.createdAt || log.CreatedAt || new Date().toISOString()),
+        User: {
+          UserID: String(u?.userId || u?.UserId || u?.UserID || log.userId || log.UserId || ""),
+          Email: String(u?.email || u?.Email || ""),
+          FullName: String(u?.fullName || u?.FullName || "System User"),
+          Phone: String(u?.phone || u?.Phone || ""),
+          ShortId: String(u?.shortId || u?.ShortId || ""),
+          Role: validRole,
+          AccountStatus: String(u?.accountStatus || u?.AccountStatus || "Active"),
+        },
+      };
+    });
+  } catch (error: unknown) {
+    logApiError("getAuditLogs", error);
+    return [];
+  }
 }
 
 export async function getRankings(

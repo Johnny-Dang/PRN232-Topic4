@@ -86,6 +86,9 @@ namespace BusinessLogicLayer.Services.Implements
                 result.Add(score);
             }
 
+            submission.Status = "Graded";
+            _submissionRepository.Update(submission);
+
             await _unitOfWork.SaveChangesAsync();
             await _rankingService.GenerateAsync(submission.RoundId);
 

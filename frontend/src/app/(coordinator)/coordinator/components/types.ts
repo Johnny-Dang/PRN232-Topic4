@@ -4,6 +4,7 @@ import type { Category as FlowCategory, Event as FlowEvent } from '@/services/ty
 import type { CategoryMentor } from '@/services/types/mentor';
 
 export interface IrrCriteriaBreakdown {
+  id?: string;
   name: string;
   mean: number;
   variance: number;

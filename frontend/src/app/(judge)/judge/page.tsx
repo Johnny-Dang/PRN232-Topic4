@@ -23,7 +23,6 @@ import {
   getEvents,
   getRounds,
   getAssignedSubmissions,
-  getScores,
   getRankings,
   submitScores,
   updateScores,
@@ -115,24 +114,29 @@ function JudgePageContent() {
   }, []);
 
   useEffect(() => {
-    const loadExistingScores = async () => {
+    const loadExistingScores = () => {
       if (!activeSubmission) {
         setExistingScores([]);
+        setScores({});
+        setComments({});
         return;
       }
 
       setLoadingScores(true);
       try {
-        const existing = await getScores(activeSubmission.submissionId);
-        setExistingScores(existing);
+        const myScores = activeSubmission.scores || [];
+        setExistingScores(myScores);
 
-        if (existing.length > 0) {
+        if (myScores.length > 0) {
           setScores(
-            Object.fromEntries(existing.map((s) => [s.CriteriaID, s.ScoreValue]))
+            Object.fromEntries(myScores.map((s) => [s.CriteriaID, s.ScoreValue]))
           );
           setComments(
-            Object.fromEntries(existing.map((s) => [s.CriteriaID, s.Comment || '']))
+            Object.fromEntries(myScores.map((s) => [s.CriteriaID, s.Comment || '']))
           );
+        } else {
+          setScores({});
+          setComments({});
         }
       } catch (error) {
         console.error('Failed to load existing scores:', error);
@@ -144,9 +148,9 @@ function JudgePageContent() {
       }
     };
 
-    void loadExistingScores();
+    loadExistingScores();
     // eslint-disable-next-line react-hooks/set-state-in-effect, react-hooks/exhaustive-deps
-  }, [selectedSubId, activeSubmission?.submissionId]);
+  }, [selectedSubId, activeSubmission?.submissionId, activeSubmission?.scores]);
 
   useEffect(() => {
     const loadCriteria = async () => {
