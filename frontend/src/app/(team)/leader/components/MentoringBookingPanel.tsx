@@ -147,7 +147,7 @@ export default function MentoringBookingPanel({ categoryId, teamId }: MentoringB
                 ) : (
                   availableSchedules.map((sch) => (
                     <option key={sch.scheduleId} value={sch.scheduleId}>
-                      Mentor: {sch.mentorName} | {new Date(sch.startTime).toLocaleString('vi-VN')} - {new Date(sch.endTime).toLocaleTimeString('vi-VN')} {sch.meetingLocation ? `(${sch.meetingLocation})` : ''}
+                      Mentor: {sch.mentorName} | {new Date(sch.startTime).toLocaleString('vi-VN')} - {new Date(sch.endTime).toLocaleTimeString('vi-VN')}
                     </option>
                   ))
                 )}
@@ -245,7 +245,7 @@ export default function MentoringBookingPanel({ categoryId, teamId }: MentoringB
                       <Calendar className="h-3 w-3 text-indigo-500" />
                       {new Date(b.startTime).toLocaleString('vi-VN')}
                     </span>
-                    {b.meetingLink && (
+                    {b.meetingLink && (b.status === 'ACCEPTED' || b.status === 'COMPLETED') && (
                       <a
                         href={b.meetingLink}
                         target="_blank"
